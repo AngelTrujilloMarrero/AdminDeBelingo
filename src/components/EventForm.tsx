@@ -8,14 +8,14 @@ import {
   generateTimeOptions,
   estandarizarNombre
 } from '../lib/utils';
-import { 
-  Calendar, 
-  Music, 
-  MapPin, 
-  Clock, 
-  Tag, 
-  Save, 
-  X, 
+import {
+  Calendar,
+  Music,
+  MapPin,
+  Clock,
+  Tag,
+  Save,
+  X,
   CheckCircle,
   AlertCircle,
   Eye,
@@ -87,8 +87,8 @@ function FloatingLabelInput({
           className={`
             absolute ${icon ? 'left-11' : 'left-4'} transition-all duration-300 pointer-events-none
             text-gray-500 origin-left
-            ${isDateInput 
-              ? 'top-2 text-xs font-medium text-indigo-600 scale-90' 
+            ${isDateInput
+              ? 'top-2 text-xs font-medium text-indigo-600 scale-90'
               : `peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base
                  peer-focus:top-2 peer-focus:text-xs peer-focus:font-medium peer-focus:text-indigo-600 peer-focus:scale-90
                  ${hasValue ? 'top-2 text-xs font-medium text-indigo-600 scale-90' : 'top-1/2 -translate-y-1/2 text-base'}`
@@ -157,6 +157,11 @@ export default function EventForm({
 
   const orquestaInputRef = useRef<HTMLInputElement>(null);
   const lugarInputRef = useRef<HTMLInputElement>(null);
+  const timeDropdownRef = useRef<HTMLDivElement>(null);
+  const tipoDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const [showTipoDropdown, setShowTipoDropdown] = useState(false);
 
   const timeOptions = generateTimeOptions();
 
@@ -217,6 +222,23 @@ export default function EventForm({
 
     setLugarSuggestions(uniquePairs);
   }, [events]);
+
+  // Cerrar dropdowns al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (timeDropdownRef.current && !timeDropdownRef.current.contains(event.target as Node)) {
+        setShowTimeDropdown(false);
+      }
+      if (tipoDropdownRef.current && !tipoDropdownRef.current.contains(event.target as Node)) {
+        setShowTipoDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleOrquestaInput = (value: string) => {
     setFormData({ ...formData, orquesta: value });
@@ -344,36 +366,36 @@ export default function EventForm({
     // Verificar para cada orquesta del nuevo evento
     const conflictosDetallados: string[] = [];
     const conflictosCriticos: string[] = [];
-    
+
     orquestas.forEach(orquestaActual => {
       // EXCEPCIÓN: Si la orquesta es DJ (en cualquier variación), omitir validación de duplicados
       const isDJ = normalizeString(orquestaActual).includes('dj');
       if (isDJ) {
         return; // Saltar validación para DJs
       }
-      
+
       // Buscar eventos que contengan esta orquesta específica
       const eventosConEstaOrquesta = events.filter(event => {
         if (editingEvent && event.id === editingEvent.id) return false;
-        
+
         // Obtener todas las orquestas de este evento
         const orquestasDelEvento = event.orquesta.split(',').map(o => o.trim());
-        
+
         // Verificar si alguna orquesta del evento coincide con la orquesta actual
-        return orquestasDelEvento.some(orqExistente => 
+        return orquestasDelEvento.some(orqExistente =>
           normalizeString(orqExistente) === normalizeString(orquestaActual.trim())
         );
       });
-      
+
       // De esos eventos, filtrar los de la misma fecha
       const eventosMismaFecha = eventosConEstaOrquesta.filter(e => e.day === eventDate);
-      
+
       // De esos, buscar conflictos de horario (diferencia <= 2 horas)
       eventosMismaFecha.forEach(eventoExistente => {
         const h1 = new Date(`1970-01-01T${eventoExistente.hora}:00`).getTime();
         const h2 = new Date(`1970-01-01T${hora}:00`).getTime();
         const diferenciaHoras = Math.abs(h1 - h2) / (1000 * 60 * 60);
-        
+
         if (diferenciaHoras <= 2) {
           const mensaje = `ADVERTENCIA: La orquesta "${orquestaActual.trim()}" ya tiene una actuacion el ${eventoExistente.day} a las ${eventoExistente.hora} en ${eventoExistente.lugar || 'casco'} (${eventoExistente.municipio}). Diferencia de tiempo: ${diferenciaHoras.toFixed(1)} horas.`;
           conflictosDetallados.push(mensaje);
@@ -381,7 +403,7 @@ export default function EventForm({
         }
       });
     });
-    
+
     // ALERT CRÍTICO para eventos duplicados de orquesta
     if (conflictosCriticos.length > 0) {
       const alertMessage = `⚠️ CONFLICTO DETECTADO:\n\n${conflictosCriticos.join('\n')}\n\n¿Deseas continuar con el guardado?`;
@@ -390,7 +412,7 @@ export default function EventForm({
         return; // No guardar si el usuario cancela
       }
     }
-    
+
     if (conflictosDetallados.length > 0) {
       conflictosDetallados.forEach(conflicto => warnings.push(conflicto));
     }
@@ -488,9 +510,9 @@ export default function EventForm({
 
   return (
     <div className="max-w-4xl mx-auto p-6" id="form-container">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
             {editingEvent ? (
               <>
@@ -505,7 +527,7 @@ export default function EventForm({
             )}
           </h2>
           <p className="text-white/80 mt-2">
-            {editingEvent 
+            {editingEvent
               ? 'Modifica los datos del evento existente'
               : 'Completa los datos para crear un nuevo evento'
             }
@@ -582,51 +604,122 @@ export default function EventForm({
               </label>
             </div>
 
-            {/* Hora */}
-            <div className="relative">
-              <select
-                value={formData.hora}
-                onChange={e => setFormData({ ...formData, hora: e.target.value })}
-                className="w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
-                           focus:border-indigo-500 focus:outline-none transition-all duration-300
-                           bg-white text-gray-900 appearance-none"
+            {/* Hora Custom Dropdown */}
+            <div className="relative" ref={timeDropdownRef}>
+              <div
+                onClick={() => setShowTimeDropdown(!showTimeDropdown)}
+                className="relative cursor-pointer"
               >
-                <option value="">Seleccione la hora</option>
-                {timeOptions.map(time => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <Clock className="h-5 w-5" />
+                <div className={`
+                  w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
+                  transition-all duration-300 bg-white text-gray-900
+                  ${showTimeDropdown ? 'border-indigo-500 ring-2 ring-indigo-100' : 'hover:border-gray-300'}
+                `}>
+                  {formData.hora || <span className="text-transparent">Seleccione la hora</span>}
+                </div>
+
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <Clock className="h-5 w-5" />
+                </div>
+
+                <label className={`
+                  absolute left-11 transition-all duration-300 pointer-events-none
+                  text-gray-500 origin-left
+                  ${formData.hora
+                    ? 'top-2 text-xs font-medium text-indigo-600 scale-90'
+                    : 'top-1/2 -translate-y-1/2 text-base'
+                  }
+                `}>
+                  Hora de comienzo
+                </label>
               </div>
-              <label className="absolute left-11 top-2 text-xs font-medium text-indigo-600">
-                Hora de comienzo
-              </label>
+
+              {/* Dropdown Menu */}
+              {showTimeDropdown && (
+                <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                  <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                    {timeOptions.map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, hora: time });
+                          setShowTimeDropdown(false);
+                        }}
+                        className={`
+                          px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200
+                          ${formData.hora === time
+                            ? 'bg-indigo-50 text-indigo-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Tipo */}
-          <div className="relative">
-            <select
-              value={formData.tipo}
-              onChange={e => {
-                setFormData({ ...formData, tipo: e.target.value });
-                setShowCustomTipo(e.target.value === 'Otro');
-              }}
-              className="w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
-                         focus:border-indigo-500 focus:outline-none transition-all duration-300
-                         bg-white text-gray-900 appearance-none"
+          {/* Tipo Custom Dropdown */}
+          <div className="relative" ref={tipoDropdownRef}>
+            <div
+              onClick={() => setShowTipoDropdown(!showTipoDropdown)}
+              className="relative cursor-pointer"
             >
-              {TIPOS_EVENTO.map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-              ))}
-            </select>
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <Tag className="h-5 w-5" />
+              <div className={`
+                w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
+                transition-all duration-300 bg-white text-gray-900
+                ${showTipoDropdown ? 'border-indigo-500 ring-2 ring-indigo-100' : 'hover:border-gray-300'}
+              `}>
+                {formData.tipo || <span className="text-transparent">Selecciona el tipo</span>}
+              </div>
+
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <Tag className="h-5 w-5" />
+              </div>
+
+              <label className={`
+                absolute left-11 transition-all duration-300 pointer-events-none
+                text-gray-500 origin-left
+                ${formData.tipo
+                  ? 'top-2 text-xs font-medium text-indigo-600 scale-90'
+                  : 'top-1/2 -translate-y-1/2 text-base'
+                }
+              `}>
+                Tipo de evento
+              </label>
             </div>
-            <label className="absolute left-11 top-2 text-xs font-medium text-indigo-600">
-              Tipo de evento
-            </label>
+
+            {/* Dropdown Menu */}
+            {showTipoDropdown && (
+              <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                  {TIPOS_EVENTO.map((tipo) => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, tipo });
+                        setShowCustomTipo(tipo === 'Otro');
+                        setShowTipoDropdown(false);
+                      }}
+                      className={`
+                        px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
+                        ${formData.tipo === tipo
+                          ? 'bg-indigo-50 text-indigo-600'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      {tipo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Tipo personalizado */}
