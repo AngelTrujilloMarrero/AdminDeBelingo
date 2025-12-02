@@ -403,6 +403,49 @@ export default function EventForm({
         }
       });
     });
+    // Detectar coincidencia en 4 de 5 parámetros
+    const parametrosCoincidentes = events.filter(e => {
+      if (editingEvent && e.id === editingEvent.id) return false;
+
+      // Verificar rango de 2 horas
+      const currentDateTime = new Date(`${eventDate}T${hora}`);
+      const existingDateTime = new Date(`${e.day}T${e.hora}`);
+
+      const diffInHours = Math.abs(currentDateTime.getTime() - existingDateTime.getTime()) / (1000 * 60 * 60);
+
+      // Si la diferencia es mayor a 2 horas, no se considera duplicado/conflicto para esta validación
+      if (diffInHours > 2) return false;
+
+      let matches = 0;
+      // 1. Fecha
+      if (e.day === eventDate) matches++;
+
+      // 2. Municipio
+      if (normalizeString(e.municipio) === normalizeString(municipio)) matches++;
+
+      // 3. Lugar
+      if (normalizeString(e.lugar) === normalizeString(formData.lugar)) matches++;
+
+      // 4. Tipo
+      const tipoActual = tipo === 'Otro' ? customTipo : tipo;
+      if (normalizeString(e.tipo) === normalizeString(tipoActual)) matches++;
+
+      // 5. Orquesta
+      // Normalizamos y ordenamos las orquestas para comparar el conjunto
+      const normalizeOrqs = (o: string) => o.split(',').map(x => normalizeString(x.trim())).sort().join(',');
+      if (normalizeOrqs(e.orquesta) === normalizeOrqs(orquesta)) matches++;
+
+      return matches >= 4;
+    });
+
+    if (parametrosCoincidentes.length > 0) {
+      conflictosCriticos.push(
+        `El evento coincide en 4 de 5 parámetros con ${parametrosCoincidentes.length} evento(s) existente(s) en un rango de 2 horas.`
+      );
+      parametrosCoincidentes.forEach(e => {
+        conflictosDetallados.push(`Coincidencia con evento: ${e.orquesta} en ${e.lugar} (${e.municipio}) el ${e.day} a las ${e.hora}`);
+      });
+    }
 
     // ALERT CRÍTICO para eventos duplicados de orquesta
     if (conflictosCriticos.length > 0) {
