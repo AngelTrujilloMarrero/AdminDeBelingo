@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, saveLoginTimestamp } from '../lib/firebase';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
@@ -15,6 +15,8 @@ export default function Login() {
     setError('');
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // Guardar el timestamp del login
+      saveLoginTimestamp();
     } catch (error: any) {
       setError('Error al iniciar sesión: ' + error.message);
     } finally {
@@ -27,7 +29,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/20"></div>
-      
+
       <div className="relative z-10 w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
@@ -41,7 +43,7 @@ export default function Login() {
         {/* Formulario */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl border border-white/20">
           <h2 className="text-2xl font-bold text-white text-center mb-6">Iniciar Sesión</h2>
-          
+
           {/* Email */}
           <div className="relative mb-4">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

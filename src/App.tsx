@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { ref, onValue } from 'firebase/database';
-import { auth, db } from './lib/firebase';
+import { auth, db, isSessionExpired, clearLoginTimestamp, saveLoginTimestamp } from './lib/firebase';
 import { Event } from './types/event';
 import Header from './components/Header';
 import Login from './components/Login';
@@ -19,13 +19,46 @@ function App() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Verificar si la sesión ha expirado
+        if (isSessionExpired()) {
+          // Cerrar sesión si ha expirado
+          await signOut(auth);
+          clearLoginTimestamp();
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        // Si el usuario está autenticado y la sesión no ha expirado, actualizar el timestamp
+        // Esto permite que la sesión se extienda si el usuario sigue activo
+        saveLoginTimestamp();
+        setUser(user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
+
+  // Verificar periódicamente si la sesión ha expirado
+  useEffect(() => {
+    if (!user) return;
+
+    // Verificar cada minuto si la sesión ha expirado
+    const intervalId = setInterval(async () => {
+      if (isSessionExpired()) {
+        await signOut(auth);
+        clearLoginTimestamp();
+        setUser(null);
+      }
+    }, 60000); // 60000ms = 1 minuto
+
+    return () => clearInterval(intervalId);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -60,12 +93,12 @@ function App() {
     if (formContainer) {
       formContainer.scrollIntoView({ behavior: 'smooth' });
     }
-    
+
     // Si hay un evento siendo editado, cancelar la edición
     if (editingEvent) {
       setEditingEvent(null);
     }
-    
+
     // Disparar evento personalizado para establecer la fecha
     window.dispatchEvent(new CustomEvent('dateSelected', { detail: date }));
   };
@@ -160,7 +193,7 @@ function App() {
                 Calendario público de eventos
               </p>
             </div>
-            
+
             {/* Iframe del calendario */}
             <div className="relative">
               <iframe
@@ -169,7 +202,7 @@ function App() {
                 scrolling="auto"
                 title="Google Calendar de eventos"
               />
-              
+
               {/* Overlay de carga */}
               <div className="absolute inset-0 bg-gray-100 flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-500">
                 <div className="text-center">

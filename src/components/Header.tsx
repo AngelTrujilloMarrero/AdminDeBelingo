@@ -1,5 +1,5 @@
 import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, clearLoginTimestamp } from '../lib/firebase';
 import { LogOut, User } from 'lucide-react';
 
 interface HeaderProps {
@@ -10,6 +10,7 @@ export default function Header({ userEmail }: HeaderProps) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      clearLoginTimestamp();
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
@@ -36,7 +37,7 @@ export default function Header({ userEmail }: HeaderProps) {
               <p className="text-sm font-medium text-white">{userEmail}</p>
               <p className="text-xs text-white/80">Administrador</p>
             </div>
-            
+
             <button
               onClick={handleLogout}
               className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm 
