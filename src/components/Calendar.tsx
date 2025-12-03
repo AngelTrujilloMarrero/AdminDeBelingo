@@ -27,10 +27,10 @@ const getDayColors = (dayName: string): string => {
 function generateCalendar(year: number, month: number, onDateSelect: (date: string) => void) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
   const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
-  
-  const days: JSX.Element[] = [];
+
+  const days = [];
   let date = 1;
 
   for (let i = 0; i < 6; i++) {
@@ -50,7 +50,7 @@ function generateCalendar(year: number, month: number, onDateSelect: (date: stri
         const dayName = fullDate.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase();
         const shortDay = DAYS_ES[j];
         const isToday = new Date().toDateString() === fullDate.toDateString();
-        
+
         days.push(
           <td key={dateString} className="p-1">
             <button
@@ -84,7 +84,7 @@ function generateCalendar(year: number, month: number, onDateSelect: (date: stri
 export default function Calendar({ onDateSelect }: CalendarProps) {
   const [showMore, setShowMore] = useState(false);
   const currentDate = new Date();
-  
+
   const calendars = [];
   for (let i = 0; i < 5; i++) {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
@@ -128,8 +128,10 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full">
                 <tbody>
-                  {Array.from({ length: Math.ceil((new Date(cal.year, cal.month + 1, 0).getDate() + 
-                    (new Date(cal.year, cal.month, 1).getDay() === 0 ? 6 : new Date(cal.year, cal.month, 1).getDay() - 1)) / 7) }).map((_, weekIndex) => (
+                  {Array.from({
+                    length: Math.ceil((new Date(cal.year, cal.month + 1, 0).getDate() +
+                      (new Date(cal.year, cal.month, 1).getDay() === 0 ? 6 : new Date(cal.year, cal.month, 1).getDay() - 1)) / 7)
+                  }).map((_, weekIndex) => (
                     <tr key={weekIndex}>
                       {generateCalendar(cal.year, cal.month, onDateSelect)
                         .slice(weekIndex * 7, (weekIndex + 1) * 7)}
