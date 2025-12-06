@@ -87,6 +87,7 @@ function App() {
     try {
       await signOut(auth);
       clearLoginTimestamp();
+      sessionStorage.removeItem('lastActivityTimestamp');
       setUser(null);
     } catch (error) {
       console.error("Error al cerrar sesión", error);

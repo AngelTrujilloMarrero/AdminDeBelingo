@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, Clock, LogOut, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Clock, LogOut, CheckCircle } from 'lucide-react';
 
 // Configuration
 const INACTIVITY_WARNING_MS = 14 * 60 * 1000; // 14 minutes
-const LOGOUT_COUNTDOWN_SECONDS = 30; // 30 seconds countdown
+const LOGOUT_COUNTDOWN_MS = 30 * 1000; // 30 seconds
+const TOTAL_MAX_IDLE_MS = INACTIVITY_WARNING_MS + LOGOUT_COUNTDOWN_MS;
 
 interface SessionTimeoutProps {
     onLogout: () => void;
@@ -13,63 +14,77 @@ interface SessionTimeoutProps {
 
 export default function SessionTimeout({ onLogout, onStayConnected, isActive }: SessionTimeoutProps) {
     const [showModal, setShowModal] = useState(false);
-    const [countdown, setCountdown] = useState(LOGOUT_COUNTDOWN_SECONDS);
+    const [countdown, setCountdown] = useState(LOGOUT_COUNTDOWN_MS / 1000);
 
-    // 1. Inactivity Timer Logic
+    // Initialize from storage or current time
+    const getInitialActivity = () => {
+        const stored = sessionStorage.getItem('lastActivityTimestamp');
+        return stored ? parseInt(stored, 10) : Date.now();
+    };
+
+    const lastActivityRef = useRef(getInitialActivity());
+    const lastStorageUpdateRef = useRef(Date.now());
+
+    // Check for inactivity periodically
     useEffect(() => {
-        if (!isActive || showModal) return; // Don't track if not logged in or modal is already open
+        if (!isActive) return;
 
-        let inactivityTimer: NodeJS.Timeout;
+        const checkInactivity = () => {
+            const now = Date.now();
+            const timeSinceLastActivity = now - lastActivityRef.current;
 
-        const startInactivityTimer = () => {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                setShowModal(true);
-                setCountdown(LOGOUT_COUNTDOWN_SECONDS);
-            }, INACTIVITY_WARNING_MS);
+            if (timeSinceLastActivity > TOTAL_MAX_IDLE_MS) {
+                // Time exceeded (e.g. device was sleeping for a long time)
+                onLogout();
+            } else if (timeSinceLastActivity > INACTIVITY_WARNING_MS) {
+                // Warning phase
+                if (!showModal) {
+                    setShowModal(true);
+                }
+                const remaining = Math.ceil((TOTAL_MAX_IDLE_MS - timeSinceLastActivity) / 1000);
+                setCountdown(remaining > 0 ? remaining : 0);
+            }
         };
 
-        // Activity Handlers
+        const intervalId = setInterval(checkInactivity, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [isActive, onLogout, showModal]);
+
+    // Activity listener with throttling
+    useEffect(() => {
+        if (!isActive || showModal) return;
+
         const handleActivity = () => {
-            // Throttle could be added here, but simple reset is robust enough for now
-            startInactivityTimer();
+            const now = Date.now();
+            // Update ref immediately for local checks
+            lastActivityRef.current = now;
+
+            // Throttle storage writes (every 5 seconds)
+            if (now - lastStorageUpdateRef.current > 5000) {
+                sessionStorage.setItem('lastActivityTimestamp', now.toString());
+                lastStorageUpdateRef.current = now;
+            }
         };
 
-        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+        // Added touchmove and other events for better mobile support
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'touchmove', 'click'];
+
         events.forEach(event => window.addEventListener(event, handleActivity));
 
-        // Start initial timer
-        startInactivityTimer();
-
         return () => {
-            clearTimeout(inactivityTimer);
             events.forEach(event => window.removeEventListener(event, handleActivity));
         };
     }, [isActive, showModal]);
 
-    // 2. Countdown Logic (Only when modal is open)
-    useEffect(() => {
-        let intervalId: NodeJS.Timeout;
-
-        if (showModal) {
-            if (countdown > 0) {
-                intervalId = setInterval(() => {
-                    setCountdown((prev) => prev - 1);
-                }, 1000);
-            } else if (countdown === 0) {
-                // Timeout reached
-                onLogout();
-            }
-        }
-
-        return () => clearInterval(intervalId);
-    }, [showModal, countdown, onLogout]);
-
     // Handle "Stay Connected"
-    const handleStayConnected = () => {
+    const handleStayConnected = useCallback(() => {
+        const now = Date.now();
+        lastActivityRef.current = now;
+        sessionStorage.setItem('lastActivityTimestamp', now.toString());
         setShowModal(false);
         onStayConnected();
-    };
+    }, [onStayConnected]);
 
     if (!showModal) return null;
 
