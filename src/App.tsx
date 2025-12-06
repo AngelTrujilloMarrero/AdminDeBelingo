@@ -10,6 +10,7 @@ import EventForm from './components/EventForm';
 import EventList from './components/EventList';
 import Filters from './components/Filters';
 import Stats from './components/Stats';
+import SessionTimeout from './components/SessionTimeout';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -24,10 +25,7 @@ function App() {
         // Verificar si la sesión ha expirado
         if (isSessionExpired()) {
           // Cerrar sesión si ha expirado
-          await signOut(auth);
-          clearLoginTimestamp();
-          setUser(null);
-          setLoading(false);
+          await performLogout();
           return;
         }
 
@@ -44,16 +42,14 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Verificar periódicamente si la sesión ha expirado
+  // Verificar periódicamente si la sesión ha expirado (backup check)
   useEffect(() => {
     if (!user) return;
 
     // Verificar cada minuto si la sesión ha expirado
     const intervalId = setInterval(async () => {
       if (isSessionExpired()) {
-        await signOut(auth);
-        clearLoginTimestamp();
-        setUser(null);
+        await performLogout();
       }
     }, 60000); // 60000ms = 1 minuto
 
@@ -86,6 +82,16 @@ function App() {
       return () => unsubscribe();
     }
   }, [user]);
+
+  const performLogout = async () => {
+    try {
+      await signOut(auth);
+      clearLoginTimestamp();
+      setUser(null);
+    } catch (error) {
+      console.error("Error al cerrar sesión", error);
+    }
+  };
 
   const handleDateSelect = (date: string) => {
     // Establecer la fecha en el formulario
@@ -148,6 +154,13 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       {/* Header moderno */}
       <Header userEmail={userEmail} />
+
+      {/* Monitor de inactividad */}
+      <SessionTimeout
+        isActive={!!user}
+        onLogout={performLogout}
+        onStayConnected={saveLoginTimestamp}
+      />
 
       {/* Contenido principal */}
       <div className="space-y-8 pb-8">
