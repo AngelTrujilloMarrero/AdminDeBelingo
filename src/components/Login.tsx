@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, saveLoginTimestamp } from '../lib/firebase';
 import { Mail, Lock, User, Eye, EyeOff, AlertTriangle, Shield, ShieldCheck } from 'lucide-react';
-import Captcha from './Captcha';
 
 // Security configuration
 const SECURITY_CONFIG = {
@@ -11,6 +10,7 @@ const SECURITY_CONFIG = {
   lockoutMultiplier: 2, // Progressive lockout
   minTimeBetweenAttempts: 1000, // 1 second minimum between attempts
   maxLockoutMinutes: 60,
+  minInteractionTime: 2000, // Minimum time (ms) a user must be on page before login (anti-bot)
 };
 
 interface SecurityState {
@@ -26,6 +26,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [mountTime] = useState(Date.now());
 
   // Honeypot field - bots will fill this
   const [honeypot, setHoneypot] = useState('');
@@ -44,7 +45,6 @@ export default function Login() {
     return { attempts: 0, lockoutUntil: 0, lockoutCount: 0, lastAttemptTime: 0 };
   });
 
-  const [captchaValid, setCaptchaValid] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [emailError, setEmailError] = useState('');
 
@@ -125,14 +125,14 @@ export default function Login() {
       return;
     }
 
-    // Validate email format
-    if (!validateEmail(email)) {
+    // Anti-bot: Check if form was submitted too quickly
+    if (now - mountTime < SECURITY_CONFIG.minInteractionTime) {
+      setError('Verificando seguridad browser... Intente nuevamente en unos segundos.');
       return;
     }
 
-    // Check captcha
-    if (!captchaValid) {
-      setError('Por favor complete la verificación de seguridad.');
+    // Validate email format
+    if (!validateEmail(email)) {
       return;
     }
 
@@ -193,7 +193,7 @@ export default function Login() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading && captchaValid) {
+    if (e.key === 'Enter' && !isLoading) {
       handleLogin();
     }
   };
@@ -228,11 +228,6 @@ export default function Login() {
               <>
                 <Shield className="h-4 w-4 text-red-300" />
                 <span className="text-xs text-red-200 font-medium">Acceso Bloqueado</span>
-              </>
-            ) : captchaValid ? (
-              <>
-                <ShieldCheck className="h-4 w-4 text-green-300" />
-                <span className="text-xs text-green-200 font-medium">Verificación Completa</span>
               </>
             ) : (
               <>
@@ -351,16 +346,11 @@ export default function Login() {
                 </button>
               </div>
 
-              {/* Captcha */}
-              <div className="mb-6">
-                <Captcha onValidate={setCaptchaValid} />
-              </div>
-
               {/* Login Button */}
               <div className="space-y-3">
                 <button
                   onClick={handleLogin}
-                  disabled={isLoading || !captchaValid}
+                  disabled={isLoading}
                   className="w-full bg-white text-purple-600 font-semibold py-3 px-4 rounded-xl
                              hover:bg-white/90 focus:outline-none focus:ring-4 focus:ring-white/30
                              transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300
@@ -392,7 +382,7 @@ export default function Login() {
 
         {/* Security Footer */}
         <p className="text-center text-white/50 text-xs mt-6">
-          🔒 Protegido con autenticación segura y verificación CAPTCHA
+          🔒 Protegido con autenticación segura
         </p>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
+import { NavLink } from 'react-router-dom';
 import { auth, clearLoginTimestamp, getLoginTimestamp } from '../lib/firebase';
-import { LogOut, User, Clock } from 'lucide-react';
+import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo } from 'lucide-react';
 
 interface HeaderProps {
   userEmail: string;
@@ -43,24 +44,59 @@ export default function Header({ userEmail }: HeaderProps) {
   };
 
   return (
-    <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-xl">
+    <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo/Título */}
-          <div className="flex items-center space-x-3">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2 hidden sm:block">
-              <User className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-8">
+            {/* Logo/Título */}
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2 hidden sm:block">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">De Belingo</h1>
+                <p className="text-xs text-white/80 hidden sm:block">Panel Admin</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">De Belingo Con Ángel</h1>
-              <p className="text-xs text-white/80 hidden sm:block">Panel de Administración</p>
-            </div>
+
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center gap-1 bg-white/10 rounded-lg p-1">
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${isActive
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-white/90 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <ListTodo className="w-4 h-4" />
+                Gestión
+              </NavLink>
+              <NavLink
+                to="/agenda"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${isActive
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-white/90 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <CalendarDays className="w-4 h-4" />
+                Agenda Pública
+              </NavLink>
+            </nav>
           </div>
 
           {/* User Info & Timer */}
           <div className="flex items-center gap-4 md:gap-6">
+            {/* Mobile Nav Link (if hidden on desktop, show simplified version?) 
+                For now we keep the desktop nav visible on md, but on sm access might be tricky depending on space.
+                Let's assume most use is desktop or simply hide user details on small screens.
+            */}
+
             {/* Session Timer */}
-            <div className="hidden md:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+            <div className="hidden lg:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
               <Clock className="w-4 h-4 text-white/80" />
               <span className="text-sm font-mono text-white font-medium">{sessionTime}</span>
             </div>
@@ -68,7 +104,6 @@ export default function Header({ userEmail }: HeaderProps) {
             {/* User Profile */}
             <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-white">{userEmail}</p>
-              <p className="text-xs text-white/80">Administrador</p>
             </div>
 
             <button
