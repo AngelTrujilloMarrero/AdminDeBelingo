@@ -94,8 +94,8 @@ export default function Header({ userEmail }: HeaderProps) {
                   }`
                 }
               >
-                <CalendarDays className="w-4 h-4" />
-                Agenda Pública
+                <BarChart3 className="w-4 h-4" />
+                Estadísticas
               </NavLink>
             </nav>
           </div>
@@ -158,9 +158,9 @@ export default function Header({ userEmail }: HeaderProps) {
               }
             >
               <div className={`p-2 rounded-lg ${location.pathname === '/agenda' ? 'bg-indigo-100/50' : 'bg-white/5'}`}>
-                <CalendarDays className={`w-5 h-5 ${location.pathname === '/agenda' ? 'text-indigo-600' : 'text-white'}`} />
+                <BarChart3 className={`w-5 h-5 ${location.pathname === '/agenda' ? 'text-indigo-600' : 'text-white'}`} />
               </div>
-              Agenda Pública
+              Estadísticas
             </NavLink>
 
             <div className="pt-4 mt-2 border-t border-white/10">
