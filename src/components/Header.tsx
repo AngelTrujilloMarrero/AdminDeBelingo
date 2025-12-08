@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { auth, clearLoginTimestamp, getLoginTimestamp } from '../lib/firebase';
-import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo } from 'lucide-react';
+import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X } from 'lucide-react';
 
 interface HeaderProps {
   userEmail: string;
@@ -10,6 +10,8 @@ interface HeaderProps {
 
 export default function Header({ userEmail }: HeaderProps) {
   const [sessionTime, setSessionTime] = useState<string>('00:00:00');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const updateTimer = () => {
@@ -43,11 +45,21 @@ export default function Header({ userEmail }: HeaderProps) {
     }
   };
 
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
   return (
     <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 sm:gap-8">
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+              onClick={toggleMenu}
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+
             {/* Logo/Título */}
             <div className="flex items-center space-x-3">
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2 hidden sm:block">
@@ -59,7 +71,7 @@ export default function Header({ userEmail }: HeaderProps) {
               </div>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation - Desktop */}
             <nav className="hidden md:flex items-center gap-1 bg-white/10 rounded-lg p-1">
               <NavLink
                 to="/"
@@ -89,12 +101,7 @@ export default function Header({ userEmail }: HeaderProps) {
           </div>
 
           {/* User Info & Timer */}
-          <div className="flex items-center gap-4 md:gap-6">
-            {/* Mobile Nav Link (if hidden on desktop, show simplified version?) 
-                For now we keep the desktop nav visible on md, but on sm access might be tricky depending on space.
-                Let's assume most use is desktop or simply hide user details on small screens.
-            */}
-
+          <div className="flex items-center gap-2 md:gap-6">
             {/* Session Timer */}
             <div className="hidden lg:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
               <Clock className="w-4 h-4 text-white/80" />
@@ -109,7 +116,7 @@ export default function Header({ userEmail }: HeaderProps) {
             <button
               onClick={handleLogout}
               className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm 
-                         transition-all duration-300 ease-in-out rounded-xl px-4 py-2 
+                         transition-all duration-300 ease-in-out rounded-xl px-3 py-2 
                          text-white hover:scale-105 active:scale-95 border border-white/10"
               title="Cerrar Sesión"
             >
@@ -119,6 +126,59 @@ export default function Header({ userEmail }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-indigo-700/95 backdrop-blur-lg border-t border-white/10 absolute w-full z-40 animate-slide-down shadow-xl">
+          <div className="px-4 pt-2 pb-4 space-y-2">
+            <NavLink
+              to="/"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${isActive
+                  ? 'bg-white text-indigo-600 shadow-lg translate-x-1'
+                  : 'text-white/90 hover:bg-white/10 hover:translate-x-1'
+                }`
+              }
+            >
+              <div className={`p-2 rounded-lg ${location.pathname === '/' ? 'bg-indigo-100/50' : 'bg-white/5'}`}>
+                <ListTodo className={`w-5 h-5 ${location.pathname === '/' ? 'text-indigo-600' : 'text-white'}`} />
+              </div>
+              Gestión de Eventos
+            </NavLink>
+
+            <NavLink
+              to="/agenda"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${isActive
+                  ? 'bg-white text-indigo-600 shadow-lg translate-x-1'
+                  : 'text-white/90 hover:bg-white/10 hover:translate-x-1'
+                }`
+              }
+            >
+              <div className={`p-2 rounded-lg ${location.pathname === '/agenda' ? 'bg-indigo-100/50' : 'bg-white/5'}`}>
+                <CalendarDays className={`w-5 h-5 ${location.pathname === '/agenda' ? 'text-indigo-600' : 'text-white'}`} />
+              </div>
+              Agenda Pública
+            </NavLink>
+
+            <div className="pt-4 mt-2 border-t border-white/10">
+              <div className="flex items-center justify-between px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 rounded-full p-2">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-sm">
+                    <p className="text-white font-medium">{userEmail}</p>
+                    <p className="text-white/60 text-xs">Sesión: {sessionTime}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
