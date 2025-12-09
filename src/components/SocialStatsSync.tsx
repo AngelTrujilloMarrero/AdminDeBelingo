@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RefreshCw, Save, TrendingUp } from 'lucide-react';
 import { updateSocialFollowers } from '../lib/firebase';
-import { set } from 'firebase/database';
+import { set, get } from 'firebase/database';
 import { socialFollowersRef } from '../lib/firebase';
 
 export default function SocialStatsSync() {
@@ -11,11 +11,40 @@ export default function SocialStatsSync() {
 
     // Estados para edición manual
     const [manualStats, setManualStats] = useState({
-        Facebook: '35.500',
-        Instagram: '9.000',
-        WhatsApp: '2.200',
-        Telegram: '140'
+        Facebook: '',
+        Instagram: '',
+        WhatsApp: '',
+        Telegram: ''
     });
+
+    // Cargar datos existentes al montar
+    useEffect(() => {
+        const fetchCurrentStats = async () => {
+            try {
+                const snapshot = await get(socialFollowersRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    setManualStats({
+                        Facebook: data.Facebook || '35.500',
+                        Instagram: data.Instagram || '9.000',
+                        WhatsApp: data.WhatsApp || '2.200',
+                        Telegram: data.Telegram || '140'
+                    });
+                } else {
+                    // Fallback por defecto si no existen datos
+                    setManualStats({
+                        Facebook: '35.500',
+                        Instagram: '9.000',
+                        WhatsApp: '2.200',
+                        Telegram: '140'
+                    });
+                }
+            } catch (error) {
+                console.error("Error al obtener datos iniciales", error);
+            }
+        };
+        fetchCurrentStats();
+    }, []);
 
     /**
      * Intenta sincronizar automáticamente (usará fallbacks por ahora)
@@ -25,7 +54,15 @@ export default function SocialStatsSync() {
         setMessage('');
 
         try {
-            await updateSocialFollowers();
+            const updatedData = await updateSocialFollowers();
+            if (updatedData) {
+                setManualStats({
+                    Facebook: updatedData.Facebook,
+                    Instagram: updatedData.Instagram,
+                    WhatsApp: updatedData.WhatsApp,
+                    Telegram: updatedData.Telegram
+                });
+            }
             setMessage('✅ Sincronización automática completada');
         } catch (error) {
             console.error('Error en sincronización:', error);
@@ -108,8 +145,8 @@ export default function SocialStatsSync() {
 
                     {message && (
                         <div className={`p-3 rounded-lg ${message.includes('✅')
-                                ? 'bg-green-50 border border-green-200 text-green-800'
-                                : 'bg-red-50 border border-red-200 text-red-800'
+                            ? 'bg-green-50 border border-green-200 text-green-800'
+                            : 'bg-red-50 border border-red-200 text-red-800'
                             }`}>
                             {message}
                         </div>
@@ -206,8 +243,8 @@ export default function SocialStatsSync() {
 
                     {message && (
                         <div className={`p-3 rounded-lg ${message.includes('✅')
-                                ? 'bg-green-50 border border-green-200 text-green-800'
-                                : 'bg-red-50 border border-red-200 text-red-800'
+                            ? 'bg-green-50 border border-green-200 text-green-800'
+                            : 'bg-red-50 border border-red-200 text-red-800'
                             }`}>
                             {message}
                         </div>

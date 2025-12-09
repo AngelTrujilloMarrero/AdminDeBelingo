@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set } from 'firebase/database';
+import { getDatabase, ref, set, get } from 'firebase/database';
 import { getAuth, setPersistence, browserSessionPersistence } from 'firebase/auth';
 
 import { scrapeSocialStats } from './socialScraper';
@@ -79,13 +79,19 @@ export const socialFollowersRef = ref(db, 'socialFollowers');
 export const updateSocialFollowers = async () => {
   try {
     console.log('Iniciando sincronización de redes sociales...');
+
+    // Obtener datos actuales primero
+    const snapshot = await get(socialFollowersRef);
+    const currentData = snapshot.val() || {};
+
     const scrapedData = await scrapeSocialStats();
 
+    // Prioridad: 1. Dato escrapeado (si existe), 2. Dato actual en DB, 3. Valor por defecto
     const dataToSave = {
-      Facebook: scrapedData.Facebook || '35.500',
-      Instagram: scrapedData.Instagram || '9.000',
-      WhatsApp: scrapedData.WhatsApp || '2.200',
-      Telegram: scrapedData.Telegram || '140',
+      Facebook: scrapedData.Facebook || currentData.Facebook || '35.500',
+      Instagram: scrapedData.Instagram || currentData.Instagram || '9.000',
+      WhatsApp: scrapedData.WhatsApp || currentData.WhatsApp || '2.200',
+      Telegram: scrapedData.Telegram || currentData.Telegram || '140',
       lastUpdated: new Date().toLocaleDateString('es-ES')
     };
 
