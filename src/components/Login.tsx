@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, saveLoginTimestamp } from '../lib/firebase';
+import { auth, saveLoginTimestamp, updateSocialFollowers } from '../lib/firebase';
 import { Mail, Lock, User, Eye, EyeOff, AlertTriangle, Shield, ShieldCheck } from 'lucide-react';
 
 // Security configuration
@@ -161,6 +161,9 @@ export default function Login() {
       localStorage.removeItem('loginSecurity');
 
       saveLoginTimestamp();
+
+      // Actualizar datos de seguidores de redes sociales
+      await updateSocialFollowers();
     } catch (error: any) {
       // Failed attempt
       const newAttempts = securityState.attempts + 1;

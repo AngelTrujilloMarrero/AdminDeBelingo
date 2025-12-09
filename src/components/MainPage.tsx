@@ -3,6 +3,7 @@ import Calendar from './Calendar';
 import EventForm from './EventForm';
 import EventList from './EventList';
 import Filters from './Filters';
+import SocialStatsSync from './SocialStatsSync';
 
 interface MainPageProps {
     events: Event[];
@@ -52,6 +53,13 @@ export default function MainPage({
             {/* Sección de eventos */}
             <section>
                 <EventList events={filteredEvents} onEditEvent={onEditEvent} />
+            </section>
+
+            {/* Sección de sincronización de redes sociales */}
+            <section>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <SocialStatsSync />
+                </div>
             </section>
         </div>
     );

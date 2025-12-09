@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase } from 'firebase/database';
+import { getDatabase, ref, set } from 'firebase/database';
 import { getAuth, setPersistence, browserSessionPersistence } from 'firebase/auth';
+
+import { scrapeSocialStats } from './socialScraper';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCg1OiMDsmfoAGpSVYRnvWdl4tSPnLVoUo",
@@ -65,3 +67,35 @@ export const isSessionExpired = (): boolean => {
 export const clearLoginTimestamp = () => {
   sessionStorage.removeItem(LOGIN_TIMESTAMP_KEY);
 };
+
+// Referencia a los datos de seguidores de redes sociales
+export const socialFollowersRef = ref(db, 'socialFollowers');
+
+/**
+ * Actualiza los datos de seguidores de redes sociales
+ * Se conecta con el scraper para obtener datos frescos o usa fallbacks.
+ * Se debe llamar cada vez que un usuario inicia sesión.
+ */
+export const updateSocialFollowers = async () => {
+  try {
+    console.log('Iniciando sincronización de redes sociales...');
+    const scrapedData = await scrapeSocialStats();
+
+    const dataToSave = {
+      Facebook: scrapedData.Facebook || '35.500',
+      Instagram: scrapedData.Instagram || '9.000',
+      WhatsApp: scrapedData.WhatsApp || '2.200',
+      Telegram: scrapedData.Telegram || '140',
+      lastUpdated: new Date().toLocaleDateString('es-ES')
+    };
+
+    await set(socialFollowersRef, dataToSave);
+    console.log('✅ Datos de seguidores actualizados correctamente:', dataToSave);
+    return dataToSave;
+  } catch (error) {
+    console.error('❌ Error al actualizar datos de seguidores:', error);
+    // Intentar guardar al menos la fecha si falla el scraping, o mantener datos viejos
+    // En este caso solo logueamos el error para no sobrescribir datos buenos con vacíos
+  }
+};
+
