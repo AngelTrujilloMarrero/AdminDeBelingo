@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Save, TrendingUp } from 'lucide-react';
-import { updateSocialFollowers } from '../lib/firebase';
+import { Save, TrendingUp } from 'lucide-react';
+
 import { set, get } from 'firebase/database';
 import { socialFollowersRef } from '../lib/firebase';
 
@@ -47,32 +47,6 @@ export default function SocialStatsSync() {
     }, []);
 
     /**
-     * Intenta sincronizar automáticamente (usará fallbacks por ahora)
-     */
-    const handleAutoSync = async () => {
-        setIsLoading(true);
-        setMessage('');
-
-        try {
-            const updatedData = await updateSocialFollowers();
-            if (updatedData) {
-                setManualStats({
-                    Facebook: updatedData.Facebook,
-                    Instagram: updatedData.Instagram,
-                    WhatsApp: updatedData.WhatsApp,
-                    Telegram: updatedData.Telegram
-                });
-            }
-            setMessage('✅ Sincronización automática completada');
-        } catch (error) {
-            console.error('Error en sincronización:', error);
-            setMessage('❌ Error en sincronización automática');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    /**
      * Guarda los valores introducidos manualmente
      */
     const handleManualSave = async () => {
@@ -116,31 +90,15 @@ export default function SocialStatsSync() {
 
             {!isManualMode ? (
                 <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-800 mb-3">
-                            <strong>Nota:</strong> El scraping automático está limitado por CORS.
-                            Usa la actualización manual para introducir valores reales.
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={handleAutoSync}
-                                disabled={isLoading}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg
-                         hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                                Sincronizar Automático
-                            </button>
-
-                            <button
-                                onClick={() => setIsManualMode(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg
-                         hover:bg-purple-700 transition-colors"
-                            >
-                                <Save className="h-4 w-4" />
-                                Actualización Manual
-                            </button>
-                        </div>
+                    <div className="flex justify-center">
+                        <button
+                            onClick={() => setIsManualMode(true)}
+                            className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg
+                         hover:bg-purple-700 transition-colors shadow-md"
+                        >
+                            <Save className="h-5 w-5" />
+                            Editar Estadísticas Manualmente
+                        </button>
                     </div>
 
                     {message && (
