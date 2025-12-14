@@ -5,6 +5,8 @@ import EventList from './EventList';
 import Filters from './Filters';
 import SocialStatsSync from './SocialStatsSync';
 
+import OrchestraForm from './OrchestraForm';
+
 interface MainPageProps {
     events: Event[];
     filteredEvents: Event[];
@@ -43,6 +45,13 @@ export default function MainPage({
                     onEventAdded={onEventAdded}
                     onCancelEdit={onCancelEdit}
                 />
+            </section>
+
+            {/* Sección de datos de orquestas */}
+            <section>
+                <div className="max-w-4xl mx-auto px-6">
+                    <OrchestraForm events={events} />
+                </div>
             </section>
 
             {/* Sección de filtros */}
