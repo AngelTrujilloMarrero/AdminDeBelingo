@@ -9,7 +9,7 @@ interface FloatingLabelInputProps {
     icon?: React.ReactNode;
     className?: string;
     placeholder?: string;
-    suggestions?: string[] | Array<{ lugar: string; municipio: string }>;
+    suggestions?: string[] | Array<{ lugar: string; municipio: string }> | Array<{ name: string; hasData: boolean }>;
     onSuggestionClick?: (value: any) => void;
     showSuggestions?: boolean;
     inputRef?: React.RefObject<HTMLInputElement>;
@@ -81,13 +81,23 @@ export default function FloatingLabelInput({
                             className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b last:border-b-0 
                          border-gray-100 transition-colors duration-200"
                         >
-                            {typeof suggestion === 'string' ? (
-                                suggestion
-                            ) : (
+                            {typeof suggestion === 'object' && 'lugar' in suggestion ? (
                                 <div>
                                     <span className="font-medium">{suggestion.lugar}</span>
                                     <span className="text-gray-500 ml-2">({suggestion.municipio})</span>
                                 </div>
+                            ) : typeof suggestion === 'object' && 'name' in suggestion ? (
+                                <div className="flex justify-between items-center">
+                                    <span>{suggestion.name}</span>
+                                    {suggestion.hasData && (
+                                        <span className="text-green-600 text-xs px-2 py-1 bg-green-50 rounded-full border border-green-100 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                            Datos
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                suggestion as string
                             )}
                         </button>
                     ))}

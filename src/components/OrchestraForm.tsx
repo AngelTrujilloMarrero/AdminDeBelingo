@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { ref, push, set } from 'firebase/database';
+import { ref, push, set, onValue } from 'firebase/database';
 import { db } from '../lib/firebase';
 import FloatingLabelInput from './FloatingLabelInput';
 import { Music, Phone, Globe, FileText, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { Event } from '../types/event';
+import { Orchestra } from '../types/orchestra';
 import { estandarizarNombre } from '../lib/utils';
 
 interface OrchestraFormProps {
@@ -24,9 +25,27 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
     const [errorMessage, setErrorMessage] = useState('');
 
     // Suggestions for Orchestra Name
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestions, setSuggestions] = useState<Array<{ name: string; hasData: boolean }>>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [storedOrchestras, setStoredOrchestras] = useState<Orchestra[]>([]);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const nameInputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch existing orchestras
+    useEffect(() => {
+        const orchestrasRef = ref(db, 'orchestras');
+        const unsubscribe = onValue(orchestrasRef, (snapshot) => {
+            const data = snapshot.val();
+            const loaded: Orchestra[] = [];
+            if (data) {
+                Object.entries(data).forEach(([key, value]: [string, any]) => {
+                    loaded.push({ id: key, ...value });
+                });
+            }
+            setStoredOrchestras(loaded);
+        });
+        return () => unsubscribe();
+    }, []);
 
     useEffect(() => {
         // Extract unique orchestra names from events
@@ -34,15 +53,37 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
             e.orquesta.split(',').map(o => o.trim())
         );
         const uniqueOrquestas = [...new Set(allOrquestas)].sort();
-        setSuggestions(uniqueOrquestas);
-    }, [events]);
+
+        // Map to suggestion objects with hasData flag
+        const suggestionsWithData = uniqueOrquestas.map(name => {
+            const exists = storedOrchestras.some(
+                o => estandarizarNombre(o.name) === estandarizarNombre(name)
+            );
+            return { name, hasData: exists };
+        });
+
+        setSuggestions(suggestionsWithData);
+    }, [events, storedOrchestras]);
 
     const handleNameInput = (value: string) => {
         setFormData({ ...formData, name: value });
 
+        // Reset editing state if user clears or changes name manually to something generic
+        // We'll trust selectOrchestra to set it correctly, but if they type, we check partial match or exact match
+        const exactMatch = storedOrchestras.find(
+            o => estandarizarNombre(o.name) === estandarizarNombre(value)
+        );
+
+        if (exactMatch) {
+            setEditingId(exactMatch.id);
+            // Optionally populate? No, only on explicit selection or if we want auto-populate on exact match typing
+        } else {
+            setEditingId(null);
+        }
+
         if (value) {
-            const filtered = suggestions.filter(orq =>
-                orq.toLowerCase().includes(value.toLowerCase())
+            const filtered = suggestions.filter(s =>
+                s.name.toLowerCase().includes(value.toLowerCase())
             );
             setShowSuggestions(filtered.length > 0);
         } else {
@@ -50,8 +91,35 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         }
     };
 
-    const selectOrchestra = (name: string) => {
-        setFormData({ ...formData, name: name });
+    const selectOrchestra = (item: { name: string; hasData: boolean }) => {
+        const name = item.name;
+
+        const existing = storedOrchestras.find(
+            o => estandarizarNombre(o.name) === estandarizarNombre(name)
+        );
+
+        if (existing) {
+            setFormData({
+                name: existing.name,
+                phone: existing.phone || '',
+                facebook: existing.facebook || '',
+                instagram: existing.instagram || '',
+                other: existing.other || ''
+            });
+            setEditingId(existing.id);
+            setSuccessMessage(`Datos de "${existing.name}" cargados para editar`);
+            setTimeout(() => setSuccessMessage(''), 2000);
+        } else {
+            setFormData({
+                name: name,
+                phone: '',
+                facebook: '',
+                instagram: '',
+                other: ''
+            });
+            setEditingId(null);
+        }
+
         setShowSuggestions(false);
     };
 
@@ -66,7 +134,6 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         setSuccessMessage('');
 
         try {
-            const orchestrasRef = ref(db, 'orchestras');
             const newOrchestra = {
                 name: estandarizarNombre(formData.name),
                 phone: formData.phone,
@@ -76,9 +143,25 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 lastUpdated: new Date().toISOString()
             };
 
-            await push(orchestrasRef, newOrchestra);
+            // Check one last time if it exists by name to avoid duplicates if they manually typed it
+            let targetId = editingId;
+            if (!targetId) {
+                const existing = storedOrchestras.find(
+                    o => estandarizarNombre(o.name) === estandarizarNombre(formData.name)
+                );
+                if (existing) targetId = existing.id;
+            }
 
-            setSuccessMessage('Datos de orquesta guardados correctamente');
+            if (targetId) {
+                const orchestraRef = ref(db, `orchestras/${targetId}`);
+                await set(orchestraRef, { ...newOrchestra, id: targetId });
+                setSuccessMessage('Datos actualizados correctamente');
+            } else {
+                const orchestrasRef = ref(db, 'orchestras');
+                await push(orchestrasRef, newOrchestra);
+                setSuccessMessage('Datos guardados correctamente');
+            }
+
             setFormData({
                 name: '',
                 phone: '',
@@ -86,6 +169,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 instagram: '',
                 other: ''
             });
+            setEditingId(null);
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (error) {
             console.error('Error saving orchestra:', error);
@@ -116,7 +200,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                     onChange={handleNameInput}
                     icon={<Music className="h-5 w-5" />}
                     suggestions={suggestions.filter(s =>
-                        s.toLowerCase().includes(formData.name.toLowerCase())
+                        s.name.toLowerCase().includes(formData.name.toLowerCase())
                     )}
                     showSuggestions={showSuggestions}
                     onSuggestionClick={selectOrchestra}
