@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '../types/event';
 import { normalizeString } from '../lib/utils';
-import { 
-  Filter, 
-  Search, 
-  Calendar, 
-  MapPin, 
-  Music, 
+import {
+  Filter,
+  Search,
+  Calendar,
+  MapPin,
+  Music,
   Clock,
   RefreshCw,
   X
@@ -24,7 +24,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
   const [endDate, setEndDate] = useState('');
   const [showDateRange, setShowDateRange] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  
+
   // Estados para autocompletado
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -84,7 +84,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
   // Funciones para autocompletado
   const handleSearchInputChange = (value: string) => {
     setSearchInput(value);
-    
+
     if (!filterSelect || !value.trim()) {
       setShowSuggestions(false);
       return;
@@ -159,7 +159,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
     setShowSearch(false);
     setSuggestions([]);
     setShowSuggestions(false);
-    
+
     // Aplicar filtro inicial de 2 días
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -220,27 +220,29 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
                            focus:border-indigo-500 focus:outline-none transition-all duration-300
                            bg-white text-gray-900 placeholder-gray-500"
               />
-              
+
               {/* Sugerencias de autocompletado */}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  {suggestions
-                    .filter(suggestion => 
-                      suggestion.toLowerCase().includes(searchInput.toLowerCase()) &&
-                      suggestion !== searchInput
-                    )
-                    .slice(0, 8)
-                    .map((suggestion, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => selectSuggestion(suggestion)}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b last:border-b-0 
-                                 border-gray-100 transition-colors duration-200"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+                  <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
+                    {suggestions
+                      .filter(suggestion =>
+                        suggestion.toLowerCase().includes(searchInput.toLowerCase()) &&
+                        suggestion !== searchInput
+                      )
+                      .slice(0, 10) // Mostrar un poco más ahora que hay 2 columnas
+                      .map((suggestion, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => selectSuggestion(suggestion)}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 border rounded-lg
+                                   border-transparent hover:border-gray-100 transition-all duration-200"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -281,7 +283,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
                 <Calendar className="h-4 w-4" />
                 <span>Seleccionar intervalo de fechas</span>
               </h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
@@ -297,7 +299,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
                                bg-white text-gray-900"
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
                     Fecha de fin
@@ -358,7 +360,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              
+
               <div className="mt-2 flex flex-wrap gap-2">
                 {filterSelect && (
                   <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-lg">

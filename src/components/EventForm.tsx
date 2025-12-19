@@ -66,6 +66,9 @@ export default function EventForm({
 
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [showTipoDropdown, setShowTipoDropdown] = useState(false);
+  const [showMunicipioDropdown, setShowMunicipioDropdown] = useState(false);
+
+  const municipioDropdownRef = useRef<HTMLDivElement>(null);
 
   const timeOptions = generateTimeOptions();
 
@@ -135,6 +138,9 @@ export default function EventForm({
       }
       if (tipoDropdownRef.current && !tipoDropdownRef.current.contains(event.target as Node)) {
         setShowTipoDropdown(false);
+      }
+      if (municipioDropdownRef.current && !municipioDropdownRef.current.contains(event.target as Node)) {
+        setShowMunicipioDropdown(false);
       }
     };
 
@@ -529,26 +535,62 @@ export default function EventForm({
 
           {/* Grid de municipio y hora */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Municipio */}
-            <div className="relative">
-              <select
-                value={formData.municipio}
-                onChange={e => setFormData({ ...formData, municipio: e.target.value })}
-                className="w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
-                           focus:border-indigo-500 focus:outline-none transition-all duration-300
-                           bg-white text-gray-900 appearance-none"
+            {/* Municipio Custom Dropdown */}
+            <div className="relative" ref={municipioDropdownRef}>
+              <div
+                onClick={() => setShowMunicipioDropdown(!showMunicipioDropdown)}
+                className="relative cursor-pointer"
               >
-                <option value="">Selecciona un municipio</option>
-                {MUNICIPIOS.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <MapPin className="h-5 w-5" />
+                <div className={`
+                  w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
+                  transition-all duration-300 bg-white text-gray-900
+                  ${showMunicipioDropdown ? 'border-indigo-500 ring-2 ring-indigo-100' : 'hover:border-gray-300'}
+                `}>
+                  {formData.municipio || <span className="text-transparent">Seleccione un municipio</span>}
+                </div>
+
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <MapPin className="h-5 w-5" />
+                </div>
+
+                <label className={`
+                  absolute left-11 transition-all duration-300 pointer-events-none
+                  text-gray-500 origin-left
+                  ${formData.municipio
+                    ? 'top-2 text-xs font-medium text-indigo-600 scale-90'
+                    : 'top-1/2 -translate-y-1/2 text-base'
+                  }
+                `}>
+                  Municipio
+                </label>
               </div>
-              <label className="absolute left-11 top-2 text-xs font-medium text-indigo-600">
-                Municipio
-              </label>
+
+              {/* Dropdown Menu */}
+              {showMunicipioDropdown && (
+                <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                  <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                    {MUNICIPIOS.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, municipio: m });
+                          setShowMunicipioDropdown(false);
+                        }}
+                        className={`
+                          px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
+                          ${formData.municipio === m
+                            ? 'bg-indigo-50 text-indigo-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Hora Custom Dropdown */}
