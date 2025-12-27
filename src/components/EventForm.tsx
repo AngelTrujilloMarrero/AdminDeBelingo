@@ -67,8 +67,10 @@ export default function EventForm({
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [showTipoDropdown, setShowTipoDropdown] = useState(false);
   const [showMunicipioDropdown, setShowMunicipioDropdown] = useState(false);
+  const [municipioSearch, setMunicipioSearch] = useState('');
 
   const municipioDropdownRef = useRef<HTMLDivElement>(null);
+  const municipioInputRef = useRef<HTMLInputElement>(null);
 
   const timeOptions = generateTimeOptions();
 
@@ -86,6 +88,7 @@ export default function EventForm({
         tipo: isCustomTipo ? 'Otro' : editingEvent.tipo,
         customTipo: isCustomTipo ? editingEvent.tipo : ''
       });
+      setMunicipioSearch(editingEvent.municipio);
       setShowCustomTipo(isCustomTipo);
     }
   }, [editingEvent]);
@@ -450,6 +453,7 @@ export default function EventForm({
       tipo: 'Baile Normal',
       customTipo: ''
     });
+    setMunicipioSearch('');
     setShowCustomTipo(false);
     setMissingFields('');
     setDuplicateWarning('');
@@ -535,59 +539,85 @@ export default function EventForm({
 
           {/* Grid de municipio y hora */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Municipio Custom Dropdown */}
+            {/* Municipio Custom Dropdown with Autocomplete */}
             <div className="relative" ref={municipioDropdownRef}>
-              <div
-                onClick={() => setShowMunicipioDropdown(!showMunicipioDropdown)}
-                className="relative cursor-pointer"
-              >
-                <div className={`
-                  w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
-                  transition-all duration-300 bg-white text-gray-900
-                  ${showMunicipioDropdown ? 'border-indigo-500 ring-2 ring-indigo-100' : 'hover:border-gray-300'}
-                `}>
-                  {formData.municipio || <span className="text-transparent">Seleccione un municipio</span>}
-                </div>
+              <div className="relative">
+                <input
+                  ref={municipioInputRef}
+                  type="text"
+                  value={municipioSearch}
+                  onChange={(e) => {
+                    setMunicipioSearch(e.target.value);
+                    setShowMunicipioDropdown(true);
+                  }}
+                  onFocus={() => {
+                    setShowMunicipioDropdown(true);
+                  }}
+                  placeholder=" "
+                  className={`
+                    w-full px-4 py-4 pl-11 border-2 border-gray-200 rounded-xl 
+                    transition-all duration-300 bg-white text-gray-900
+                    ${showMunicipioDropdown ? 'border-indigo-500 ring-2 ring-indigo-100' : 'hover:border-gray-300'}
+                  `}
+                />
 
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
                   <MapPin className="h-5 w-5" />
                 </div>
 
                 <label className={`
                   absolute left-11 transition-all duration-300 pointer-events-none
                   text-gray-500 origin-left
-                  ${formData.municipio
+                  ${municipioSearch || formData.municipio
                     ? 'top-2 text-xs font-medium text-indigo-600 scale-90'
                     : 'top-1/2 -translate-y-1/2 text-base'
                   }
                 `}>
                   Municipio
                 </label>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMunicipioDropdown(!showMunicipioDropdown)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-500 transition-colors"
+                >
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showMunicipioDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               </div>
 
               {/* Dropdown Menu */}
               {showMunicipioDropdown && (
                 <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-80 overflow-y-auto">
                   <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                    {MUNICIPIOS.map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => {
-                          setFormData({ ...formData, municipio: m });
-                          setShowMunicipioDropdown(false);
-                        }}
-                        className={`
-                          px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
-                          ${formData.municipio === m
-                            ? 'bg-indigo-50 text-indigo-600'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          }
-                        `}
-                      >
-                        {m}
-                      </button>
-                    ))}
+                    {MUNICIPIOS
+                      .filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase()))
+                      .map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, municipio: m });
+                            setMunicipioSearch(m);
+                            setShowMunicipioDropdown(false);
+                          }}
+                          className={`
+                            px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
+                            ${formData.municipio === m
+                              ? 'bg-indigo-50 text-indigo-600'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }
+                          `}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    {MUNICIPIOS.filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase())).length === 0 && (
+                      <div className="col-span-2 p-4 text-center text-gray-500 italic">
+                        No se encontraron municipios
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
