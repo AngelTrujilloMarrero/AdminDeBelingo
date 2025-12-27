@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Event } from '../types/event';
 import { normalizeString } from '../lib/utils';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  TrendingDown, 
-  Music, 
-  Calendar, 
-  MapPin, 
+import {
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  Music,
+  Calendar,
+  MapPin,
   Clock,
   Sun,
   Snowflake,
@@ -43,22 +43,40 @@ interface StatItem {
 }
 
 export default function Stats({ events }: StatsProps) {
+  const years = useMemo(() => {
+    const allYears = events.map(e => new Date(e.day).getFullYear());
+    return Array.from(new Set(allYears)).sort((a, b) => b - a);
+  }, [events]);
+
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>(() => {
+    const currentYear = new Date().getFullYear();
+    return years.includes(currentYear) ? currentYear : (years[0] || 'all');
+  });
+
+  const filteredEvents = useMemo(() => {
+    if (selectedYear === 'all') return events;
+    return events.filter(e => new Date(e.day).getFullYear() === selectedYear);
+  }, [events, selectedYear]);
+
   const statistics = useMemo(() => {
-    if (events.length === 0) return null;
+    if (filteredEvents.length === 0) return null;
+
+    // Use filteredEvents for all calculations
+    const currentEvents = filteredEvents;
 
     // 1. ORQUESTAS CON MÁS ACTUACIONES (excluyendo DJ)
     const orquestaCounts: { [key: string]: number } = {};
     let djEvents = 0;
-    
+
     // Análisis de distribución de DJs
     let eventosCon1DJ = 0;
     let eventosCon2DJ = 0;
     let eventosCon3OMasDJ = 0;
-    
-    events.forEach(event => {
+
+    currentEvents.forEach(event => {
       const orquestas = event.orquesta.split(',').map(o => o.trim());
       let djCount = 0;
-      
+
       orquestas.forEach(orq => {
         if (orq) {
           // Contar DJ por separado
@@ -70,7 +88,7 @@ export default function Stats({ events }: StatsProps) {
           }
         }
       });
-      
+
       // Clasificar eventos por número de DJs
       if (djCount === 1) {
         eventosCon1DJ++;
@@ -82,16 +100,17 @@ export default function Stats({ events }: StatsProps) {
     });
 
     const topOrquestas = Object.entries(orquestaCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
 
     // 2. ORQUESTAS AL ALZA Y A LA BAJA (últimos 3 meses vs anteriores 6 meses)
+    // Nota: Estas tendencias pueden estar limitadas si el año seleccionado no tiene suficientes datos previos
     const now = new Date();
     const threeMonthsAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
     const nineMonthsAgo = new Date(now.getTime() - (270 * 24 * 60 * 60 * 1000));
 
-    const recentEvents = events.filter(e => new Date(e.day) >= threeMonthsAgo);
-    const olderEvents = events.filter(e => {
+    const recentEventsTrend = currentEvents.filter(e => new Date(e.day) >= threeMonthsAgo);
+    const olderEventsTrend = currentEvents.filter(e => {
       const date = new Date(e.day);
       return date >= nineMonthsAgo && date < threeMonthsAgo;
     });
@@ -99,29 +118,29 @@ export default function Stats({ events }: StatsProps) {
     const recentCounts: { [key: string]: number } = {};
     const olderCounts: { [key: string]: number } = {};
 
-    recentEvents.forEach(event => {
+    recentEventsTrend.forEach(event => {
       const orquestas = event.orquesta.split(',').map(o => o.trim());
       orquestas.forEach(orq => {
         if (orq) recentCounts[orq] = (recentCounts[orq] || 0) + 1;
       });
     });
 
-    olderEvents.forEach(event => {
+    olderEventsTrend.forEach(event => {
       const orquestas = event.orquesta.split(',').map(o => o.trim());
       orquestas.forEach(orq => {
         if (orq) olderCounts[orq] = (olderCounts[orq] || 0) + 1;
       });
     });
 
-    const trendData = Object.keys({...recentCounts, ...olderCounts}).map(orq => {
+    const trendData = Object.keys({ ...recentCounts, ...olderCounts }).map(orq => {
       const recent = recentCounts[orq] || 0;
       const older = olderCounts[orq] || 0;
       const change = older > 0 ? ((recent - older) / older) * 100 : (recent > 0 ? 100 : 0);
       return { orquest: orq, recent, older, change };
-    }).filter(item => (item.recent + item.older) >= 9); // Al menos 9 actuaciones total
+    }).filter(item => (item.recent + item.older) >= (selectedYear === 'all' ? 9 : 3)); // Ajuste de threshold para vista por año
 
     const alAlza = trendData
-      .filter(item => item.change > 10) // Threshold para orquestas establecidas
+      .filter(item => item.change > 10)
       .sort((a, b) => b.change - a.change)
       .slice(0, 8);
 
@@ -130,74 +149,52 @@ export default function Stats({ events }: StatsProps) {
       .sort((a, b) => a.change - b.change)
       .slice(0, 8);
 
-    // 3. ESTACIONALIDAD (VERANO vs INVIERNO vs PRIMAVERA vs OTOÑO)
+    // 3. ESTACIONALIDAD
     const veranoCounts: { [key: string]: number } = {};
     const inviernoCounts: { [key: string]: number } = {};
     const primaveraCounts: { [key: string]: number } = {};
     const otoñoCounts: { [key: string]: number } = {};
 
-    events.forEach(event => {
-      const month = new Date(event.day).getMonth() + 1; // 1-12
+    currentEvents.forEach(event => {
+      const month = new Date(event.day).getMonth() + 1;
       const orquestas = event.orquesta.split(',').map(o => o.trim());
-      
+
       let season: string;
-      if (month >= 6 && month <= 8) season = 'summer'; // Jun, Jul, Ago
-      else if (month >= 3 && month <= 5) season = 'spring'; // Mar, Abr, May
-      else if (month >= 9 && month <= 11) season = 'autumn'; // Sep, Oct, Nov
-      else season = 'winter'; // Dic, Ene, Feb
-      
+      if (month >= 6 && month <= 8) season = 'summer';
+      else if (month >= 3 && month <= 5) season = 'spring';
+      else if (month >= 9 && month <= 11) season = 'autumn';
+      else season = 'winter';
+
       orquestas.forEach(orq => {
-        if (orq && !normalizeString(orq).includes('dj')) { // Excluir DJ
-          if (season === 'summer') {
-            veranoCounts[orq] = (veranoCounts[orq] || 0) + 1;
-          } else if (season === 'winter') {
-            inviernoCounts[orq] = (inviernoCounts[orq] || 0) + 1;
-          } else if (season === 'spring') {
-            primaveraCounts[orq] = (primaveraCounts[orq] || 0) + 1;
-          } else if (season === 'autumn') {
-            otoñoCounts[orq] = (otoñoCounts[orq] || 0) + 1;
-          }
+        if (orq && !normalizeString(orq).includes('dj')) {
+          if (season === 'summer') veranoCounts[orq] = (veranoCounts[orq] || 0) + 1;
+          else if (season === 'winter') inviernoCounts[orq] = (inviernoCounts[orq] || 0) + 1;
+          else if (season === 'spring') primaveraCounts[orq] = (primaveraCounts[orq] || 0) + 1;
+          else if (season === 'autumn') otoñoCounts[orq] = (otoñoCounts[orq] || 0) + 1;
         }
       });
     });
 
-    const topVerano = Object.entries(veranoCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
-
-    const topInvierno = Object.entries(inviernoCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
-
-    const topPrimavera = Object.entries(primaveraCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
-
-    const topOtoño = Object.entries(otoñoCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
+    const topVerano = Object.entries(veranoCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+    const topInvierno = Object.entries(inviernoCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+    const topPrimavera = Object.entries(primaveraCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+    const topOtoño = Object.entries(otoñoCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
 
     // 4. MUNICIPIOS MÁS POPULARES
     const municipioCounts: { [key: string]: number } = {};
-    events.forEach(event => {
+    currentEvents.forEach(event => {
       if (event.municipio) {
         municipioCounts[event.municipio] = (municipioCounts[event.municipio] || 0) + 1;
       }
     });
-
-    const topMunicipios = Object.entries(municipioCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10);
+    const topMunicipios = Object.entries(municipioCounts).sort(([, a], [, b]) => b - a).slice(0, 10);
 
     // 5. HORARIOS POR DÍA DE LA SEMANA
     const horariosPorDia: { [key: string]: { [time: string]: number } } = {};
     const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    
-    diasSemana.forEach(dia => {
-      horariosPorDia[dia] = {};
-    });
+    diasSemana.forEach(dia => horariosPorDia[dia] = {});
 
-    events.forEach(event => {
+    currentEvents.forEach(event => {
       const diaIndex = new Date(event.day).getDay();
       const dia = diasSemana[diaIndex];
       if (horariosPorDia[dia]) {
@@ -206,23 +203,16 @@ export default function Stats({ events }: StatsProps) {
     });
 
     const horariosPopulares = Object.entries(horariosPorDia).map(([dia, horarios]) => {
-      const topHora = Object.entries(horarios).sort(([,a], [,b]) => b - a)[0];
-      return {
-        dia,
-        hora: topHora ? topHora[0] : 'N/A',
-        count: topHora ? topHora[1] : 0
-      };
+      const topHora = Object.entries(horarios).sort(([, a], [, b]) => b - a)[0];
+      return { dia, hora: topHora ? topHora[0] : 'N/A', count: topHora ? topHora[1] : 0 };
     });
 
-    // 6. TIPOS DE EVENTOS CON TOP ORQUESTAS
+    // 6. TIPOS DE EVENTOS
     const tipoCounts: { [key: string]: number } = {};
     const orquestasPorTipo: { [key: string]: { [orq: string]: number } } = {};
-    
-    events.forEach(event => {
+    currentEvents.forEach(event => {
       const tipo = event.tipo || 'Otro';
       tipoCounts[tipo] = (tipoCounts[tipo] || 0) + 1;
-      
-      // Contar orquestas por tipo
       const orquestas = event.orquesta.split(',').map(o => o.trim()).filter(orq => !normalizeString(orq).includes('dj'));
       orquestas.forEach(orq => {
         if (!orquestasPorTipo[tipo]) orquestasPorTipo[tipo] = {};
@@ -230,433 +220,135 @@ export default function Stats({ events }: StatsProps) {
       });
     });
 
-    const totalEventos = events.length;
-    const tiposPorcentaje = Object.entries(tipoCounts)
-      .map(([tipo, count]) => {
-        const topOrquestas = Object.entries(orquestasPorTipo[tipo] || {})
-          .sort(([,a], [,b]) => b - a)
-          .slice(0, 3)
-          .map(([orq, orqCount]) => ({ orquest: orq, count: orqCount }));
-        
-        return {
-          tipo,
-          count,
-          porcentaje: Math.round((count / totalEventos) * 100),
-          topOrquestas
-        };
-      })
-      .sort((a, b) => b.count - a.count);
+    const totalEventosCalc = currentEvents.length;
+    const tiposPorcentaje = Object.entries(tipoCounts).map(([tipo, count]) => {
+      const topOrqs = Object.entries(orquestasPorTipo[tipo] || {}).sort(([, a], [, b]) => b - a).slice(0, 3).map(([orq, count]) => ({ orquest: orq, count }));
+      return { tipo, count, porcentaje: Math.round((count / totalEventosCalc) * 100), topOrquestas: topOrqs };
+    }).sort((a, b) => b.count - a.count);
 
-    // 7. ESTADÍSTICAS SORPRENDENTES (SIN DJ)
-
-    // A) El día de la semana más "musical" (sin DJ)
+    // 7. SORPRESAS
     const eventosPorDia = new Array(7).fill(0);
-    events.forEach(event => {
-      // Solo contar eventos que no sean DJ
-      const orquestas = event.orquesta.split(',').map(o => o.trim());
-      const tieneDJ = orquestas.some(orq => normalizeString(orq).includes('dj'));
-      if (!tieneDJ) {
-        const diaIndex = new Date(event.day).getDay();
-        eventosPorDia[diaIndex]++;
-      }
-    });
-    const diaMasMusical = diasSemana[eventosPorDia.indexOf(Math.max(...eventosPorDia))];
-
-    // B) Hora más popular general (sin DJ)
     const horaGeneralCounts: { [key: string]: number } = {};
-    events.forEach(event => {
+    const fechasOrquesta: { [key: string]: Set<string> } = {};
+    const orquestasPorMunicipio: { [key: string]: Set<string> } = {};
+
+    currentEvents.forEach(event => {
       const orquestas = event.orquesta.split(',').map(o => o.trim());
       const tieneDJ = orquestas.some(orq => normalizeString(orq).includes('dj'));
       if (!tieneDJ) {
+        eventosPorDia[new Date(event.day).getDay()]++;
         horaGeneralCounts[event.hora] = (horaGeneralCounts[event.hora] || 0) + 1;
       }
-    });
-    const horaPopular = Object.entries(horaGeneralCounts)
-      .sort(([,a], [,b]) => b - a)[0];
-
-    // C) La orquesta "workaholic" (que más toca en días consecutivos, sin DJ)
-    const fechasOrquesta: { [key: string]: Set<string> } = {};
-    events.forEach(event => {
-      const fecha = event.day;
-      const orquestas = event.orquesta.split(',').map(o => o.trim());
       orquestas.forEach(orq => {
         if (orq && !normalizeString(orq).includes('dj')) {
           if (!fechasOrquesta[orq]) fechasOrquesta[orq] = new Set();
-          fechasOrquesta[orq].add(fecha);
+          fechasOrquesta[orq].add(event.day);
+          if (event.municipio) {
+            if (!orquestasPorMunicipio[event.municipio]) orquestasPorMunicipio[event.municipio] = new Set();
+            orquestasPorMunicipio[event.municipio].add(orq);
+          }
         }
       });
     });
+
+    const diaMasMusical = diasSemana[eventosPorDia.indexOf(Math.max(...eventosPorDia))];
+    const horaPopularArr = Object.entries(horaGeneralCounts).sort(([, a], [, b]) => b - a)[0];
+    const horaPopular = horaPopularArr ? { hora: horaPopularArr[0], count: horaPopularArr[1] } : null;
 
     const workaholicOrquest = Object.entries(fechasOrquesta).map(([orq, fechas]) => {
-      const fechasArray = Array.from(fechas).sort();
-      let maxConsecutivos = 1;
-      let actualConsecutivos = 1;
-      
-      for (let i = 1; i < fechasArray.length; i++) {
-        const fechaActual = new Date(fechasArray[i]);
-        const fechaAnterior = new Date(fechasArray[i - 1]);
-        const diferencia = (fechaActual.getTime() - fechaAnterior.getTime()) / (1000 * 60 * 60 * 24);
-        
-        if (diferencia === 1) {
-          actualConsecutivos++;
-          maxConsecutivos = Math.max(maxConsecutivos, actualConsecutivos);
-        } else {
-          actualConsecutivos = 1;
-        }
+      const sorted = Array.from(fechas).sort();
+      let max = 1, curr = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        if ((new Date(sorted[i]).getTime() - new Date(sorted[i - 1]).getTime()) === 86400000) { curr++; max = Math.max(max, curr); }
+        else curr = 1;
       }
-      
-      return { orquest: orq, maxConsecutivos, totalFechas: fechasArray.length };
+      return { orquest: orq, maxConsecutivos: max };
     }).sort((a, b) => b.maxConsecutivos - a.maxConsecutivos)[0];
 
-    // D) Municipio con más variedad de orquestas (sin DJ)
-    const orquestasPorMunicipio: { [key: string]: Set<string> } = {};
-    events.forEach(event => {
-      if (event.municipio) {
-        if (!orquestasPorMunicipio[event.municipio]) {
-          orquestasPorMunicipio[event.municipio] = new Set();
-        }
-        const orquestas = event.orquesta.split(',').map(o => o.trim());
-        orquestas.forEach(orq => {
-          if (orq && !normalizeString(orq).includes('dj')) orquestasPorMunicipio[event.municipio].add(orq);
-        });
-      }
-    });
+    const municipioVariado = Object.entries(orquestasPorMunicipio).map(([m, s]) => ({ municipio: m, variedad: s.size })).sort((a, b) => b.variedad - a.variedad)[0];
 
-    const municipioVariado = Object.entries(orquestasPorMunicipio)
-      .map(([municipio, orquestas]) => ({
-        municipio,
-        variedad: orquestas.size
-      }))
-      .sort((a, b) => b.variedad - a.variedad)[0];
-
-    // 8. NUEVAS MÉTRICAS ADICIONALES
-
-    // A) Días con más eventos (saturación)
+    // 8. MÉTRICAS ADICIONALES
     const eventosPorFecha: { [key: string]: number } = {};
-    events.forEach(event => {
-      eventosPorFecha[event.day] = (eventosPorFecha[event.day] || 0) + 1;
-    });
-
-    const diasSaturados = Object.entries(eventosPorFecha)
-      .filter(([, count]) => count >= 3) // Días con 3 o más eventos
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5);
-
-    // B) Orquestas más versátiles (que tocan en más municipios)
     const municipiosPorOrquesta: { [key: string]: Set<string> } = {};
-    events.forEach(event => {
-      const orquestas = event.orquesta.split(',').map(o => o.trim());
-      orquestas.forEach(orq => {
+    currentEvents.forEach(e => {
+      eventosPorFecha[e.day] = (eventosPorFecha[e.day] || 0) + 1;
+      e.orquesta.split(',').map(o => o.trim()).forEach(orq => {
         if (orq && !normalizeString(orq).includes('dj')) {
-          if (!municipiosPorOrquesta[orq]) {
-            municipiosPorOrquesta[orq] = new Set();
-          }
-          municipiosPorOrquesta[orq].add(event.municipio);
+          if (!municipiosPorOrquesta[orq]) municipiosPorOrquesta[orq] = new Set();
+          municipiosPorOrquesta[orq].add(e.municipio);
         }
       });
     });
 
-    const orquestasVersatiles = Object.entries(municipiosPorOrquesta)
-      .map(([orq, municipios]) => ({
-        orquest: orq,
-        municipios: municipios.size,
-        totalEventos: orquestaCounts[orq] || 0
-      }))
-      .filter(item => item.totalEventos >= 3) // Al menos 3 eventos
-      .sort((a, b) => b.municipios - a.municipios)
-      .slice(0, 5);
+    const diasSaturados = Object.entries(eventosPorFecha).filter(([, c]) => c >= 3).sort(([, a], [, b]) => b - a).slice(0, 5);
+    const orquestasVersatiles = Object.entries(municipiosPorOrquesta).map(([orq, muns]) => ({ orquest: orq, municipios: muns.size, totalEventos: orquestaCounts[orq] || 0 })).filter(i => i.totalEventos >= 3).sort((a, b) => b.municipios - a.municipios).slice(0, 5);
 
-    // C) Horarios preferidos por tipo de evento (solo top 10)
-    const horariosPorTipo: { [key: string]: { [time: string]: number } } = {};
-    events.forEach(event => {
-      const tipo = event.tipo || 'Otro';
-      if (!horariosPorTipo[tipo]) horariosPorTipo[tipo] = {};
-      horariosPorTipo[tipo][event.hora] = (horariosPorTipo[tipo][event.hora] || 0) + 1;
-    });
-
-    const horariosPreferidos = Object.entries(horariosPorTipo)
-      .map(([tipo, horarios]) => {
-        const topHora = Object.entries(horarios).sort(([,a], [,b]) => b - a)[0];
-        return {
-          tipo,
-          hora: topHora ? topHora[0] : 'N/A',
-          count: topHora ? topHora[1] : 0
-        };
-      })
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // Solo los primeros 10
-
-    // 9. MÉTRICAS CREATIVAS Y ANÁLISIS AVANZADOS
-
-    // A) Análisis de Competencia - Orquestas que comparten fechas/municipios
-    const competenciaPorFecha: { [fecha: string]: string[] } = {};
-    const competenciaPorMunicipio: { [municipio: string]: string[] } = {};
-    
-    events.forEach(event => {
-      const fecha = event.day;
-      const municipio = event.municipio;
-      const orquestas = event.orquesta.split(',').map(o => o.trim()).filter(orq => !normalizeString(orq).includes('dj'));
-      
-      // Por fecha
-      if (!competenciaPorFecha[fecha]) competenciaPorFecha[fecha] = [];
-      competenciaPorFecha[fecha].push(...orquestas);
-      
-      // Por municipio
-      if (!competenciaPorMunicipio[municipio]) competenciaPorMunicipio[municipio] = [];
-      competenciaPorMunicipio[municipio].push(...orquestas);
-    });
-
-    const competenciaFechas = Object.entries(competenciaPorFecha)
-      .map(([fecha, orquestas]) => {
-        const orquestasUnicas = [...new Set(orquestas)];
-        return orquestasUnicas.length > 1 ? {
-          fecha,
-          cantidadOrquestas: orquestasUnicas.length,
-          orquestas: orquestasUnicas
-        } : null;
-      })
-      .filter(item => item !== null)
-      .sort((a, b) => b.cantidadOrquestas - a.cantidadOrquestas)
-      .slice(0, 3);
-
-    const competenciaMunicipios = Object.entries(competenciaPorMunicipio)
-      .map(([municipio, orquestas]) => {
-        const orquestasUnicas = [...new Set(orquestas)];
-        return orquestasUnicas.length > 1 ? {
-          municipio,
-          cantidadOrquestas: orquestasUnicas.length,
-          orquestas: orquestasUnicas
-        } : null;
-      })
-      .filter(item => item !== null)
-      .sort((a, b) => b.cantidadOrquestas - a.cantidadOrquestas)
-      .slice(0, 3);
-
-    // B) Rutas Geográficas - Orquestas que más se mueven entre municipios
-    const movimientosPorOrquesta: { [key: string]: string[] } = {};
-    events.forEach(event => {
-      const orquestas = event.orquesta.split(',').map(o => o.trim()).filter(orq => !normalizeString(orq).includes('dj'));
-      orquestas.forEach(orq => {
-        if (!movimientosPorOrquesta[orq]) movimientosPorOrquesta[orq] = [];
-        movimientosPorOrquesta[orq].push(event.municipio);
-      });
-    });
-
-    const rutasGeograficas = Object.entries(movimientosPorOrquesta)
-      .map(([orq, municipios]) => {
-        const municipiosUnicos = [...new Set(municipios)];
-        return {
-          orquest: orq,
-          movimientos: municipiosUnicos.length,
-          municipios: municipiosUnicos,
-          totalEventos: orquestaCounts[orq] || 0
-        };
-      })
-      .filter(item => item.totalEventos >= 4 && item.movimientos >= 3) // Al menos 4 eventos en 3+ municipios
-      .sort((a, b) => b.movimientos - a.movimientos)
-      .slice(0, 5);
-
-    // C) Fidelidad Territorial - Orquestas locales vs nómadas
-    const fidelidadTerritorial = Object.entries(municipiosPorOrquesta)
-      .map(([orq, municipios]) => ({
-        orquest: orq,
-        municipios: municipios.size,
-        totalEventos: orquestaCounts[orq] || 0,
-        fidelidad: Math.round((municipios.size / Math.max(1, orquestaCounts[orq])) * 100)
-      }))
-      .filter(item => item.totalEventos >= 3)
-      .sort((a, b) => a.fidelidad - b.fidelidad);
-
-    const masFiel = fidelidadTerritorial.slice(0, 3)[0]; // Más fiel (menos municipios)
-    const masNomada = fidelidadTerritorial.slice(-1)[0]; // Más nómada (más municipios)
-
-    // D) Récords y Estadísticas Extremas
-    const diaMasActivo = Object.entries(eventosPorFecha)
-      .sort(([,a], [,b]) => b - a)[0];
-
-    const rachaMasLarga = Object.entries(fechasOrquesta).map(([orq, fechas]) => {
-      const fechasArray = Array.from(fechas).sort();
-      let maxConsecutivos = 1;
-      let actualConsecutivos = 1;
-      
-      for (let i = 1; i < fechasArray.length; i++) {
-        const fechaActual = new Date(fechasArray[i]);
-        const fechaAnterior = new Date(fechasArray[i - 1]);
-        const diferencia = (fechaActual.getTime() - fechaAnterior.getTime()) / (1000 * 60 * 60 * 24);
-        
-        if (diferencia === 1) {
-          actualConsecutivos++;
-          maxConsecutivos = Math.max(maxConsecutivos, actualConsecutivos);
-        } else {
-          actualConsecutivos = 1;
-        }
-      }
-      
-      return { orquest: orq, maxConsecutivos };
-    }).sort((a, b) => b.maxConsecutivos - a.maxConsecutivos)[0];
-
-    // E) Predicciones - Orquestas emergentes basadas en tendencias
-    const prediccionesEmergentes = Object.entries(recentCounts)
-      .filter(([orq, count]) => {
-        const older = olderCounts[orq] || 0;
-        const reciente = count;
-        // Orquestas con crecimiento reciente pero pocos eventos totales
-        return reciente >= 2 && reciente <= 6 && older < reciente && orq !== 'dj';
-      })
-      .map(([orq, recent]) => ({
-        orquest: orq,
-        reciente: recent,
-        anterior: olderCounts[orq] || 0,
-        potencial: recent > (olderCounts[orq] || 0) ? 'En Crecimiento' : 'Estable'
-      }))
-      .sort((a, b) => b.reciente - a.reciente)
-      .slice(0, 3);
-
-    // F) Análisis de Eficiencia Mejorado
     const eficienciaOrquestas = Object.keys(orquestaCounts).map(orq => {
-      const eventosOrq = events.filter(event => {
-        const orquestas = event.orquesta.split(',').map(o => o.trim());
-        return orquestas.some(o => normalizeString(o) === normalizeString(orq));
-      });
-      
-      // Calcular meses activos
-      const mesesActivos = new Set(eventosOrq.map(e => {
-        const fecha = new Date(e.day);
-        return `${fecha.getFullYear()}-${fecha.getMonth() + 1}`;
-      }));
-      
-      const totalEventos = eventosOrq.length;
-      const mesesTotal = Math.max(1, mesesActivos.size);
-      const eficiencia = totalEventos / mesesTotal;
-      
-      return {
-        orquest: orq,
-        eficiencia: Math.round(eficiencia * 100) / 100,
-        totalEventos,
-        mesesActivos: mesesTotal
-      };
+      const evs = currentEvents.filter(e => e.orquesta.includes(orq));
+      const meses = new Set(evs.map(e => `${new Date(e.day).getFullYear()}-${new Date(e.day).getMonth() + 1}`)).size;
+      return { orquest: orq, eficiencia: Math.round((evs.length / Math.max(1, meses)) * 100) / 100, totalEventos: evs.length, mesesActivos: meses };
     }).sort((a, b) => b.eficiencia - a.eficiencia).slice(0, 5);
 
-    // G) Análisis Detallado de Orquestas Establecidas (9+ actuaciones)
-    const orquestasEstablecidas = Object.keys(orquestaCounts)
-      .filter(orq => orquestaCounts[orq] >= 9)
-      .sort((a, b) => orquestaCounts[b] - orquestaCounts[a])
-      .slice(0, 8); // Top 8 orquestas con 9+ actuaciones
+    const horariosPorTipoMap: { [key: string]: { [t: string]: number } } = {};
+    currentEvents.forEach(e => {
+      const t = e.tipo || 'Otro';
+      if (!horariosPorTipoMap[t]) horariosPorTipoMap[t] = {};
+      horariosPorTipoMap[t][e.hora] = (horariosPorTipoMap[t][e.hora] || 0) + 1;
+    });
+    const horariosPreferidos = Object.entries(horariosPorTipoMap).map(([t, h]) => {
+      const top = Object.entries(h).sort(([, a], [, b]) => b - a)[0];
+      return { tipo: t, hora: top ? top[0] : 'N/A', count: top ? top[1] : 0 };
+    }).sort((a, b) => b.count - a.count).slice(0, 10);
 
-    const analisisEstablecidas = orquestasEstablecidas.map(orq => {
-      const eventosOrq = events.filter(event => {
-        const orquestas = event.orquesta.split(',').map(o => o.trim());
-        return orquestas.some(o => normalizeString(o) === normalizeString(orq));
+    // 9. MÉTRICAS CREATIVAS
+    const compFecha: { [f: string]: string[] } = {}, compMun: { [m: string]: string[] } = {}, movOrq: { [o: string]: string[] } = {};
+    currentEvents.forEach(e => {
+      const orqs = e.orquesta.split(',').map(o => o.trim()).filter(o => !normalizeString(o).includes('dj'));
+      if (!compFecha[e.day]) compFecha[e.day] = []; compFecha[e.day].push(...orqs);
+      if (!compMun[e.municipio]) compMun[e.municipio] = []; compMun[e.municipio].push(...orqs);
+      orqs.forEach(o => { if (!movOrq[o]) movOrq[o] = []; movOrq[o].push(e.municipio); });
+    });
+
+    const competenciaFechas = Object.entries(compFecha).map(([f, o]) => ({ fecha: f, cantidadOrquestas: new Set(o).size, orquestas: [...new Set(o)] })).filter(i => i.cantidadOrquestas > 1).sort((a, b) => b.cantidadOrquestas - a.cantidadOrquestas).slice(0, 3);
+    const competenciaMunicipios = Object.entries(compMun).map(([m, o]) => ({ municipio: m, cantidadOrquestas: new Set(o).size, orquestas: [...new Set(o)] })).filter(i => i.cantidadOrquestas > 1).sort((a, b) => b.cantidadOrquestas - a.cantidadOrquestas).slice(0, 3);
+    const rutasGeograficas = Object.entries(movOrq).map(([o, m]) => ({ orquest: o, movimientos: new Set(m).size, municipios: [...new Set(m)], totalEventos: orquestaCounts[o] || 0 })).filter(i => i.totalEventos >= 4).sort((a, b) => b.movimientos - a.movimientos).slice(0, 5);
+    const fidelidadTerritorial = Object.entries(municipiosPorOrquesta).map(([o, m]) => ({ orquest: o, municipios: m.size, totalEventos: orquestaCounts[o] || 0, fidelidad: Math.round((m.size / Math.max(1, orquestaCounts[o])) * 100) })).filter(i => i.totalEventos >= 3).sort((a, b) => a.fidelidad - b.fidelidad);
+    const masFiel = fidelidadTerritorial[0], masNomada = fidelidadTerritorial[fidelidadTerritorial.length - 1];
+    const diaMasActivo = Object.entries(eventosPorFecha).sort(([, a], [, b]) => b - a)[0];
+    const rachaMasLarga = workaholicOrquest;
+    const prediccionesEmergentes = Object.entries(recentCounts).filter(([o, c]) => c >= 2 && c <= 6 && (olderCounts[o] || 0) < c && o !== 'dj').map(([o, c]) => ({ orquest: o, reciente: c, anterior: olderCounts[o] || 0, potencial: 'En Crecimiento' })).slice(0, 3);
+
+    const orquestasEstablecidasNames = Object.keys(orquestaCounts).filter(o => orquestaCounts[o] >= (selectedYear === 'all' ? 9 : 3)).sort((a, b) => orquestaCounts[b] - orquestaCounts[a]).slice(0, 8);
+    const analisisEstablecidas = orquestasEstablecidasNames.map(orq => {
+      const evs = currentEvents.filter(e => e.orquesta.includes(orq));
+      const mCount: any = {}, tCount: any = {}, hCount: any = {}, dCount: any = {}, sCount: any = { Primavera: 0, Verano: 0, Otoño: 0, Invierno: 0 };
+      evs.forEach(e => {
+        mCount[e.municipio] = (mCount[e.municipio] || 0) + 1;
+        tCount[e.tipo || 'Otro'] = (tCount[e.tipo || 'Otro'] || 0) + 1;
+        hCount[e.hora] = (hCount[e.hora] || 0) + 1;
+        dCount[diasSemana[new Date(e.day).getDay()]] = (dCount[diasSemana[new Date(e.day).getDay()]] || 0) + 1;
+        const m = new Date(e.day).getMonth() + 1;
+        if (m >= 3 && m <= 5) sCount.Primavera++; else if (m >= 6 && m <= 8) sCount.Verano++; else if (m >= 9 && m <= 11) sCount.Otoño++; else sCount.Invierno++;
       });
-
-      // Análisis por municipio
-      const municipiosCount: { [key: string]: number } = {};
-      eventosOrq.forEach(event => {
-        municipiosCount[event.municipio] = (municipiosCount[event.municipio] || 0) + 1;
-      });
-      const municipioFavorito = Object.entries(municipiosCount).sort(([,a], [,b]) => b - a)[0];
-
-      // Análisis por tipo de evento
-      const tiposCount: { [key: string]: number } = {};
-      eventosOrq.forEach(event => {
-        const tipo = event.tipo || 'Otro';
-        tiposCount[tipo] = (tiposCount[tipo] || 0) + 1;
-      });
-      const tipoFavorito = Object.entries(tiposCount).sort(([,a], [,b]) => b - a)[0];
-
-      // Análisis por horario
-      const horariosCount: { [key: string]: number } = {};
-      eventosOrq.forEach(event => {
-        horariosCount[event.hora] = (horariosCount[event.hora] || 0) + 1;
-      });
-      const horarioFavorito = Object.entries(horariosCount).sort(([,a], [,b]) => b - a)[0];
-
-      // Análisis por día de la semana
-      const diasCount: { [key: string]: number } = {};
-      eventosOrq.forEach(event => {
-        const diaIndex = new Date(event.day).getDay();
-        const dia = diasSemana[diaIndex];
-        diasCount[dia] = (diasCount[dia] || 0) + 1;
-      });
-      const diaFavorito = Object.entries(diasCount).sort(([,a], [,b]) => b - a)[0];
-
-      // Análisis estacional
-      const estacionalidadCount: { [key: string]: number } = {
-        'Primavera': 0,
-        'Verano': 0, 
-        'Otoño': 0,
-        'Invierno': 0
-      };
-      eventosOrq.forEach(event => {
-        const month = new Date(event.day).getMonth() + 1;
-        if (month >= 3 && month <= 5) estacionalidadCount['Primavera']++;
-        else if (month >= 6 && month <= 8) estacionalidadCount['Verano']++;
-        else if (month >= 9 && month <= 11) estacionalidadCount['Otoño']++;
-        else estacionalidadCount['Invierno']++;
-      });
-      const estacionFavorita = Object.entries(estacionalidadCount).sort(([,a], [,b]) => b - a)[0];
-
       return {
-        orquest: orq,
-        totalEventos: orquestaCounts[orq],
-        municipioFavorito,
-        tipoFavorito,
-        horarioFavorito,
-        diaFavorito,
-        estacionFavorita
+        orquest: orq, totalEventos: orquestaCounts[orq],
+        municipioFavorito: Object.entries(mCount).sort(([, a], [, b]) => b as number - (a as number))[0],
+        tipoFavorito: Object.entries(tCount).sort(([, a], [, b]) => b as number - (a as number))[0],
+        horarioFavorito: Object.entries(hCount).sort(([, a], [, b]) => b as number - (a as number))[0],
+        diaFavorito: Object.entries(dCount).sort(([, a], [, b]) => b as number - (a as number))[0],
+        estacionFavorita: Object.entries(sCount).sort(([, a], [, b]) => b as number - (a as number))[0]
       };
     });
 
     return {
-      topOrquestas,
-      alAlza,
-      aLaBaja,
-      topVerano,
-      topInvierno,
-      topPrimavera,
-      topOtoño,
-      topMunicipios,
-      horariosPopulares,
-      tiposPorcentaje,
-      djEvents,
-      djDistribution: {
-        eventosCon1DJ,
-        eventosCon2DJ,
-        eventosCon3OMasDJ,
-        totalEventosConDJ: eventosCon1DJ + eventosCon2DJ + eventosCon3OMasDJ
-      },
-      sorpresas: {
-        diaMasMusical,
-        horaPopular: horaPopular ? { hora: horaPopular[0], count: horaPopular[1] } : null,
-        workaholicOrquest,
-        municipioVariado
-      },
-      metricasAdicionales: {
-        diasSaturados,
-        orquestasVersatiles,
-        eficienciaOrquestas,
-        horariosPreferidos
-      },
-      metricasCreativas: {
-        competenciaFechas,
-        competenciaMunicipios,
-        rutasGeograficas,
-        fidelidadTerritorial,
-        masFiel,
-        masNomada,
-        diaMasActivo,
-        rachaMasLarga,
-        prediccionesEmergentes
-      },
-      orquestasEstablecidas: {
-        analisis: analisisEstablecidas,
-        orquestas: orquestasEstablecidas.map(orq => ({
-          orquest: orq,
-          count: orquestaCounts[orq]
-        }))
-      }
+      topOrquestas, alAlza, aLaBaja, topVerano, topInvierno, topPrimavera, topOtoño, topMunicipios, horariosPopulares, tiposPorcentaje, djEvents,
+      djDistribution: { eventosCon1DJ, eventosCon2DJ, eventosCon3OMasDJ, totalEventosConDJ: eventosCon1DJ + eventosCon2DJ + eventosCon3OMasDJ },
+      sorpresas: { diaMasMusical, horaPopular, workaholicOrquest, municipioVariado },
+      metricasAdicionales: { diasSaturados, orquestasVersatiles, eficienciaOrquestas, horariosPreferidos },
+      metricasCreativas: { competenciaFechas, competenciaMunicipios, rutasGeograficas, fidelidadTerritorial, masFiel, masNomada, diaMasActivo, rachaMasLarga, prediccionesEmergentes },
+      orquestasEstablecidas: { analisis: analisisEstablecidas, orquestas: orquestasEstablecidasNames.map(o => ({ orquest: o, count: orquestaCounts[o] })) }
     };
-  }, [events]);
+  }, [filteredEvents, selectedYear]);
 
   if (!statistics) {
     return (
@@ -732,8 +424,8 @@ export default function Stats({ events }: StatsProps) {
 
   const sorpresa2: StatItem = {
     label: '⏰ Hora peak',
-    value: statistics.sorpresas.horaPopular ? 
-      `${statistics.sorpresas.horaPopular.hora} (${statistics.sorpresas.horaPopular.count} veces)` : 
+    value: statistics.sorpresas.horaPopular ?
+      `${statistics.sorpresas.horaPopular.hora} (${statistics.sorpresas.horaPopular.count} veces)` :
       'N/A',
     icon: <Clock className="h-4 w-4 text-white" />,
     color: 'bg-yellow-500'
@@ -741,8 +433,8 @@ export default function Stats({ events }: StatsProps) {
 
   const sorpresa3: StatItem = {
     label: '🔥 Workaholic',
-    value: statistics.sorpresas.workaholicOrquest ? 
-      `${statistics.sorpresas.workaholicOrquest.orquest} (${statistics.sorpresas.workaholicOrquest.maxConsecutivos} días seguidos)` : 
+    value: statistics.sorpresas.workaholicOrquest ?
+      `${statistics.sorpresas.workaholicOrquest.orquest} (${statistics.sorpresas.workaholicOrquest.maxConsecutivos} días seguidos)` :
       'N/A',
     icon: <Zap className="h-4 w-4 text-white" />,
     color: 'bg-orange-500'
@@ -750,8 +442,8 @@ export default function Stats({ events }: StatsProps) {
 
   const sorpresa4: StatItem = {
     label: '🌍 Más variety',
-    value: statistics.sorpresas.municipioVariado ? 
-      `${statistics.sorpresas.municipioVariado.municipio} (${statistics.sorpresas.municipioVariado.variedad} orquestas)` : 
+    value: statistics.sorpresas.municipioVariado ?
+      `${statistics.sorpresas.municipioVariado.municipio} (${statistics.sorpresas.municipioVariado.variedad} orquestas)` :
       'N/A',
     icon: <Star className="h-4 w-4 text-white" />,
     color: 'bg-indigo-500'
@@ -761,12 +453,39 @@ export default function Stats({ events }: StatsProps) {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-6">
-          <div className="flex items-center space-x-2">
-            <BarChart3 className="h-8 w-8 text-white" />
-            <h2 className="text-3xl font-bold text-white">📊 Estadísticas de Eventos</h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-8 w-8 text-white" />
+              <h2 className="text-3xl font-bold text-white">📊 Estadísticas de Eventos</h2>
+            </div>
+
+            {/* Selector de Año */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setSelectedYear('all')}
+                className={`px-4 py-2 rounded-xl font-bold transition-all duration-300 shadow-sm ${selectedYear === 'all'
+                  ? 'bg-white text-purple-600'
+                  : 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
+                  }`}
+              >
+                Total
+              </button>
+              {years.map(year => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={`px-4 py-2 rounded-xl font-bold transition-all duration-300 shadow-sm ${selectedYear === year
+                    ? 'bg-white text-purple-600'
+                    : 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
+                    }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
           </div>
           <p className="text-white/80 text-sm mt-2">
-            Análisis completo de la actividad musical
+            Análisis completo de la actividad musical {selectedYear === 'all' ? 'histórica' : `en ${selectedYear}`}
           </p>
         </div>
       </div>
@@ -774,33 +493,33 @@ export default function Stats({ events }: StatsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Orquestas */}
         {renderStatCard(
-          '🏆 Top Orquestas', 
-          topOrquestasItems, 
-          <Award className="h-5 w-5" />, 
+          '🏆 Top Orquestas',
+          topOrquestasItems,
+          <Award className="h-5 w-5" />,
           'from-blue-500 to-blue-600'
         )}
 
         {/* Al Alza */}
         {renderStatCard(
-          '📈 Al Alza', 
-          alAlzaItems, 
-          <TrendingUp className="h-5 w-5" />, 
+          '📈 Al Alza',
+          alAlzaItems,
+          <TrendingUp className="h-5 w-5" />,
           'from-green-500 to-green-600'
         )}
 
         {/* A la Baja */}
         {renderStatCard(
-          '📉 A la Baja', 
-          aLaBajaItems, 
-          <TrendingDown className="h-5 w-5" />, 
+          '📉 A la Baja',
+          aLaBajaItems,
+          <TrendingDown className="h-5 w-5" />,
           'from-red-500 to-red-600'
         )}
 
         {/* Sorpresas */}
         {renderStatCard(
-          '🎯 Datos Sorprendentes', 
-          [sorpresa1, sorpresa2, sorpresa3, sorpresa4], 
-          <Star className="h-5 w-5" />, 
+          '🎯 Datos Sorprendentes',
+          [sorpresa1, sorpresa2, sorpresa3, sorpresa4],
+          <Star className="h-5 w-5" />,
           'from-purple-500 to-pink-600'
         )}
       </div>
@@ -918,13 +637,13 @@ export default function Stats({ events }: StatsProps) {
                   <span className="text-xl font-bold text-pink-600">{item.porcentaje}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-pink-500 to-rose-600 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${item.porcentaje}%` }}
                   ></div>
                 </div>
                 <p className="text-sm text-gray-600 mb-3 font-medium">{item.count} eventos totales</p>
-                
+
                 {/* Top 3 Orquestas para este tipo */}
                 <div className="bg-white rounded-lg p-3 border">
                   <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -972,62 +691,62 @@ export default function Stats({ events }: StatsProps) {
               <div className="text-3xl font-bold text-purple-600">{statistics.djEvents}</div>
               <p className="text-gray-700 font-medium">Apariciones totales de DJ</p>
             </div>
-            
+
             {statistics.djDistribution.totalEventosConDJ > 0 ? (
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-gray-800 text-center mb-3">Distribución por evento:</h4>
-                
+
                 {/* 1 DJ */}
                 <div className="bg-purple-50 rounded-lg p-3">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-purple-800">🎵 1 DJ</span>
                     <span className="text-sm font-bold text-purple-600">
-                      {statistics.djDistribution.eventosCon1DJ} eventos 
+                      {statistics.djDistribution.eventosCon1DJ} eventos
                       ({Math.round((statistics.djDistribution.eventosCon1DJ / statistics.djDistribution.totalEventosConDJ) * 100)}%)
                     </span>
                   </div>
                   <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-purple-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${(statistics.djDistribution.eventosCon1DJ / statistics.djDistribution.totalEventosConDJ) * 100}%` }}
                     ></div>
                   </div>
                 </div>
-                
+
                 {/* 2 DJs */}
                 <div className="bg-indigo-50 rounded-lg p-3">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-indigo-800">🎶 2 DJs</span>
                     <span className="text-sm font-bold text-indigo-600">
-                      {statistics.djDistribution.eventosCon2DJ} eventos 
+                      {statistics.djDistribution.eventosCon2DJ} eventos
                       ({Math.round((statistics.djDistribution.eventosCon2DJ / statistics.djDistribution.totalEventosConDJ) * 100)}%)
                     </span>
                   </div>
                   <div className="w-full bg-indigo-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${(statistics.djDistribution.eventosCon2DJ / statistics.djDistribution.totalEventosConDJ) * 100}%` }}
                     ></div>
                   </div>
                 </div>
-                
+
                 {/* 3+ DJs */}
                 <div className="bg-violet-50 rounded-lg p-3">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-violet-800">🎼 3+ DJs</span>
                     <span className="text-sm font-bold text-violet-600">
-                      {statistics.djDistribution.eventosCon3OMasDJ} eventos 
+                      {statistics.djDistribution.eventosCon3OMasDJ} eventos
                       ({Math.round((statistics.djDistribution.eventosCon3OMasDJ / statistics.djDistribution.totalEventosConDJ) * 100)}%)
                     </span>
                   </div>
                   <div className="w-full bg-violet-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-violet-500 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${(statistics.djDistribution.eventosCon3OMasDJ / statistics.djDistribution.totalEventosConDJ) * 100}%` }}
                     ></div>
                   </div>
                 </div>
-                
+
                 <p className="text-xs text-gray-500 text-center mt-3">
                   Total eventos con DJ: {statistics.djDistribution.totalEventosConDJ}
                 </p>
