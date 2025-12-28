@@ -6,6 +6,7 @@ import Filters from './Filters';
 import SocialStatsSync from './SocialStatsSync';
 
 import OrchestraForm from './OrchestraForm';
+import FormationTagger from './FormationTagger';
 
 interface MainPageProps {
     events: Event[];
@@ -51,6 +52,13 @@ export default function MainPage({
             <section>
                 <div className="max-w-4xl mx-auto px-6">
                     <OrchestraForm events={events} />
+                </div>
+            </section>
+
+            {/* Sección de clasificación rápida de formaciones */}
+            <section>
+                <div className="max-w-4xl mx-auto px-6">
+                    <FormationTagger events={events} />
                 </div>
             </section>
 

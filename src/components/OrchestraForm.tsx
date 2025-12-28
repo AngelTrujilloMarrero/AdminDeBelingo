@@ -17,7 +17,8 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         phone: '',
         facebook: '',
         instagram: '',
-        other: ''
+        other: '',
+        type: '' as 'orquesta' | 'grupo' | 'solista' | ''
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -69,14 +70,12 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         setFormData({ ...formData, name: value });
 
         // Reset editing state if user clears or changes name manually to something generic
-        // We'll trust selectOrchestra to set it correctly, but if they type, we check partial match or exact match
         const exactMatch = storedOrchestras.find(
             o => estandarizarNombre(o.name) === estandarizarNombre(value)
         );
 
         if (exactMatch) {
             setEditingId(exactMatch.id);
-            // Optionally populate? No, only on explicit selection or if we want auto-populate on exact match typing
         } else {
             setEditingId(null);
         }
@@ -104,7 +103,8 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 phone: existing.phone || '',
                 facebook: existing.facebook || '',
                 instagram: existing.instagram || '',
-                other: existing.other || ''
+                other: existing.other || '',
+                type: existing.type || ''
             });
             setEditingId(existing.id);
             setSuccessMessage(`Datos de "${existing.name}" cargados para editar`);
@@ -115,7 +115,8 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 phone: '',
                 facebook: '',
                 instagram: '',
-                other: ''
+                other: '',
+                type: ''
             });
             setEditingId(null);
         }
@@ -134,7 +135,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         setSuccessMessage('');
 
         try {
-            const newOrchestra = {
+            const newOrchestra: any = {
                 name: estandarizarNombre(formData.name),
                 phone: formData.phone,
                 facebook: formData.facebook,
@@ -142,6 +143,10 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 other: formData.other,
                 lastUpdated: new Date().toISOString()
             };
+
+            if (formData.type) {
+                newOrchestra.type = formData.type;
+            }
 
             // Check one last time if it exists by name to avoid duplicates if they manually typed it
             let targetId = editingId;
@@ -154,7 +159,14 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
 
             if (targetId) {
                 const orchestraRef = ref(db, `orchestras/${targetId}`);
-                await set(orchestraRef, { ...newOrchestra, id: targetId });
+                // Use the existing type if not specified in form
+                const existing = storedOrchestras.find(o => o.id === targetId);
+                const finalData = {
+                    ...existing,
+                    ...newOrchestra,
+                    id: targetId
+                };
+                await set(orchestraRef, finalData);
                 setSuccessMessage('Datos actualizados correctamente');
             } else {
                 const orchestrasRef = ref(db, 'orchestras');
@@ -167,7 +179,8 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 phone: '',
                 facebook: '',
                 instagram: '',
-                other: ''
+                other: '',
+                type: ''
             });
             setEditingId(null);
             setTimeout(() => setSuccessMessage(''), 3000);
@@ -242,6 +255,34 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                         onChange={(v) => setFormData({ ...formData, other: v })}
                         icon={<FileText className="h-5 w-5" />}
                     />
+                </div>
+
+                {/* Type Selection in Form */}
+                <div className="flex flex-wrap gap-4 items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mr-2">Tipo:</span>
+                    {(['orquesta', 'grupo', 'solista'] as const).map((t) => (
+                        <button
+                            key={t}
+                            onClick={() => setFormData({ ...formData, type: t })}
+                            className={`
+                                px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 capitalize
+                                ${formData.type === t
+                                    ? 'bg-indigo-600 text-white shadow-md scale-105'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:border-indigo-300'
+                                }
+                            `}
+                        >
+                            {t}
+                        </button>
+                    ))}
+                    {formData.type && (
+                        <button
+                            onClick={() => setFormData({ ...formData, type: '' })}
+                            className="text-xs text-gray-400 hover:text-red-500 underline ml-auto"
+                        >
+                            Limpiar
+                        </button>
+                    )}
                 </div>
 
                 {/* Messages */}

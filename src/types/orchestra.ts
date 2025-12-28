@@ -6,4 +6,5 @@ export interface Orchestra {
     instagram: string;
     other: string;
     lastUpdated: string;
+    type?: 'orquesta' | 'grupo' | 'solista';
 }

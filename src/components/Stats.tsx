@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Event } from '../types/event';
+import FormationStats from './FormationStats';
 import { normalizeString } from '../lib/utils';
 import {
   BarChart3,
@@ -451,6 +452,7 @@ export default function Stats({ events }: StatsProps) {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <FormationStats events={filteredEvents} />
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -489,6 +491,7 @@ export default function Stats({ events }: StatsProps) {
           </p>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Orquestas */}
