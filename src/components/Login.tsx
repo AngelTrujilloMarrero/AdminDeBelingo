@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, saveLoginTimestamp } from '../lib/firebase';
-import { Mail, Lock, User, Eye, EyeOff, AlertTriangle, Shield, ShieldCheck } from 'lucide-react';
+import { signInWithEmailAndPassword, setPersistence } from 'firebase/auth';
+import { auth, saveLoginTimestamp, browserSessionPersistence, browserLocalPersistence } from '../lib/firebase';
+import { Mail, Lock, User, Eye, EyeOff, AlertTriangle, Shield, ShieldCheck, CheckSquare, Square } from 'lucide-react';
 
 // Security configuration
 const SECURITY_CONFIG = {
@@ -26,6 +26,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [mountTime] = useState(Date.now());
 
   // Honeypot field - bots will fill this
@@ -149,6 +150,13 @@ export default function Login() {
     setSecurityState(prev => ({ ...prev, lastAttemptTime: now }));
 
     try {
+      // Configurar persistencia según la opción "Recordarme"
+      const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistence);
+
+      // Guardar preferencia para que otras partes de la app la conozcan
+      localStorage.setItem('rememberMe', rememberMe.toString());
+
       await signInWithEmailAndPassword(auth, email, password);
 
       // Success: Clear all security counters
@@ -345,6 +353,23 @@ export default function Login() {
                   ) : (
                     <Eye className="h-5 w-5 text-white/60 hover:text-white transition-colors" />
                   )}
+                </button>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  type="button"
+                  onClick={() => setRememberMe(!rememberMe)}
+                  className="flex items-center gap-2 text-white/80 hover:text-white transition-colors group"
+                >
+                  {rememberMe ? (
+                    <CheckSquare className="h-5 w-5 text-indigo-300" />
+                  ) : (
+                    <Square className="h-5 w-5 text-white/40 group-hover:text-white/60" />
+                  )
+                  }
+                  <span className="text-sm font-medium">Mantener sesión iniciada</span>
                 </button>
               </div>
 

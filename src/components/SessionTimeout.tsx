@@ -30,6 +30,11 @@ export default function SessionTimeout({ onLogout, onStayConnected, isActive }: 
         if (!isActive) return;
 
         const checkInactivity = () => {
+            // Si el usuario marcó "Recordarme", deshabilitamos el timeout por inactividad
+            // para una experiencia más permisible.
+            const isRemembered = localStorage.getItem('rememberMe') === 'true';
+            if (isRemembered) return;
+
             const now = Date.now();
             const timeSinceLastActivity = now - lastActivityRef.current;
 

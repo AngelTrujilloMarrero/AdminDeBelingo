@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, get } from 'firebase/database';
-import { getAuth, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { getAuth, setPersistence, browserSessionPersistence, browserLocalPersistence } from 'firebase/auth';
 
 import { scrapeSocialStats } from './socialScraper';
 
@@ -19,27 +19,38 @@ const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 export const auth = getAuth(app);
 
-// Configurar persistencia de sesión (se cierre al cerrar la pestaña/ventana)
-setPersistence(auth, browserSessionPersistence);
+// Exportar tipos de persistencia para uso en Login
+export { browserSessionPersistence, browserLocalPersistence };
 
-// Constante para el tiempo de expiración de la sesión (1 día en milisegundos)
-const SESSION_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 1 día
-
+// Clave para almacenar la preferencia de "Recordarme"
+const REMEMBER_ME_KEY = 'rememberMe';
 // Clave para almacenar el timestamp del login
 const LOGIN_TIMESTAMP_KEY = 'loginTimestamp';
+
+// Constantes para el tiempo de expiración
+const SESSION_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 1 día por defecto
+const REMEMBERED_EXPIRATION_TIME = 30 * 24 * 60 * 60 * 1000; // 30 días si se marca "Recordarme"
+
+/**
+ * Determina qué almacenamiento usar basado en la preferencia del usuario
+ */
+const getStorage = () => {
+  const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+  return rememberMe ? localStorage : sessionStorage;
+};
 
 /**
  * Guarda el timestamp del login actual
  */
 export const saveLoginTimestamp = () => {
-  sessionStorage.setItem(LOGIN_TIMESTAMP_KEY, Date.now().toString());
+  getStorage().setItem(LOGIN_TIMESTAMP_KEY, Date.now().toString());
 };
 
 /**
  * Obtiene el timestamp del login actual
  */
 export const getLoginTimestamp = (): number | null => {
-  const timestamp = sessionStorage.getItem(LOGIN_TIMESTAMP_KEY);
+  const timestamp = getStorage().getItem(LOGIN_TIMESTAMP_KEY);
   return timestamp ? parseInt(timestamp, 10) : null;
 };
 
@@ -48,7 +59,9 @@ export const getLoginTimestamp = (): number | null => {
  * @returns true si la sesión ha expirado, false en caso contrario
  */
 export const isSessionExpired = (): boolean => {
-  const loginTimestamp = sessionStorage.getItem(LOGIN_TIMESTAMP_KEY);
+  const storage = getStorage();
+  const loginTimestamp = storage.getItem(LOGIN_TIMESTAMP_KEY);
+  const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
 
   // Si no hay timestamp, retornamos false (se establecerá en el login o validación)
   if (!loginTimestamp) {
@@ -57,15 +70,18 @@ export const isSessionExpired = (): boolean => {
 
   const currentTime = Date.now();
   const elapsedTime = currentTime - parseInt(loginTimestamp, 10);
+  const expirationTime = rememberMe ? REMEMBERED_EXPIRATION_TIME : SESSION_EXPIRATION_TIME;
 
-  return elapsedTime > SESSION_EXPIRATION_TIME;
+  return elapsedTime > expirationTime;
 };
 
 /**
- * Limpia el timestamp del login
+ * Limpia el timestamp del login y la preferencia
  */
 export const clearLoginTimestamp = () => {
   sessionStorage.removeItem(LOGIN_TIMESTAMP_KEY);
+  localStorage.removeItem(LOGIN_TIMESTAMP_KEY);
+  localStorage.removeItem(REMEMBER_ME_KEY);
 };
 
 // Referencia a los datos de seguidores de redes sociales
