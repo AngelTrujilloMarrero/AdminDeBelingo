@@ -5,7 +5,7 @@ import FloatingLabelInput from './FloatingLabelInput';
 import { Music, Phone, Globe, FileText, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { Event } from '../types/event';
 import { Orchestra } from '../types/orchestra';
-import { estandarizarNombre } from '../lib/utils';
+import { estandarizarNombre, normalizeString } from '../lib/utils';
 
 interface OrchestraFormProps {
     events: Event[];
@@ -81,8 +81,9 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         }
 
         if (value) {
+            const normalizedValue = normalizeString(value);
             const filtered = suggestions.filter(s =>
-                s.name.toLowerCase().includes(value.toLowerCase())
+                normalizeString(s.name).includes(normalizedValue)
             );
             setShowSuggestions(filtered.length > 0);
         } else {
@@ -213,7 +214,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                     onChange={handleNameInput}
                     icon={<Music className="h-5 w-5" />}
                     suggestions={suggestions.filter(s =>
-                        s.name.toLowerCase().includes(formData.name.toLowerCase())
+                        normalizeString(s.name).includes(normalizeString(formData.name))
                     )}
                     showSuggestions={showSuggestions}
                     onSuggestionClick={selectOrchestra}

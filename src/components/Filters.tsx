@@ -90,10 +90,11 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
       return;
     }
 
+    const normalizedValue = normalizeString(value);
     const filteredSuggestions = suggestions.filter(suggestion =>
-      suggestion.toLowerCase().includes(value.toLowerCase())
+      normalizeString(suggestion).includes(normalizedValue)
     );
-    setShowSuggestions(filteredSuggestions.length > 0 && filteredSuggestions[0] !== value);
+    setShowSuggestions(filteredSuggestions.length > 0 && normalizeString(filteredSuggestions[0]) !== normalizedValue);
   };
 
   const selectSuggestion = (suggestion: string) => {
@@ -142,9 +143,10 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
     }
 
     if (filterSelect && searchInput) {
+      const normalizedSearch = normalizeString(searchInput);
       const filtered = events.filter(event => {
         const fieldValue = (event as any)[filterSelect];
-        return fieldValue && fieldValue.toLowerCase().includes(searchInput.toLowerCase());
+        return fieldValue && normalizeString(fieldValue).includes(normalizedSearch);
       });
       onFilterChange(filtered);
     }
@@ -226,10 +228,12 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                   <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
                     {suggestions
-                      .filter(suggestion =>
-                        suggestion.toLowerCase().includes(searchInput.toLowerCase()) &&
-                        suggestion !== searchInput
-                      )
+                      .filter(suggestion => {
+                        const normalizedSuggestion = normalizeString(suggestion);
+                        const normalizedSearch = normalizeString(searchInput);
+                        return normalizedSuggestion.includes(normalizedSearch) &&
+                          normalizedSuggestion !== normalizedSearch;
+                      })
                       .slice(0, 10) // Mostrar un poco más ahora que hay 2 columnas
                       .map((suggestion, index) => (
                         <button

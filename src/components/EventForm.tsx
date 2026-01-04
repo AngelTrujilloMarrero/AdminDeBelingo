@@ -156,11 +156,12 @@ export default function EventForm({
   const handleOrquestaInput = (value: string) => {
     setFormData({ ...formData, orquesta: value });
     const parts = value.split(',');
-    const lastPart = parts[parts.length - 1].trim().toLowerCase();
+    const lastPart = parts[parts.length - 1].trim();
 
     if (lastPart) {
+      const normalizedLastPart = normalizeString(lastPart);
       const filtered = orquestaSuggestions.filter(orq =>
-        orq.toLowerCase().startsWith(lastPart)
+        normalizeString(orq).startsWith(normalizedLastPart)
       );
       setShowOrquestaSuggestions(filtered.length > 0);
     } else {
@@ -170,11 +171,12 @@ export default function EventForm({
 
   const handleLugarInput = (value: string) => {
     setFormData({ ...formData, lugar: value });
-    const val = value.toLowerCase();
+    const val = value.trim();
 
     if (val) {
+      const normalizedVal = normalizeString(val);
       const filtered = lugarSuggestions.filter(({ lugar, municipio }) =>
-        `${lugar} (${municipio})`.toLowerCase().includes(val)
+        normalizeString(`${lugar} (${municipio})`).includes(normalizedVal)
       );
       setShowLugarSuggestions(filtered.length > 0);
     } else {
@@ -513,8 +515,8 @@ export default function EventForm({
             placeholder="Si hay varios sepáralos por comas"
             suggestions={orquestaSuggestions.filter(orq => {
               const parts = formData.orquesta.split(',');
-              const lastPart = parts[parts.length - 1].trim().toLowerCase();
-              return orq.toLowerCase().startsWith(lastPart);
+              const lastPart = parts[parts.length - 1].trim();
+              return normalizeString(orq).startsWith(normalizeString(lastPart));
             })}
             showSuggestions={showOrquestaSuggestions}
             onSuggestionClick={selectOrquesta}
@@ -530,7 +532,7 @@ export default function EventForm({
             icon={<MapPin className="h-5 w-5" />}
             placeholder="Déjalo en blanco si es el sitio habitual o casco"
             suggestions={lugarSuggestions.filter(({ lugar, municipio }) =>
-              `${lugar} (${municipio})`.toLowerCase().includes(formData.lugar.toLowerCase())
+              normalizeString(`${lugar} (${municipio})`).includes(normalizeString(formData.lugar))
             )}
             showSuggestions={showLugarSuggestions}
             onSuggestionClick={selectLugar}
