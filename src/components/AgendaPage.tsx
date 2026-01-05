@@ -1,5 +1,6 @@
 import { Event } from '../types/event';
 import Stats from './Stats';
+import MonthComparison from './MonthComparison';
 
 interface AgendaPageProps {
     events: Event[];
@@ -19,6 +20,11 @@ export default function AgendaPage({ events }: AgendaPageProps) {
                     </div>
                 </div>
                 <Stats events={events} />
+            </section>
+
+            {/* Comparativa Interanual (Escaneo de Continuidad) */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <MonthComparison events={events} />
             </section>
 
             {/* Google Calendar Embed */}
