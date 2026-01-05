@@ -194,6 +194,7 @@ export default function EventForm({
 
   const selectLugar = (item: { lugar: string; municipio: string }) => {
     setFormData({ ...formData, lugar: item.lugar, municipio: item.municipio });
+    setMunicipioSearch(item.municipio);
     setShowLugarSuggestions(false);
     lugarInputRef.current?.focus();
   };
