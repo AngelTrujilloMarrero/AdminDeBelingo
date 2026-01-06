@@ -353,724 +353,322 @@ export default function Stats({ events }: StatsProps) {
 
   if (!statistics) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-6 text-center">
-            <h2 className="text-2xl font-bold text-white">📊 Estadísticas de Eventos</h2>
-            <p className="text-white/80 mt-2">No hay datos suficientes para mostrar estadísticas</p>
+      <div className="w-full p-6 text-center">
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-10 flex flex-col items-center justify-center space-y-4">
+          <div className="bg-gray-200 p-4 rounded-full">
+            <BarChart3 className="h-8 w-8 text-gray-400" />
           </div>
+          <h2 className="text-lg font-semibold text-gray-900">Sin datos suficientes</h2>
+          <p className="text-gray-500 max-w-md">No hay suficientes eventos registrados en este período para generar estadísticas fiables.</p>
         </div>
       </div>
     );
   }
 
-  const renderStatCard = (title: string, items: StatItem[], icon: React.ReactNode, gradient: string) => (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-      <div className={`bg-gradient-to-r ${gradient} p-4`}>
-        <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-          {icon}
-          <span>{title}</span>
-        </h3>
+  // Helper Components for the new Layout
+  const StatCard = ({ title, icon: Icon, children, className = "" }: any) => (
+    <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col ${className}`}>
+      <div className="p-5 border-b border-gray-50 flex items-center gap-3">
+        <div className="p-2 bg-gray-50 rounded-lg text-gray-600">
+          <Icon className="h-5 w-5" />
+        </div>
+        <h3 className="font-bold text-gray-800 text-sm tracking-wide uppercase">{title}</h3>
       </div>
-      <div className="p-4 space-y-3">
-        {items.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
-            <div className="flex items-center space-x-2">
-              <div className={`p-1.5 rounded-full ${item.color}`}>
-                {item.icon}
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">{item.label}</p>
-                {item.subtitle && (
-                  <p className="text-xs text-gray-500">{item.subtitle}</p>
-                )}
-              </div>
-            </div>
-            <span className="font-bold text-gray-700">{item.value}</span>
-          </div>
-        ))}
+      <div className="p-5 flex-1 relative">
+        {children}
       </div>
     </div>
   );
 
-  const topOrquestasItems: StatItem[] = statistics.topOrquestas.map(([orq, count]) => ({
-    label: orq,
-    value: `${count} actuaciones`,
-    icon: <Music className="h-4 w-4 text-white" />,
-    color: 'bg-blue-500'
-  }));
-
-  const alAlzaItems: StatItem[] = statistics.alAlza.map(item => ({
-    label: item.orquest,
-    value: `+${Math.round(item.change)}%`,
-    icon: <TrendingUp className="h-4 w-4 text-white" />,
-    color: 'bg-green-500',
-    subtitle: `Crecimiento: ${item.recent} reciente vs ${item.older} anterior`
-  }));
-
-  const aLaBajaItems: StatItem[] = statistics.aLaBaja.map(item => ({
-    label: item.orquest,
-    value: `${Math.round(item.change)}%`,
-    icon: <TrendingDown className="h-4 w-4 text-white" />,
-    color: 'bg-red-500',
-    subtitle: `Declive: ${item.recent} reciente vs ${item.older} anterior`
-  }));
-
-  const sorpresa1: StatItem = {
-    label: '🎵 Día más musical',
-    value: statistics.sorpresas.diaMasMusical,
-    icon: <Calendar className="h-4 w-4 text-white" />,
-    color: 'bg-purple-500'
-  };
-
-  const sorpresa2: StatItem = {
-    label: '⏰ Hora peak',
-    value: statistics.sorpresas.horaPopular ?
-      `${statistics.sorpresas.horaPopular.hora} (${statistics.sorpresas.horaPopular.count} veces)` :
-      'N/A',
-    icon: <Clock className="h-4 w-4 text-white" />,
-    color: 'bg-yellow-500'
-  };
-
-  const sorpresa3: StatItem = {
-    label: '🔥 Workaholic',
-    value: statistics.sorpresas.workaholicOrquest ?
-      `${statistics.sorpresas.workaholicOrquest.orquest} (${statistics.sorpresas.workaholicOrquest.maxConsecutivos} días seguidos)` :
-      'N/A',
-    icon: <Zap className="h-4 w-4 text-white" />,
-    color: 'bg-orange-500'
-  };
-
-  const sorpresa4: StatItem = {
-    label: '🌍 Más variety',
-    value: statistics.sorpresas.municipioVariado ?
-      `${statistics.sorpresas.municipioVariado.municipio} (${statistics.sorpresas.municipioVariado.variedad} orquestas)` :
-      'N/A',
-    icon: <Star className="h-4 w-4 text-white" />,
-    color: 'bg-indigo-500'
-  };
+  const MiniStat = ({ label, value, subtext, icon: Icon, colorClass = "text-indigo-600", bgClass = "bg-indigo-50" }: any) => (
+    <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between shadow-sm hover:translate-y-[-2px] transition-transform">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 tracking-tight">{value}</p>
+        {subtext && <p className="text-xs text-gray-400 mt-1 font-medium">{subtext}</p>}
+      </div>
+      <div className={`p-2.5 rounded-xl ${bgClass}`}>
+        <Icon className={`h-5 w-5 ${colorClass}`} />
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <FormationStats events={filteredEvents} />
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="h-8 w-8 text-white" />
-              <h2 className="text-3xl font-bold text-white">📊 Estadísticas de Eventos</h2>
-            </div>
+    <div className="space-y-8 pb-12">
+      {/* 1. Header & Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-indigo-200 shadow-lg">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Resumen Estadístico</h2>
+            <p className="text-xs text-gray-500">Mostrando datos de: <span className="font-semibold text-indigo-600">{selectedYear === 'all' ? 'Histórico Completo' : selectedYear}</span></p>
+          </div>
+        </div>
 
-            {/* Selector de Año */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setSelectedYear('all')}
-                className={`px-4 py-2 rounded-xl font-bold transition-all duration-300 shadow-sm ${selectedYear === 'all'
-                  ? 'bg-white text-purple-600'
-                  : 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
-                  }`}
-              >
-                Total
-              </button>
-              {years.map(year => (
-                <button
-                  key={year}
-                  onClick={() => setSelectedYear(year)}
-                  className={`px-4 py-2 rounded-xl font-bold transition-all duration-300 shadow-sm ${selectedYear === year
-                    ? 'bg-white text-purple-600'
-                    : 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
-                    }`}
-                >
-                  {year}
-                </button>
+        <div className="flex bg-gray-100 p-1 rounded-xl">
+          <button
+            onClick={() => setSelectedYear('all')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedYear === 'all'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-900'
+              }`}
+          >
+            Todo
+          </button>
+          {years.map(year => (
+            <button
+              key={year}
+              onClick={() => setSelectedYear(year)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedYear === year
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+                }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. Key Metrics - Bento Grid Row 1 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MiniStat
+          label="Total Actuaciones"
+          value={statistics.topOrquestas.reduce((acc: number, curr: any) => acc + curr[1], 0)}
+          subtext="Eventos registrados"
+          icon={Music}
+          colorClass="text-violet-600"
+          bgClass="bg-violet-50"
+        />
+        <MiniStat
+          label="Día Récord"
+          value={statistics.sorpresas.diaMasMusical}
+          subtext="Mayor actividad"
+          icon={Calendar}
+          colorClass="text-pink-600"
+          bgClass="bg-pink-50"
+        />
+        <MiniStat
+          label="Hora Punta"
+          value={statistics.sorpresas.horaPopular?.hora || 'N/A'}
+          subtext={`${statistics.sorpresas.horaPopular?.count || 0} eventos`}
+          icon={Clock}
+          colorClass="text-orange-600"
+          bgClass="bg-orange-50"
+        />
+        <MiniStat
+          label="Presencia DJ"
+          value={statistics.djEvents}
+          subtext="Actuaciones totales"
+          icon={Zap}
+          colorClass="text-yellow-600"
+          bgClass="bg-yellow-50"
+        />
+      </div>
+
+      {/* Formation Stats Integration */}
+      <FormationStats events={filteredEvents} selectedYear={selectedYear} />
+
+      {/* 3. Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* Left Column: Rankings (Width 8/12) */}
+        <div className="lg:col-span-8 space-y-6">
+
+          {/* Top Orquestas Table */}
+          <StatCard title="🏆 Top 10 Orquestas" icon={Trophy}>
+            <div className="space-y-4">
+              {statistics.topOrquestas.map(([orq, count]: any, index: number) => (
+                <div key={index} className="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-default">
+                  <div className="flex items-center gap-4">
+                    <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold ${index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}>
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="font-bold text-gray-800">{orq}</p>
+                      <div className="w-32 md:w-64 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${(count / statistics.topOrquestas[0][1]) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block font-bold text-gray-900 text-lg">{count}</span>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">Eventos</span>
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-          <p className="text-white/80 text-sm mt-2">
-            Análisis completo de la actividad musical {selectedYear === 'all' ? 'histórica' : `en ${selectedYear}`}
-          </p>
-        </div>
-      </div>
+          </StatCard>
 
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Orquestas */}
-        {renderStatCard(
-          '🏆 Top Orquestas',
-          topOrquestasItems,
-          <Award className="h-5 w-5" />,
-          'from-blue-500 to-blue-600'
-        )}
-
-        {/* Al Alza */}
-        {renderStatCard(
-          '📈 Al Alza',
-          alAlzaItems,
-          <TrendingUp className="h-5 w-5" />,
-          'from-green-500 to-green-600'
-        )}
-
-        {/* A la Baja */}
-        {renderStatCard(
-          '📉 A la Baja',
-          aLaBajaItems,
-          <TrendingDown className="h-5 w-5" />,
-          'from-red-500 to-red-600'
-        )}
-
-        {/* Sorpresas */}
-        {renderStatCard(
-          '🎯 Datos Sorprendentes',
-          [sorpresa1, sorpresa2, sorpresa3, sorpresa4],
-          <Star className="h-5 w-5" />,
-          'from-purple-500 to-pink-600'
-        )}
-      </div>
-
-      {/* Segunda fila con más estadísticas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Estacionalidad Completa */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Sun className="h-5 w-5" />
-              <span>🌸☀️🍂❄️ Estacionalidad</span>
-            </h3>
-          </div>
-          <div className="p-4 space-y-3">
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">🌸 Top Primavera</h4>
-              {statistics.topPrimavera.length > 0 ? (
-                statistics.topPrimavera.map(([orq, count], index) => (
-                  <div key={index} className="flex justify-between py-1">
-                    <span className="text-sm text-gray-700">{orq}</span>
-                    <span className="text-sm font-medium text-green-600">{count}</span>
-                  </div>
-                ))
-              ) : <p className="text-xs text-gray-500">Sin datos</p>}
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">☀️ Top Verano</h4>
-              {statistics.topVerano.length > 0 ? (
-                statistics.topVerano.map(([orq, count], index) => (
-                  <div key={index} className="flex justify-between py-1">
-                    <span className="text-sm text-gray-700">{orq}</span>
-                    <span className="text-sm font-medium text-yellow-600">{count}</span>
-                  </div>
-                ))
-              ) : <p className="text-xs text-gray-500">Sin datos</p>}
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">🍂 Top Otoño</h4>
-              {statistics.topOtoño.length > 0 ? (
-                statistics.topOtoño.map(([orq, count], index) => (
-                  <div key={index} className="flex justify-between py-1">
-                    <span className="text-sm text-gray-700">{orq}</span>
-                    <span className="text-sm font-medium text-orange-600">{count}</span>
-                  </div>
-                ))
-              ) : <p className="text-xs text-gray-500">Sin datos</p>}
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">❄️ Top Invierno</h4>
-              {statistics.topInvierno.length > 0 ? (
-                statistics.topInvierno.map(([orq, count], index) => (
-                  <div key={index} className="flex justify-between py-1">
-                    <span className="text-sm text-gray-700">{orq}</span>
-                    <span className="text-sm font-medium text-blue-600">{count}</span>
-                  </div>
-                ))
-              ) : <p className="text-xs text-gray-500">Sin datos</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Horarios por Día */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Clock className="h-5 w-5" />
-              <span>⏰ Horarios Populares</span>
-            </h3>
-          </div>
-          <div className="p-4 space-y-2">
-            {statistics.horariosPopulares.slice(0, 7).map((item, index) => (
-              <div key={index} className="flex justify-between items-center py-1">
-                <span className="text-sm font-medium text-gray-800">{item.dia}</span>
-                <span className="text-sm text-indigo-600 font-semibold">{item.hora}</span>
-                <span className="text-xs text-gray-500">({item.count})</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Municipios */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-teal-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <MapPin className="h-5 w-5" />
-              <span>📍 Top Municipios</span>
-            </h3>
-          </div>
-          <div className="p-4 space-y-2">
-            {statistics.topMunicipios.map(([municipio, count], index) => (
-              <div key={index} className="flex justify-between items-center py-1">
-                <span className="text-sm font-medium text-gray-800">{municipio}</span>
-                <span className="text-sm text-green-600 font-semibold">{count} eventos</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Tipos de Eventos con Top Orquestas (Top 10) */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-pink-500 to-rose-600 p-6">
-          <h3 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Percent className="h-6 w-6" />
-            <span>💃 Tipos de Eventos con Top Orquestas (Top 10)</span>
-          </h3>
-        </div>
-        <div className="p-6">
+          {/* Trends Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {statistics.tiposPorcentaje.slice(0, 10).map((item, index) => (
-              <div key={index} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-gray-800 text-lg">{item.tipo}</span>
-                  <span className="text-xl font-bold text-pink-600">{item.porcentaje}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
-                  <div
-                    className="bg-gradient-to-r from-pink-500 to-rose-600 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${item.porcentaje}%` }}
-                  ></div>
-                </div>
-                <p className="text-sm text-gray-600 mb-3 font-medium">{item.count} eventos totales</p>
+            <StatCard title="📈 Tendencia Al Alza" icon={TrendingUp}>
+              <div className="space-y-3">
+                {statistics.alAlza.length > 0 ? statistics.alAlza.map((item: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center bg-green-50/50 p-3 rounded-xl border border-green-100">
+                    <span className="font-semibold text-gray-700">{item.orquest}</span>
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs font-bold">+{Math.round(item.change)}%</span>
+                  </div>
+                )) : <p className="text-gray-400 text-sm text-center py-4">Sin cambios significativos</p>}
+              </div>
+            </StatCard>
 
-                {/* Top 3 Orquestas para este tipo */}
-                <div className="bg-white rounded-lg p-3 border">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                    <Award className="h-4 w-4 mr-1" />
-                    🏆 Top 3 Orquestas en {item.tipo}:
+            <StatCard title="📉 Tendencia A La Baja" icon={TrendingDown}>
+              <div className="space-y-3">
+                {statistics.aLaBaja.length > 0 ? statistics.aLaBaja.map((item: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center bg-red-50/50 p-3 rounded-xl border border-red-100">
+                    <span className="font-semibold text-gray-700">{item.orquest}</span>
+                    <span className="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-xs font-bold">{Math.round(item.change)}%</span>
+                  </div>
+                )) : <p className="text-gray-400 text-sm text-center py-4">Sin cambios significativos</p>}
+              </div>
+            </StatCard>
+          </div>
+
+          {/* Seasonality */}
+          <StatCard title="☀️ Estacionalidad" icon={Sun}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Primavera', data: statistics.topPrimavera, color: 'text-green-600', bg: 'bg-green-100' },
+                { label: 'Verano', data: statistics.topVerano, color: 'text-yellow-600', bg: 'bg-yellow-100' },
+                { label: 'Otoño', data: statistics.topOtoño, color: 'text-orange-600', bg: 'bg-orange-100' },
+                { label: 'Invierno', data: statistics.topInvierno, color: 'text-blue-600', bg: 'bg-blue-100' }
+              ].map((season, idx) => (
+                <div key={idx} className="space-y-3">
+                  <h4 className={`font-bold ${season.color} flex items-center gap-2`}>
+                    <div className={`w-2 h-2 rounded-full ${season.bg.replace('bg-', 'bg-')}`}></div>
+                    {season.label}
                   </h4>
                   <div className="space-y-2">
-                    {item.topOrquestas.length > 0 ? (
-                      item.topOrquestas.map((orq, orqIndex) => (
-                        <div key={orqIndex} className="flex justify-between items-center">
-                          <div className="flex items-center">
-                            <span className="text-xs font-bold text-pink-500 w-6">
-                              {orqIndex + 1}.
-                            </span>
-                            <span className="text-sm font-medium text-gray-800">{orq.orquest}</span>
-                          </div>
-                          <span className="text-sm font-semibold text-pink-600">
-                            {orq.count} eventos
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-gray-500 italic">Sin datos de orquestas</p>
-                    )}
+                    {season.data.length > 0 ? season.data.slice(0, 3).map(([orq, count]: any, ii: number) => (
+                      <div key={ii} className="flex justify-between text-xs">
+                        <span className="text-gray-600 truncate mr-2">{orq}</span>
+                        <span className="font-semibold text-gray-900">{count}</span>
+                      </div>
+                    )) : <span className="text-xs text-gray-400 italic">No Data</span>}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+              ))}
+            </div>
+          </StatCard>
 
-      {/* Métricas Adicionales - Primera Fila */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* DJ en Estadísticas - Distribución */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Music className="h-5 w-5" />
-              <span>🎧 DJ en Estadísticas</span>
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="text-center mb-4">
-              <div className="text-3xl font-bold text-purple-600">{statistics.djEvents}</div>
-              <p className="text-gray-700 font-medium">Apariciones totales de DJ</p>
+        </div>
+
+        {/* Right Column: Details & Insights (Width 4/12) */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Top Municipios */}
+          <StatCard title="📍 Top Municipios" icon={MapPin}>
+            <div className="space-y-1">
+              {statistics.topMunicipios.map(([mun, count]: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition-colors">
+                  <span className="text-sm font-medium text-gray-700">{mun}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${(count / statistics.topMunicipios[0][1]) * 100}%` }}></div>
+                    </div>
+                    <span className="text-xs font-bold text-gray-900 w-6 text-right">{count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </StatCard>
+
+          {/* Insights / Sorpresas */}
+          <div className="bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+            <div className="flex items-center gap-3 mb-6">
+              <Lightbulb className="w-6 h-6 text-yellow-300" />
+              <h3 className="font-bold text-lg">Insights Curiosos</h3>
             </div>
 
-            {statistics.djDistribution.totalEventosConDJ > 0 ? (
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-gray-800 text-center mb-3">Distribución por evento:</h4>
-
-                {/* 1 DJ */}
-                <div className="bg-purple-50 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-purple-800">🎵 1 DJ</span>
-                    <span className="text-sm font-bold text-purple-600">
-                      {statistics.djDistribution.eventosCon1DJ} eventos
-                      ({Math.round((statistics.djDistribution.eventosCon1DJ / statistics.djDistribution.totalEventosConDJ) * 100)}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div
-                      className="bg-purple-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(statistics.djDistribution.eventosCon1DJ / statistics.djDistribution.totalEventosConDJ) * 100}%` }}
-                    ></div>
-                  </div>
+            <div className="space-y-6">
+              <div>
+                <p className="text-indigo-200 text-xs uppercase tracking-wider font-bold mb-1">Workaholic Award</p>
+                <div className="flex justify-between items-end">
+                  <p className="font-bold text-xl">{statistics.sorpresas.workaholicOrquest?.orquest || 'N/A'}</p>
+                  <span className="text-sm bg-white/20 px-2 py-1 rounded text-white">{statistics.sorpresas.workaholicOrquest?.maxConsecutivos} días seguidos</span>
                 </div>
-
-                {/* 2 DJs */}
-                <div className="bg-indigo-50 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-indigo-800">🎶 2 DJs</span>
-                    <span className="text-sm font-bold text-indigo-600">
-                      {statistics.djDistribution.eventosCon2DJ} eventos
-                      ({Math.round((statistics.djDistribution.eventosCon2DJ / statistics.djDistribution.totalEventosConDJ) * 100)}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-indigo-200 rounded-full h-2">
-                    <div
-                      className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(statistics.djDistribution.eventosCon2DJ / statistics.djDistribution.totalEventosConDJ) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* 3+ DJs */}
-                <div className="bg-violet-50 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-violet-800">🎼 3+ DJs</span>
-                    <span className="text-sm font-bold text-violet-600">
-                      {statistics.djDistribution.eventosCon3OMasDJ} eventos
-                      ({Math.round((statistics.djDistribution.eventosCon3OMasDJ / statistics.djDistribution.totalEventosConDJ) * 100)}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-violet-200 rounded-full h-2">
-                    <div
-                      className="bg-violet-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(statistics.djDistribution.eventosCon3OMasDJ / statistics.djDistribution.totalEventosConDJ) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  Total eventos con DJ: {statistics.djDistribution.totalEventosConDJ}
-                </p>
               </div>
-            ) : (
-              <p className="text-center text-gray-500 py-4">No hay eventos con DJs registrados</p>
-            )}
-          </div>
-        </div>
 
-        {/* Récords y Datos Extremos */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Trophy className="h-5 w-5" />
-              <span>🏆 Récords Musicales</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <div className="space-y-3">
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Día más activo</p>
-                <p className="font-bold text-yellow-600">{statistics.metricasCreativas.diaMasActivo[0]}</p>
-                <p className="text-sm text-gray-600">{statistics.metricasCreativas.diaMasActivo[1]} eventos</p>
+              <div className="h-px bg-white/10"></div>
+
+              <div>
+                <p className="text-indigo-200 text-xs uppercase tracking-wider font-bold mb-1">Más Variedad</p>
+                <div className="flex justify-between items-end">
+                  <p className="font-bold text-xl truncate pr-2">{statistics.sorpresas.municipioVariado?.municipio || 'N/A'}</p>
+                  <span className="text-sm bg-white/20 px-2 py-1 rounded text-white">{statistics.sorpresas.municipioVariado?.variedad} orquestas</span>
+                </div>
               </div>
-              <div className="text-center border-t pt-2">
-                <p className="text-xs text-gray-500">Racha más larga</p>
-                <p className="font-bold text-orange-600">{statistics.metricasCreativas.rachaMasLarga.orquest}</p>
-                <p className="text-sm text-gray-600">{statistics.metricasCreativas.rachaMasLarga.maxConsecutivos} días seguidos</p>
+
+              <div className="h-px bg-white/10"></div>
+
+              <div>
+                <p className="text-indigo-200 text-xs uppercase tracking-wider font-bold mb-1">Más Viajera</p>
+                <div className="flex justify-between items-end">
+                  <p className="font-bold text-xl">{statistics.metricasCreativas.rutasGeograficas[0]?.orquest || 'N/A'}</p>
+                  <span className="text-sm bg-white/20 px-2 py-1 rounded text-white">{statistics.metricasCreativas.rutasGeograficas[0]?.movimientos} municipios</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Time Distribution */}
+          <StatCard title="⏰ Distribución Horaria" icon={Clock}>
+            <div className="space-y-2">
+              {statistics.horariosPopulares.slice(0, 5).map((item: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center bg-gray-50 rounded-lg p-2.5">
+                  <span className="text-sm font-medium text-gray-600">{item.dia}</span>
+                  <span className="text-sm font-bold text-indigo-600">{item.hora}</span>
+                </div>
+              ))}
+            </div>
+          </StatCard>
         </div>
 
-        {/* Fidelidad Territorial */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Home className="h-5 w-5" />
-              <span>🏠 Fidelidad vs Nómadas</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <div className="space-y-3">
-              <div className="text-center">
-                <p className="text-xs text-gray-500 mb-1">🎯 Más Fiel</p>
-                <p className="font-bold text-green-600">{statistics.metricasCreativas.masFiel?.orquest}</p>
-                <p className="text-sm text-gray-600">{statistics.metricasCreativas.masFiel?.municipios} municipio(s)</p>
+      </div>
+
+      {/* 4. Footer Section - Detailed Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard title="⚡ Eficiencia" icon={Zap} className="h-full">
+          <p className="text-xs text-gray-500 mb-4">Eventos por mes activo (Top 5)</p>
+          {statistics.metricasAdicionales.eficienciaOrquestas.map((item: any, i: number) => (
+            <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+              <span className="text-sm font-medium text-gray-700">{item.orquest}</span>
+              <span className="text-sm font-bold text-green-600">{item.eficiencia} / mes</span>
+            </div>
+          ))}
+        </StatCard>
+
+        <StatCard title="👑 Orquestas Establecidas" icon={Crown} className="h-full">
+          <p className="text-xs text-gray-500 mb-4">Líderes de la temporada</p>
+          <div className="flex flex-wrap gap-2">
+            {statistics.orquestasEstablecidas.orquestas.map((item: any, i: number) => (
+              <div key={i} className="bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100 flex items-center gap-2">
+                {item.orquest}
+                <span className="bg-white px-1.5 rounded text-indigo-600">{item.count}</span>
               </div>
-              <div className="text-center border-t pt-2">
-                <p className="text-xs text-gray-500 mb-1">🌍 Más Nómada</p>
-                <p className="font-bold text-emerald-600">{statistics.metricasCreativas.masNomada?.orquest}</p>
-                <p className="text-sm text-gray-600">{statistics.metricasCreativas.masNomada?.municipios} municipios</p>
+            ))}
+          </div>
+        </StatCard>
+
+        <StatCard title="🎧 Distribución DJs" icon={Music} className="h-full">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-4xl font-black text-gray-900 mb-2">{statistics.djEvents}</div>
+              <p className="text-gray-500 text-sm">Total Actuaciones DJ</p>
+              <div className="mt-4 flex gap-2 justify-center">
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">1 DJ: {statistics.djDistribution.eventosCon1DJ}</span>
+                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">2 DJs: {statistics.djDistribution.eventosCon2DJ}</span>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Días Saturados */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-red-500 to-pink-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Target className="h-5 w-5" />
-              <span>🎯 Días Saturados</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            {statistics.metricasAdicionales.diasSaturados.length > 0 ? (
-              <div className="space-y-2">
-                {statistics.metricasAdicionales.diasSaturados.map(([fecha, count], index) => (
-                  <div key={index} className="flex justify-between items-center py-1">
-                    <span className="text-sm text-gray-700">{new Date(fecha).toLocaleDateString()}</span>
-                    <span className="text-sm font-semibold text-red-600">{count} eventos</span>
-                  </div>
-                ))}
-                <p className="text-xs text-gray-500 mt-2">Días con 3+ eventos simultáneos</p>
-              </div>
-            ) : (
-              <p className="text-center text-gray-500 py-4">No hay días saturados</p>
-            )}
-          </div>
-        </div>
+        </StatCard>
       </div>
 
-      {/* Métricas Adicionales - Segunda Fila */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Orquestas Versátiles */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <MapPin className="h-5 w-5" />
-              <span>🗺️ Orquestas Versátiles</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-500 mb-3">Orquestas que más municipios visitan</p>
-            {statistics.metricasAdicionales.orquestasVersatiles.map((item, index) => (
-              <div key={index} className="flex justify-between items-center py-2">
-                <div>
-                  <span className="font-medium text-gray-800">{item.orquest}</span>
-                  <p className="text-xs text-gray-500">{item.totalEventos} eventos</p>
-                </div>
-                <span className="text-sm font-semibold text-cyan-600">{item.municipios} municipios</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Eficiencia Orquestas */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-teal-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Award className="h-5 w-5" />
-              <span>⚡ Eficiencia Mensual</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-500 mb-3">Eventos por mes activo</p>
-            {statistics.metricasAdicionales.eficienciaOrquestas.map((item, index) => (
-              <div key={index} className="flex justify-between items-center py-2">
-                <div>
-                  <span className="font-medium text-gray-800">{item.orquest}</span>
-                  <p className="text-xs text-gray-500">{item.totalEventos} eventos en {item.mesesActivos} meses</p>
-                </div>
-                <span className="text-sm font-semibold text-green-600">{item.eficiencia}/mes</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Análisis de Competencia */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Competencia por Fechas */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-red-500 to-pink-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Activity className="h-5 w-5" />
-              <span>⚡ Competencia por Fechas</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-500 mb-3">Fechas con más orquestas tocando</p>
-            {statistics.metricasCreativas.competenciaFechas.map((comp, index) => (
-              <div key={index} className="bg-red-50 rounded-lg p-3 mb-2">
-                <p className="font-medium text-red-800">{new Date(comp.fecha).toLocaleDateString()}</p>
-                <p className="text-sm text-red-600">{comp.cantidadOrquestas} orquestas</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {comp.orquestas.slice(0, 3).map((orq, i) => (
-                    <span key={i} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">{orq}</span>
-                  ))}
-                  {comp.orquestas.length > 3 && (
-                    <span className="text-xs text-red-500">+{comp.orquestas.length - 3} más</span>
-                  )}
-                </div>
-              </div>
-            ))}
-            {statistics.metricasCreativas.competenciaFechas.length === 0 && (
-              <p className="text-center text-gray-500 py-4">No hay competencia significativa</p>
-            )}
-          </div>
-        </div>
-
-        {/* Competencia por Municipios */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-500 to-red-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <MapPin className="h-5 w-5" />
-              <span>🗺️ Competencia Territorial</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-500 mb-3">Municipios con más diversidad</p>
-            {statistics.metricasCreativas.competenciaMunicipios.map((comp, index) => (
-              <div key={index} className="bg-orange-50 rounded-lg p-3 mb-2">
-                <p className="font-medium text-orange-800">{comp.municipio}</p>
-                <p className="text-sm text-orange-600">{comp.cantidadOrquestas} orquestas diferentes</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {comp.orquestas.slice(0, 3).map((orq, i) => (
-                    <span key={i} className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">{orq}</span>
-                  ))}
-                  {comp.orquestas.length > 3 && (
-                    <span className="text-xs text-orange-500">+{comp.orquestas.length - 3} más</span>
-                  )}
-                </div>
-              </div>
-            ))}
-            {statistics.metricasCreativas.competenciaMunicipios.length === 0 && (
-              <p className="text-center text-gray-500 py-4">No hay competencia territorial significativa</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Análisis de Orquestas Establecidas (9+ actuaciones) */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-500 to-blue-600 p-6">
-          <h3 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Crown className="h-6 w-6" />
-            <span>👑 Orquestas Establecidas (9+ Actuaciones)</span>
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {statistics.orquestasEstablecidas.analisis.map((orq, index) => (
-              <div key={index} className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-4 border-l-4 border-indigo-500">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-bold text-indigo-800">{orq.orquest}</h4>
-                  <span className="text-sm font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
-                    {orq.totalEventos} eventos
-                  </span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">📍 Municipio:</span>
-                    <span className="font-medium text-indigo-700">{orq.municipioFavorito[0]}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">💃 Tipo:</span>
-                    <span className="font-medium text-indigo-700">{orq.tipoFavorito[0]}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">⏰ Horario:</span>
-                    <span className="font-medium text-indigo-700">{orq.horarioFavorito[0]}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">📅 Día:</span>
-                    <span className="font-medium text-indigo-700">{orq.diaFavorito[0]}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">🌸 Estación:</span>
-                    <span className="font-medium text-indigo-700">{orq.estacionFavorita[0]}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Rutas Geográficas y Predicciones */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Rutas Geográficas */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Route className="h-5 w-5" />
-              <span>🧳 Rutas Geográficas</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-500 mb-3">Orquestas más viajeras</p>
-            {statistics.metricasCreativas.rutasGeograficas.map((ruta, index) => (
-              <div key={index} className="bg-blue-50 rounded-lg p-3 mb-2">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-medium text-blue-800">{ruta.orquest}</span>
-                  <span className="text-sm font-semibold text-blue-600">{ruta.movimientos} municipios</span>
-                </div>
-                <p className="text-xs text-blue-600">{ruta.totalEventos} eventos totales</p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {ruta.municipios.slice(0, 4).map((mun, i) => (
-                    <span key={i} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{mun}</span>
-                  ))}
-                  {ruta.municipios.length > 4 && (
-                    <span className="text-xs text-blue-500">+{ruta.municipios.length - 4} más</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Predicciones Emergentes */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4">
-            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-              <Brain className="h-5 w-5" />
-              <span>🔮 Predicciones Emergentes</span>
-            </h3>
-          </div>
-          <div className="p-4">
-            <p className="text-xs text-gray-500 mb-3">Orquestas con potencial de crecimiento</p>
-            {statistics.metricasCreativas.prediccionesEmergentes.map((pred, index) => (
-              <div key={index} className="bg-purple-50 rounded-lg p-3 mb-2">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-medium text-purple-800">{pred.orquest}</span>
-                  <span className="text-sm font-semibold text-purple-600">{pred.potencial}</span>
-                </div>
-                <div className="flex justify-between text-xs text-purple-600">
-                  <span>Recientes: {pred.reciente}</span>
-                  <span>Anteriores: {pred.anterior}</span>
-                </div>
-              </div>
-            ))}
-            {statistics.metricasCreativas.prediccionesEmergentes.length === 0 && (
-              <p className="text-center text-gray-500 py-4">No hay predicciones emergentes claras</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Horarios Preferidos por Tipo (Top 10) */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-6">
-          <h3 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Clock className="h-6 w-6" />
-            <span>🕰️ Horarios Preferidos por Tipo (Top 10)</span>
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {statistics.metricasAdicionales.horariosPreferidos.slice(0, 10).map((item, index) => (
-              <div key={index} className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg p-4 text-center">
-                <h4 className="font-medium text-gray-800 mb-2">{item.tipo}</h4>
-                <div className="text-2xl font-bold text-violet-600 mb-1">{item.hora}</div>
-                <p className="text-sm text-gray-600">{item.count} veces</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
