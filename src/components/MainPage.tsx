@@ -7,6 +7,7 @@ import SocialStatsSync from './SocialStatsSync';
 
 import OrchestraForm from './OrchestraForm';
 import FormationTagger from './FormationTagger';
+import MessageAdmin from './MessageAdmin';
 
 interface MainPageProps {
     events: Event[];
@@ -76,6 +77,13 @@ export default function MainPage({
             <section>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <SocialStatsSync />
+                </div>
+            </section>
+
+            {/* Sección de administración del chat */}
+            <section>
+                <div className="max-w-4xl mx-auto px-6">
+                    <MessageAdmin />
                 </div>
             </section>
         </div>
