@@ -1,5 +1,5 @@
 import { Event } from '../types/event';
-import { ref, remove } from 'firebase/database';
+import { ref, remove, push, set } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { getDayClassName } from '../lib/utils';
 import { 
@@ -36,6 +36,20 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
   const handleDelete = async (id: string, eventName: string) => {
     if (confirm(`¿Estás seguro de que quieres eliminar el evento "${eventName}"?`)) {
       try {
+        // Primero registrar la eliminación en la auditoría
+        const eventToRegister = events.find(e => e.id === id);
+        if (eventToRegister) {
+          const deletionRef = ref(db, 'eventDeletions');
+          const newDeletionRef = push(deletionRef);
+          await set(newDeletionRef, {
+            eventId: id,
+            deletedBy: 'admin@debelingo.com', // TODO: Obtener del usuario autenticado
+            deletedAt: new Date().toISOString(),
+            eventData: eventToRegister
+          });
+        }
+
+        // Luego eliminar el evento
         const eventRef = ref(db, `events/${id}`);
         await remove(eventRef);
       } catch (error) {
