@@ -11,10 +11,8 @@ export default function SocialStatsSync() {
 
     // Estados para edición manual
     const [manualStats, setManualStats] = useState({
-        Facebook: '',
         Instagram: '',
-        WhatsApp: '',
-        Telegram: ''
+        WhatsApp: ''
     });
 
     // Cargar datos existentes al montar
@@ -25,18 +23,14 @@ export default function SocialStatsSync() {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     setManualStats({
-                        Facebook: data.Facebook || '35.500',
                         Instagram: data.Instagram || '9.000',
-                        WhatsApp: data.WhatsApp || '2.200',
-                        Telegram: data.Telegram || '140'
+                        WhatsApp: data.WhatsApp || '2.200'
                     });
                 } else {
                     // Fallback por defecto si no existen datos
                     setManualStats({
-                        Facebook: '35.500',
                         Instagram: '9.000',
-                        WhatsApp: '2.200',
-                        Telegram: '140'
+                        WhatsApp: '2.200'
                     });
                 }
             } catch (error) {
@@ -118,21 +112,6 @@ export default function SocialStatsSync() {
                         </h4>
 
                         <div className="grid grid-cols-2 gap-4">
-                            {/* Facebook */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Facebook
-                                </label>
-                                <input
-                                    type="text"
-                                    value={manualStats.Facebook}
-                                    onChange={(e) => setManualStats({ ...manualStats, Facebook: e.target.value })}
-                                    placeholder="35.500"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-purple-500 focus:border-transparent"
-                                />
-                            </div>
-
                             {/* Instagram */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -158,21 +137,6 @@ export default function SocialStatsSync() {
                                     value={manualStats.WhatsApp}
                                     onChange={(e) => setManualStats({ ...manualStats, WhatsApp: e.target.value })}
                                     placeholder="2.200"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-purple-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            {/* Telegram */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Telegram
-                                </label>
-                                <input
-                                    type="text"
-                                    value={manualStats.Telegram}
-                                    onChange={(e) => setManualStats({ ...manualStats, Telegram: e.target.value })}
-                                    placeholder="140"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
                            focus:ring-purple-500 focus:border-transparent"
                                 />
@@ -216,14 +180,12 @@ export default function SocialStatsSync() {
                     📖 ¿Cómo obtener los datos reales?
                 </summary>
                 <div className="mt-3 text-sm text-gray-600 space-y-2 bg-gray-50 p-4 rounded-lg">
-                    <p><strong>Facebook:</strong> Ve a tu página → Información → Seguidores</p>
                     <p><strong>Instagram:</strong> Abre tu perfil → Mira el número de seguidores</p>
                     <p><strong>WhatsApp:</strong> Abre tu canal → Configuración → Ver estadísticas</p>
-                    <p><strong>Telegram:</strong> Abre tu canal → Estadísticas → Suscriptores</p>
                     <hr className="my-2" />
                     <p className="text-xs text-gray-500">
-                        💡 <strong>Tip:</strong> Para automatizar esto completamente, necesitarías configurar
-                        las APIs oficiales de cada plataforma o crear un backend con Puppeteer.
+                        💡 <strong>Nota:</strong> Facebook y Telegram fueron cerrados el 23 de enero de 2026.
+                        Solo se gestionan Instagram y WhatsApp.
                     </p>
                 </div>
             </details>
