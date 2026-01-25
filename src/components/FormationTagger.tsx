@@ -5,6 +5,7 @@ import { Event } from '../types/event';
 import { Orchestra } from '../types/orchestra';
 import { estandarizarNombre } from '../lib/utils';
 import { Music, Users, User, Triangle } from 'lucide-react';
+import { hybridOrchestraService } from '../services/hybridOrchestraService';
 
 interface FormationTaggerProps {
     events: Event[];
@@ -16,20 +17,36 @@ export default function FormationTagger({ events }: FormationTaggerProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Fetch existing orchestras
+    // Fetch existing orchestras (Hybrid)
     useEffect(() => {
-        const orchestrasRef = ref(db, 'orchestras');
-        const unsubscribe = onValue(orchestrasRef, (snapshot) => {
-            const data = snapshot.val();
-            const loaded: Orchestra[] = [];
-            if (data) {
-                Object.entries(data).forEach(([key, value]: [string, any]) => {
-                    loaded.push({ id: key, ...value });
-                });
-            }
-            setStoredOrchestras(loaded);
-        });
-        return () => unsubscribe();
+        const loadOrchestras = async () => {
+            const orchestrasRef = ref(db, 'orchestras');
+            const unsubscribe = onValue(orchestrasRef, async (snapshot) => {
+                const liveData = snapshot.val();
+                const liveLoaded: Orchestra[] = [];
+                if (liveData) {
+                    Object.entries(liveData).forEach(([key, value]: [string, any]) => {
+                        liveLoaded.push({ id: key, ...value });
+                    });
+                }
+
+                // Load archived data
+                const archivedData = await hybridOrchestraService.getArchivedOrchestras();
+
+                // Merge
+                const mergedMap = new Map<string, Orchestra>();
+                archivedData.forEach(o => mergedMap.set(o.name, o));
+                liveLoaded.forEach(o => mergedMap.set(o.name, o));
+
+                setStoredOrchestras(Array.from(mergedMap.values()));
+            });
+            return unsubscribe;
+        };
+
+        const cleanupPromise = loadOrchestras();
+        return () => {
+            cleanupPromise.then(unsubscribe => unsubscribe());
+        };
     }, []);
 
     // Calculate untagged formations

@@ -10,6 +10,7 @@ import SessionTimeout from './components/SessionTimeout';
 import MainPage from './components/MainPage';
 import AgendaPage from './components/AgendaPage';
 import MigrationPage from './components/MigrationPanel';
+import { hybridOrchestraService } from './services/hybridOrchestraService';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -90,17 +91,19 @@ function App() {
           // Forzar actualización al terminar de cargar históricos
           updateTotalEvents(staticEvents, firebaseEvents);
 
-          // 3. Suscribirse a orquestas
+          // 3. Get all orchestra names (Hybrid)
           const orchestrasRef = ref(db, 'orchestras');
-          const unsubscribeOrchestras = onValue(orchestrasRef, (snapshot) => {
-            const data = snapshot.val();
-            const names: string[] = [];
-            if (data) {
-              Object.values(data).forEach((orch: any) => {
-                if (orch.name) names.push(orch.name);
-              });
-            }
-            setAllOrchestraNames(names);
+          const unsubscribeOrchestras = onValue(orchestrasRef, async (snapshot) => {
+            const liveData = snapshot.val() || {};
+            const liveNames = Object.values(liveData).map((o: any) => o.name).filter(Boolean);
+
+            // Fetch archived names
+            const archivedOrchs = await hybridOrchestraService.getArchivedOrchestras();
+            const archivedNames = archivedOrchs.map(o => o.name);
+
+            // Combine and unique
+            const allNames = [...new Set([...liveNames, ...archivedNames])].sort();
+            setAllOrchestraNames(allNames);
           });
 
           return () => {

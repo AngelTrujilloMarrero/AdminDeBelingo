@@ -5,10 +5,11 @@ import { Event, MUNICIPIOS } from '../types/event';
 import { Orchestra } from '../types/orchestra';
 import { estandarizarNombre } from '../lib/utils';
 import { format } from 'date-fns';
+import { hybridOrchestraService } from '../services/hybridOrchestraService';
 import {
     BarChart3,
     PieChart,
-    Map,
+    Map as MapIcon,
     Calendar,
     Music,
     Users,
@@ -46,20 +47,36 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
     const [viewMode, setViewMode] = useState<'global' | 'zona' | 'municipio' | 'dia'>('global');
     const [isExporting, setIsExporting] = useState(false);
 
-    // Fetch live data for types
+    // Fetch data (Hybrid)
     useEffect(() => {
-        const orchestrasRef = ref(db, 'orchestras');
-        const unsubscribe = onValue(orchestrasRef, (snapshot) => {
-            const data = snapshot.val();
-            const loaded: Orchestra[] = [];
-            if (data) {
-                Object.entries(data).forEach(([key, value]: [string, any]) => {
-                    loaded.push({ id: key, ...value });
-                });
-            }
-            setOrchestras(loaded);
-        });
-        return () => unsubscribe();
+        const loadOrchestras = async () => {
+            const orchestrasRef = ref(db, 'orchestras');
+            const unsubscribe = onValue(orchestrasRef, async (snapshot) => {
+                const liveData = snapshot.val();
+                const liveLoaded: Orchestra[] = [];
+                if (liveData) {
+                    Object.entries(liveData).forEach(([key, value]: [string, any]) => {
+                        liveLoaded.push({ id: key, ...value });
+                    });
+                }
+
+                // Load archived data
+                const archivedData = await hybridOrchestraService.getArchivedOrchestras();
+
+                // Merge
+                const mergedMap = new Map<string, Orchestra>();
+                archivedData.forEach(o => mergedMap.set(o.name, o));
+                liveLoaded.forEach(o => mergedMap.set(o.name, o));
+
+                setOrchestras(Array.from(mergedMap.values()));
+            });
+            return unsubscribe;
+        };
+
+        const cleanupPromise = loadOrchestras();
+        return () => {
+            cleanupPromise.then(unsubscribe => unsubscribe());
+        };
     }, []);
 
     const orchestraTypeMap = useMemo(() => {
@@ -312,9 +329,9 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                         <div className="lg:col-span-2">
                             <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit mb-6">
                                 {[
-                                    { id: 'zona', label: 'Zonas', icon: Map },
+                                    { id: 'zona', label: 'Zonas', icon: MapIcon },
                                     { id: 'dia', label: 'Días', icon: Calendar },
-                                    { id: 'municipio', label: 'Top Municipios', icon: Map }
+                                    { id: 'municipio', label: 'Top Municipios', icon: MapIcon }
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
