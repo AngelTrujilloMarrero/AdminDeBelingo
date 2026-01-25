@@ -19,18 +19,18 @@ class HybridDataService {
   }
 
   /**
-   * Obtiene eventos combinados de Firebase (año actual) y archivos JSON (años anteriores)
+   * Obtiene eventos combinados de Firebase (en vivo) y archivos JSON (archivados)
    */
   async getAllEvents(): Promise<Event[]> {
     try {
-      // Obtener eventos del año actual desde Firebase
-      const currentYearEvents = await this.getCurrentYearEventsFromFirebase();
+      // 1. Obtener eventos en vivo desde Firebase
+      const liveEvents = await this.getLiveEventsFromFirebase();
 
-      // Obtener eventos de años anteriores desde archivos JSON en Storage
-      const previousYearsEvents = await this.getPreviousYearsEventsFromJSON();
+      // 2. Obtener eventos archivados desde archivos JSON
+      const archivedEvents = await this.getPreviousYearsEventsFromJSON();
 
       // Combinar todos los eventos
-      return [...currentYearEvents, ...previousYearsEvents];
+      return [...liveEvents, ...archivedEvents];
     } catch (error) {
       console.error('Error en getAllEvents:', error);
       return [];
@@ -38,9 +38,9 @@ class HybridDataService {
   }
 
   /**
-   * Obtiene eventos del año actual desde Firebase
+   * Obtiene todos los eventos guardados en Firebase (datos "vivos")
    */
-  async getCurrentYearEventsFromFirebase(): Promise<Event[]> {
+  async getLiveEventsFromFirebase(): Promise<Event[]> {
     return new Promise((resolve, reject) => {
       const eventsRef = ref(db, 'events');
       const unsubscribe = onValue(
@@ -52,11 +52,7 @@ class HybridDataService {
 
             if (data) {
               Object.entries(data).forEach(([key, value]: [string, any]) => {
-                const event = { id: key, ...value };
-                // Solo incluir eventos del año actual
-                if (new Date(event.day).getFullYear().toString() === this.currentYear) {
-                  loadedEvents.push(event);
-                }
+                loadedEvents.push({ id: key, ...value });
               });
             }
 
@@ -70,10 +66,8 @@ class HybridDataService {
         }
       );
 
-      // Cancelar la suscripción después de obtener los datos (o tras un timeout)
-      setTimeout(() => {
-        unsubscribe();
-      }, 2000);
+      // Cancelar la suscripción tras obtener los datos
+      setTimeout(() => unsubscribe(), 5000);
     });
   }
 
@@ -88,9 +82,8 @@ class HybridDataService {
       // Obtener lista de años disponibles desde el servicio estático
       const availableYears = await staticFileService.getAvailableYears();
 
-      // Cargar eventos de cada año disponible que sea anterior al actual
+      // Cargar eventos de cada año disponible
       const fetchPromises = availableYears
-        .filter(year => year < currentYearNum)
         .map(async (year) => {
           const archiveData = await staticFileService.getArchiveData(year);
           return archiveData ? archiveData.events : [];
