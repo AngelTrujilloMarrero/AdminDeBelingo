@@ -1,14 +1,6 @@
 {
   "projects": {
-    "default": "debelingoconangel"
-  },
-  "targets": {
-    "debelingoconangel": {
-      "hosting": {
-        "admin": [
-          "admin-debelingoconangel"
-        ]
-      }
-    }
+    "default": "admindebelingo",
+    "prod": "admindebelingo"
   }
 }
