@@ -31,6 +31,7 @@ async function runMigration() {
 
         if (!snapshot.exists()) {
             console.log('ℹ️ No hay eventos en Firebase para migrar.');
+            await admin.app().delete();
             return;
         }
 
@@ -49,6 +50,7 @@ async function runMigration() {
 
         if (yearsToMigrate.length === 0) {
             console.log('✅ No hay años anteriores que necesiten migración.');
+            await admin.app().delete();
             return;
         }
 
@@ -76,19 +78,9 @@ async function runMigration() {
             fs.writeFileSync(filePath, JSON.stringify(archiveData, null, 2));
             console.log(`✅ Archivo generado para el año ${year}: ${eventsByYear[year].length} eventos.`);
             availableYears.push(yearInt);
-
-            // OPCIONAL: Eliminar de Firebase después de migrar
-            // Si quieres que el script borre los datos de Firebase automáticamente:
-            /*
-            for (const event of eventsByYear[year]) {
-              await db.ref(`events/${event.id}`).remove();
-            }
-            console.log(`🗑️ Eventos del año ${year} eliminados de Firebase.`);
-            */
         }
 
         // Actualizar index.json
-        // Leer índice actual si existe
         const indexPath = path.join(archiveDir, 'index.json');
         let existingYears: number[] = [];
         if (fs.existsSync(indexPath)) {
@@ -110,8 +102,15 @@ async function runMigration() {
 
         console.log('✅ Proceso de migración completado con éxito.');
 
+        // Cerrar la conexión de Firebase para que el proceso termine
+        await admin.app().delete();
+        process.exit(0);
+
     } catch (error) {
         console.error('❌ Error en el proceso de migración:', error);
+        if (admin.apps.length > 0) {
+            await admin.app().delete();
+        }
         process.exit(1);
     }
 }
