@@ -1,0 +1,45 @@
+name: Auto Migration & Deploy
+
+on:
+  schedule:
+    # Se ejecuta cada 1 de enero a las 00:00 UTC
+    - cron: '0 0 1 1 *'
+  workflow_dispatch:
+    # Permite ejecución manual desde la pestaña Actions de GitHub
+
+jobs:
+  migrate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Migration Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: pnpm tsx src/scripts/githubMigration.ts
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto-migration of previous year events [skip ci]"
+          file_pattern: 'public/events-archive/*'
+
+      - name: Build and Deploy to Firebase
+        run: |
+          pnpm build
+          npx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"

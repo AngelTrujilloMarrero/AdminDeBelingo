@@ -1,6 +1,7 @@
-import { ref, onValue, get, remove, set } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event } from '../types/event';
+import staticFileService from './staticFileService';
 
 export interface ArchivedEventData {
   year: number;
@@ -12,7 +13,6 @@ export interface ArchivedEventData {
 
 class HybridDataService {
   private currentYear: string;
-  private archiveBaseUrl = '/events-archive';
 
   constructor() {
     this.currentYear = new Date().getFullYear().toString();
@@ -26,7 +26,7 @@ class HybridDataService {
       // Obtener eventos del año actual desde Firebase
       const currentYearEvents = await this.getCurrentYearEventsFromFirebase();
 
-      // Obtener eventos de años anteriores desde archivos JSON
+      // Obtener eventos de años anteriores desde archivos JSON en Storage
       const previousYearsEvents = await this.getPreviousYearsEventsFromJSON();
 
       // Combinar todos los eventos
@@ -70,75 +70,39 @@ class HybridDataService {
         }
       );
 
-      // Cancelar la suscripción después de obtener los datos
+      // Cancelar la suscripción después de obtener los datos (o tras un timeout)
       setTimeout(() => {
         unsubscribe();
-      }, 1000);
+      }, 2000);
     });
   }
 
   /**
-   * Obtiene eventos de años anteriores desde archivos JSON estáticos
+   * Obtiene eventos de años anteriores desde archivos JSON estáticos en Storage
    */
   async getPreviousYearsEventsFromJSON(): Promise<Event[]> {
     try {
       const events: Event[] = [];
       const currentYearNum = parseInt(this.currentYear);
 
-      // Obtener lista de años disponibles (podría ser dinámico)
-      const availableYears = await this.getAvailableArchiveYears();
+      // Obtener lista de años disponibles desde el servicio estático
+      const availableYears = await staticFileService.getAvailableYears();
 
-      for (const year of availableYears) {
-        if (year < currentYearNum) {
-          const yearEvents = await this.getEventsFromYearFile(year);
-          events.push(...yearEvents);
-        }
-      }
+      // Cargar eventos de cada año disponible que sea anterior al actual
+      const fetchPromises = availableYears
+        .filter(year => year < currentYearNum)
+        .map(async (year) => {
+          const archiveData = await staticFileService.getArchiveData(year);
+          return archiveData ? archiveData.events : [];
+        });
+
+      const results = await Promise.all(fetchPromises);
+      results.forEach(yearEvents => events.push(...yearEvents));
 
       return events;
     } catch (error) {
       console.error('Error al obtener eventos de archivos JSON:', error);
       return [];
-    }
-  }
-
-  /**
-   * Carga eventos de un archivo JSON específico de un año
-   */
-  async getEventsFromYearFile(year: number): Promise<Event[]> {
-    try {
-      const response = await fetch(`${this.archiveBaseUrl}/${year}.json`);
-
-      if (!response.ok) {
-        console.warn(`No se encontró archivo para el año ${year}`);
-        return [];
-      }
-
-      const data: ArchivedEventData = await response.json();
-      return data.events || [];
-    } catch (error) {
-      console.error(`Error al cargar eventos del año ${year}:`, error);
-      return [];
-    }
-  }
-
-  /**
-   * Obtiene la lista de años disponibles en el archivo de históricos
-   */
-  async getAvailableArchiveYears(): Promise<number[]> {
-    try {
-      // Importar dinámicamente para evitar dependencias circulares si las hubiera
-      const { staticFileService } = await import('./staticFileService');
-      return await staticFileService.getAvailableYears();
-    } catch (error) {
-      console.error('Error al obtener años disponibles desde staticFileService:', error);
-      // Fallback a lógica manual si falla
-      const currentYear = new Date().getFullYear();
-      const years: number[] = [];
-      for (let year = 2020; year < currentYear; year++) {
-        years.push(year);
-      }
-      return years;
     }
   }
 

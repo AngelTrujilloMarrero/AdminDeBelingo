@@ -176,8 +176,7 @@ export default function MigrationPanel() {
   };
 
   const scheduleAutomaticMigration = () => {
-    autoMigrationService.scheduleNewYearMigration();
-    alert('Migración automática programada para el próximo 1 de enero a las 00:00h');
+    alert('La migración automática está configurada en GitHub Actions para el 1 de enero a las 00:00h. No requiere acción manual.');
   };
 
   const currentYear = new Date().getFullYear();
@@ -190,7 +189,8 @@ export default function MigrationPanel() {
           <h2 className="text-xl font-semibold text-gray-900">Panel de Migración de Eventos</h2>
         </div>
         <p className="text-gray-600 mb-6">
-          Optimización de Firebase moviendo eventos de años anteriores a archivos JSON estáticos
+          Optimización de Firebase moviendo eventos de años anteriores a archivos JSON estáticos.
+          <span className="ml-1 font-medium text-indigo-600">Gestionado automáticamente por GitHub Actions.</span>
         </p>
 
         <div className="space-y-4">
@@ -215,10 +215,21 @@ export default function MigrationPanel() {
 
             <button
               onClick={scheduleAutomaticMigration}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Programar Migración Automática
+              Info Migración GitHub
             </button>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3 items-start">
+            <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
+            <div>
+              <p className="text-sm text-blue-800 font-medium">Automatización Activa</p>
+              <p className="text-xs text-blue-700 mt-1">
+                GitHub Actions ejecutará la migración el 1 de enero a las 00:00h automáticamente.
+                También puedes lanzarla manualmente desde el panel de GitHub ("Workflow Dispatch").
+              </p>
+            </div>
           </div>
 
           {error && (
@@ -234,8 +245,8 @@ export default function MigrationPanel() {
 
           {migrationResult && (
             <div className={`border rounded-md p-4 ${migrationResult.success
-                ? 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
               }`}>
               <div className="flex">
                 {migrationResult.success ? (
@@ -306,8 +317,8 @@ export default function MigrationPanel() {
                             <div className="flex items-center gap-3">
                               <span
                                 className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${isCurrentYear
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-gray-100 text-gray-800"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-gray-100 text-gray-800"
                                   }`}
                               >
                                 {count} eventos
@@ -326,8 +337,8 @@ export default function MigrationPanel() {
                                     onClick={() => handleOnlyDelete(parseInt(year))}
                                     disabled={isMigrating || !archivesExist[parseInt(year)]}
                                     className={`p-1 rounded transition-all ${archivesExist[parseInt(year)]
-                                        ? "text-red-400 hover:text-red-600 hover:bg-red-50"
-                                        : "text-gray-300 cursor-not-allowed"
+                                      ? "text-red-400 hover:text-red-600 hover:bg-red-50"
+                                      : "text-gray-300 cursor-not-allowed"
                                       }`}
                                     title={archivesExist[parseInt(year)] ? "Borrar de Firebase (Requiere JSON)" : "Primero crea el archivo JSON"}
                                   >
@@ -367,8 +378,8 @@ export default function MigrationPanel() {
                         onClick={() => handleOnlyDelete(year)}
                         disabled={isMigrating || !hasArchive}
                         className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-md text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${hasArchive
-                            ? "border-red-200 text-red-700 bg-red-50 hover:bg-red-100 focus:ring-red-500"
-                            : "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                          ? "border-red-200 text-red-700 bg-red-50 hover:bg-red-100 focus:ring-red-500"
+                          : "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
                           }`}
                       >
                         <Trash2 className="h-4 w-4" />
