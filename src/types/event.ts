@@ -10,6 +10,7 @@ export interface Event {
   cancelado: boolean;
   FechaAgregado: string;
   FechaEditado: string;
+  isArchived?: boolean;
 }
 
 export interface EventFormData {

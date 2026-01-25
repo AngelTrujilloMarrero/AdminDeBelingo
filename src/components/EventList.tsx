@@ -2,16 +2,18 @@ import { Event } from '../types/event';
 import { ref, remove, push, set } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { getDayClassName } from '../lib/utils';
-import { 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  Music, 
-  MapPin, 
-  Clock, 
+import {
+  Edit,
+  Trash2,
+  Calendar,
+  Music,
+  MapPin,
+  Clock,
   Tag,
   Plus,
-  AlertCircle
+  AlertCircle,
+  Archive,
+  Lock
 } from 'lucide-react';
 
 interface EventListProps {
@@ -72,14 +74,14 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
     const monthKey = `${eventDate.getFullYear()}-${(eventDate.getMonth() + 1)
       .toString()
       .padStart(2, '0')}`;
-    
+
     if (!groups[monthKey]) {
       groups[monthKey] = {
         monthName: eventDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
         events: []
       };
     }
-    
+
     groups[monthKey].events.push(event);
     return groups;
   }, {} as Record<string, { monthName: string; events: Event[] }>);
@@ -157,28 +159,34 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
                                 Cancelado
                               </span>
                             )}
+                            {event.isArchived && (
+                              <span className="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-1 rounded-full flex items-center space-x-1">
+                                <Archive className="h-3 w-3" />
+                                <span>Archivado</span>
+                              </span>
+                            )}
                           </div>
-                          
+
                           {/* Información principal */}
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                               <Music className="h-4 w-4 text-gray-600 flex-shrink-0" />
                               <span className="font-semibold text-gray-900">{event.orquesta}</span>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                               <MapPin className="h-4 w-4 text-gray-600 flex-shrink-0" />
                               <span className="text-gray-700">
                                 {event.lugar || 'Casco'}, {event.municipio}
                               </span>
                             </div>
-                            
+
                             <div className="flex items-center space-x-4">
                               <div className="flex items-center space-x-2">
                                 <Clock className="h-4 w-4 text-gray-600 flex-shrink-0" />
                                 <span className="text-gray-700 font-medium">{event.hora}</span>
                               </div>
-                              
+
                               <div className="flex items-center space-x-2">
                                 <Tag className="h-4 w-4 text-gray-600 flex-shrink-0" />
                                 <span className="bg-white/60 text-gray-800 text-sm font-medium px-2 py-1 rounded-lg">
@@ -191,27 +199,35 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
 
                         {/* Botones de acción */}
                         <div className="flex flex-col space-y-2 ml-4">
-                          <button
-                            onClick={() => onEditEvent(event)}
-                            className="flex items-center space-x-1 bg-blue-500 hover:bg-blue-600 
-                                       text-white font-medium py-2 px-3 rounded-lg shadow-md 
-                                       hover:shadow-lg transform hover:scale-105 active:scale-95 
-                                       transition-all duration-200"
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="text-sm">Editar</span>
-                          </button>
-                          
-                          <button
-                            onClick={() => handleDelete(event.id, event.orquesta)}
-                            className="flex items-center space-x-1 bg-red-500 hover:bg-red-600 
-                                       text-white font-medium py-2 px-3 rounded-lg shadow-md 
-                                       hover:shadow-lg transform hover:scale-105 active:scale-95 
-                                       transition-all duration-200"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="text-sm">Eliminar</span>
-                          </button>
+                          {!event.isArchived ? (
+                            <>
+                              <button
+                                onClick={() => onEditEvent(event)}
+                                className="flex items-center space-x-1 bg-blue-500 hover:bg-blue-600 
+                                           text-white font-medium py-2 px-3 rounded-lg shadow-md 
+                                           hover:shadow-lg transform hover:scale-105 active:scale-95 
+                                           transition-all duration-200"
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span className="text-sm">Editar</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleDelete(event.id, event.orquesta)}
+                                className="flex items-center space-x-1 bg-red-500 hover:bg-red-600 
+                                           text-white font-medium py-2 px-3 rounded-lg shadow-md 
+                                           hover:shadow-lg transform hover:scale-105 active:scale-95 
+                                           transition-all duration-200"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="text-sm">Eliminar</span>
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center p-2 bg-gray-100/50 rounded-lg border border-gray-200" title="Evento histórico no editable">
+                              <Lock className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
                         </div>
                       </div>
 

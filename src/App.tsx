@@ -115,7 +115,10 @@ function App() {
       const updateTotalEvents = (staticEv: Event[], dynamicEv: Event[]) => {
         const eventsMap = new Map();
         // El orden importa: los dinámicos (Firebase) tienen prioridad si hay IDs repetidos
-        [...staticEv, ...dynamicEv].forEach(event => {
+        // Marcamos los estáticos como archivados
+        const archivedEvents = staticEv.map(e => ({ ...e, isArchived: true }));
+
+        [...archivedEvents, ...dynamicEv].forEach(event => {
           if (event.id) eventsMap.set(event.id, event);
         });
 
