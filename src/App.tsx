@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { ref, onValue } from 'firebase/database';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -76,18 +76,25 @@ function App() {
               });
             }
 
-            // Combinar estáticos y dinámicos
-            const totalEvents = [...staticEvents, ...firebaseEvents];
+            // Combinar estáticos y dinámicos deduplicando por ID
+            const eventsMap = new Map();
+            [...staticEvents, ...firebaseEvents].forEach(event => {
+              if (event.id) eventsMap.set(event.id, event);
+            });
+            const totalEvents = Array.from(eventsMap.values());
             setEvents(totalEvents);
 
-            // Actualizar eventos filtrados si es necesario (mantener lógica de 2 días)
-            const twoDaysAgo = new Date();
-            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-            const filtered = totalEvents.filter(event => {
-              const eventDate = new Date(event.day);
-              return eventDate >= twoDaysAgo;
-            });
-            setFilteredEvents(filtered);
+            // Actualizar eventos filtrados solo si NO hay un filtro activo por parte del usuario
+            if (!hasActiveFilter.current) {
+              const twoDaysAgo = new Date();
+              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+              twoDaysAgo.setHours(0, 0, 0, 0);
+              const filtered = totalEvents.filter(event => {
+                const eventDate = new Date(event.day);
+                return eventDate >= twoDaysAgo;
+              });
+              setFilteredEvents(filtered);
+            }
           });
 
           // 3. Suscribirse a nombres de orquestas para autocompletado global
@@ -163,8 +170,15 @@ function App() {
     setEditingEvent(null);
   };
 
+  const hasActiveFilter = useRef(false);
+
   const handleFilterChange = (filtered: Event[]) => {
+    hasActiveFilter.current = true;
     setFilteredEvents(filtered);
+  };
+
+  const clearFilterFlag = () => {
+    hasActiveFilter.current = false;
   };
 
   if (loading) {
@@ -214,6 +228,7 @@ function App() {
                 onEditEvent={handleEditEvent}
                 onCancelEdit={handleCancelEdit}
                 onFilterChange={handleFilterChange}
+                onClearFilter={clearFilterFlag}
                 allOrchestraNames={allOrchestraNames}
               />
             }

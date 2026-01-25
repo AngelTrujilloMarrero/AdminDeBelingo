@@ -15,9 +15,10 @@ import {
 interface FiltersProps {
   events: Event[];
   onFilterChange: (filtered: Event[]) => void;
+  onClearFilter: () => void;
 }
 
-export default function Filters({ events, onFilterChange }: FiltersProps) {
+export default function Filters({ events, onFilterChange, onClearFilter }: FiltersProps) {
   const [filterSelect, setFilterSelect] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -105,9 +106,11 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
 
   const handleFilter = () => {
     if (filterSelect === '') {
-      // Volver al filtro inicial de 2 días
+      onClearFilter();
+      // Volver al filtro inicial de 2 días (normalizado)
       const twoDaysAgo = new Date();
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      twoDaysAgo.setHours(0, 0, 0, 0);
       const filtered = events.filter(event => {
         const eventDate = new Date(event.day);
         return eventDate >= twoDaysAgo;
@@ -122,10 +125,11 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
     }
 
     if (filterSelect === 'ultimoMesYMedio') {
-      const oneAndHalfMonthsAgo = new Date();
-      oneAndHalfMonthsAgo.setMonth(oneAndHalfMonthsAgo.getMonth() - 1.5);
+      const fortyFiveDaysAgo = new Date();
+      fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
+      fortyFiveDaysAgo.setHours(0, 0, 0, 0);
       const filtered = events.filter(
-        event => new Date(event.day) >= oneAndHalfMonthsAgo
+        event => new Date(event.day) >= fortyFiveDaysAgo
       );
       onFilterChange(filtered);
       return;
@@ -133,7 +137,9 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
 
     if (filterSelect === 'intervaloFechas' && startDate && endDate) {
       const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
       const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
       const filtered = events.filter(event => {
         const eventDate = new Date(event.day);
         return eventDate >= start && eventDate <= end;
@@ -153,6 +159,7 @@ export default function Filters({ events, onFilterChange }: FiltersProps) {
   };
 
   const clearFilters = () => {
+    onClearFilter();
     setFilterSelect('');
     setSearchInput('');
     setStartDate('');

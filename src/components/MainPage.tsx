@@ -18,6 +18,7 @@ interface MainPageProps {
     onEditEvent: (event: Event) => void;
     onCancelEdit: () => void;
     onFilterChange: (filtered: Event[]) => void;
+    onClearFilter: () => void;
     allOrchestraNames: string[];
 }
 
@@ -30,6 +31,7 @@ export default function MainPage({
     onEditEvent,
     onCancelEdit,
     onFilterChange,
+    onClearFilter,
     allOrchestraNames
 }: MainPageProps) {
     return (
@@ -68,7 +70,11 @@ export default function MainPage({
 
             {/* Sección de filtros */}
             <section>
-                <Filters events={events} onFilterChange={onFilterChange} />
+                <Filters
+                    events={events}
+                    onFilterChange={onFilterChange}
+                    onClearFilter={onClearFilter}
+                />
             </section>
 
             {/* Sección de eventos */}
