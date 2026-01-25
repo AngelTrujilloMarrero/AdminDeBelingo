@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "debelingoconangel"
+  },
+  "targets": {
+    "debelingoconangel": {
+      "hosting": {
+        "admin": [
+          "admindebelingo"
+        ]
+      }
+    }
   }
 }
