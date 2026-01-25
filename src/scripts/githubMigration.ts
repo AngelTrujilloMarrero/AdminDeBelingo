@@ -1,16 +1,16 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import * as fs from 'fs';
 import * as path from 'path';
 
 // Configuración de Firebase Admin desde variables de entorno
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    : null;
+const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-if (!serviceAccount) {
+if (!serviceAccountString) {
     console.error('❌ Error: La variable FIREBASE_SERVICE_ACCOUNT no está configurada.');
     process.exit(1);
 }
+
+const serviceAccount = JSON.parse(serviceAccountString);
 
 // Inicializar Firebase Admin
 if (admin.apps.length === 0) {
@@ -92,8 +92,12 @@ async function runMigration() {
         const indexPath = path.join(archiveDir, 'index.json');
         let existingYears: number[] = [];
         if (fs.existsSync(indexPath)) {
-            const indexContent = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
-            existingYears = indexContent.years || [];
+            try {
+                const indexContent = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+                existingYears = indexContent.years || [];
+            } catch (e) {
+                console.log('Error leyendo index.json existente, creando uno nuevo.');
+            }
         }
 
         const finalYears = Array.from(new Set([...existingYears, ...availableYears])).sort((a, b) => b - a);
