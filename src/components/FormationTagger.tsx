@@ -51,20 +51,20 @@ export default function FormationTagger({ events }: FormationTaggerProps) {
 
     // Calculate untagged formations
     useEffect(() => {
-        if (events.length === 0) return;
+        if (events.length === 0 || storedOrchestras.length === 0) return;
 
         // 1. Get all unique formation names from events
         const allFormations = events.flatMap(e =>
             e.orquesta.split(',').map(o => o.trim())
-        ).filter(name => name.length > 0);
+        ).filter(name => name.length > 0 && name !== 'DJ');
 
         const uniqueFormations = [...new Set(allFormations)];
 
-        // 2. Filter those that don't have a type in storedOrchestras
+        // 2. Filter those that don't have a type in storedOrchestras (Case Insensitive Match)
         const untagged = uniqueFormations.filter(name => {
-            const normalizedName = estandarizarNombre(name);
+            const normalizedTarget = name.toLowerCase().trim();
             const orchestra = storedOrchestras.find(
-                o => estandarizarNombre(o.name) === normalizedName
+                o => o.name.toLowerCase().trim() === normalizedTarget
             );
             return !orchestra || !orchestra.type;
         }).sort();

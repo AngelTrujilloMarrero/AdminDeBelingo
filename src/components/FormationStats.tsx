@@ -82,13 +82,14 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
     const orchestraTypeMap = useMemo(() => {
         const map: Record<string, string> = {};
         orchestras.forEach(o => {
-            map[estandarizarNombre(o.name)] = o.type || 'unknown';
+            map[o.name.toLowerCase().trim()] = o.type || 'unknown';
         });
         return map;
     }, [orchestras]);
 
     const getFormationType = (name: string) => {
-        const normalized = estandarizarNombre(name.trim());
+        const normalized = name.toLowerCase().trim();
+        // Buscar en el mapa que ya debería tener keys normalizadas
         return orchestraTypeMap[normalized] || 'unknown';
     };
 
