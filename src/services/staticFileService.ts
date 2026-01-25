@@ -30,7 +30,8 @@ class StaticFileService {
    */
   async archiveExists(year: number): Promise<boolean> {
     try {
-      const response = await fetch(`${this.archiveBaseUrl}/${year}.json`, { method: 'HEAD' });
+      // Usamos GET normal porque HEAD suele estar restringido
+      const response = await fetch(`${this.archiveBaseUrl}/${year}.json`);
       return response.ok;
     } catch (error) {
       return false;
@@ -42,15 +43,19 @@ class StaticFileService {
    */
   async getArchiveData(year: number): Promise<ArchiveData | null> {
     try {
+      console.log(`[StaticFileService] Cargando datos de ${year}...`);
       const response = await fetch(`${this.archiveBaseUrl}/${year}.json`);
 
       if (!response.ok) {
+        console.warn(`[StaticFileService] No se encontró el archivo de ${year}`);
         return null;
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`[StaticFileService] ✅ ${year} cargado con ${data.events?.length || 0} eventos.`);
+      return data;
     } catch (error) {
-      console.error(`Error al cargar archivo del año ${year}:`, error);
+      console.error(`[StaticFileService] Error al cargar ${year}:`, error);
       return null;
     }
   }
@@ -64,20 +69,25 @@ class StaticFileService {
 
       if (indexResponse.ok) {
         const index = await indexResponse.json();
+        console.log('[StaticFileService] Índice cargado:', index.years);
         return index.years || [];
       }
 
       // Fallback si no hay índice
+      console.log('[StaticFileService] Índice no encontrado, buscando manualmente...');
       const currentYear = new Date().getFullYear();
       const years: number[] = [];
-      for (let year = 2020; year < currentYear; year++) {
-        if (await this.archiveExists(year)) {
+      // Empezamos en 2024 que es el inicio de la plataforma
+      for (let year = 2024; year < currentYear; year++) {
+        const exists = await this.archiveExists(year);
+        if (exists) {
           years.push(year);
         }
       }
+      console.log('[StaticFileService] Años encontrados manualmente:', years);
       return years.sort((a, b) => b - a);
     } catch (error) {
-      console.error('Error al obtener años disponibles:', error);
+      console.error('[StaticFileService] Error al obtener años:', error);
       return [];
     }
   }

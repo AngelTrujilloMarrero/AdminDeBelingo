@@ -61,6 +61,13 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
     setSuggestions(uniqueSuggestions);
   }, [events, filterSelect, showSearch]);
 
+  // Re-aplicar filtro si los eventos base cambian (útil para carga diferida de históricos)
+  useEffect(() => {
+    if (filterSelect || searchInput || startDate || endDate) {
+      handleFilter();
+    }
+  }, [events]);
+
   const handleFilterSelectChange = (value: string) => {
     setFilterSelect(value);
     setSearchInput('');
@@ -129,7 +136,11 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
       fortyFiveDaysAgo.setDate(fortyFiveDaysAgo.getDate() - 45);
       fortyFiveDaysAgo.setHours(0, 0, 0, 0);
       const filtered = events.filter(
-        event => new Date(event.day) >= fortyFiveDaysAgo
+        event => {
+          const eventDate = new Date(event.day);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate >= fortyFiveDaysAgo;
+        }
       );
       onFilterChange(filtered);
       return;
@@ -169,9 +180,10 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
     setSuggestions([]);
     setShowSuggestions(false);
 
-    // Aplicar filtro inicial de 2 días
+    // Aplicar filtro inicial de 2 días (normalizado)
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    twoDaysAgo.setHours(0, 0, 0, 0);
     const filtered = events.filter(event => {
       const eventDate = new Date(event.day);
       return eventDate >= twoDaysAgo;

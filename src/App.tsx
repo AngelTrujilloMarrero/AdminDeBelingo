@@ -59,45 +59,38 @@ function App() {
   useEffect(() => {
     if (user) {
       let staticEvents: Event[] = [];
+      let firebaseEvents: Event[] = [];
+      let staticEventsLoaded = false;
+
       const loadData = async () => {
         try {
-          // 1. Cargar eventos históricos de JSON
           const { hybridDataService } = await import('./services/hybridDataService');
-          staticEvents = await hybridDataService.getPreviousYearsEventsFromJSON();
 
-          // 2. Suscribirse a eventos en tiempo real desde Firebase
+          // 1. Suscribirse a Firebase primero (esto es inmediato)
           const eventsRef = ref(db, 'events');
           const unsubscribeEvents = onValue(eventsRef, (snapshot) => {
             const data = snapshot.val();
-            const firebaseEvents: Event[] = [];
+            const currentFirebaseEvents: Event[] = [];
             if (data) {
               Object.entries(data).forEach(([key, value]: [string, any]) => {
-                firebaseEvents.push({ id: key, ...value });
+                currentFirebaseEvents.push({ id: key, ...value });
               });
             }
+            firebaseEvents = currentFirebaseEvents;
 
-            // Combinar estáticos y dinámicos deduplicando por ID
-            const eventsMap = new Map();
-            [...staticEvents, ...firebaseEvents].forEach(event => {
-              if (event.id) eventsMap.set(event.id, event);
-            });
-            const totalEvents = Array.from(eventsMap.values());
-            setEvents(totalEvents);
-
-            // Actualizar eventos filtrados solo si NO hay un filtro activo por parte del usuario
-            if (!hasActiveFilter.current) {
-              const twoDaysAgo = new Date();
-              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-              twoDaysAgo.setHours(0, 0, 0, 0);
-              const filtered = totalEvents.filter(event => {
-                const eventDate = new Date(event.day);
-                return eventDate >= twoDaysAgo;
-              });
-              setFilteredEvents(filtered);
-            }
+            // Solo combinamos si ya tenemos los estáticos o si queremos mostrar algo ya
+            updateTotalEvents(staticEvents, firebaseEvents);
           });
 
-          // 3. Suscribirse a nombres de orquestas para autocompletado global
+          // 2. Cargar históricos (puede tardar un poco)
+          const historicalEvents = await hybridDataService.getPreviousYearsEventsFromJSON();
+          staticEvents = historicalEvents;
+          staticEventsLoaded = true;
+
+          // Forzar actualización al terminar de cargar históricos
+          updateTotalEvents(staticEvents, firebaseEvents);
+
+          // 3. Suscribirse a orquestas
           const orchestrasRef = ref(db, 'orchestras');
           const unsubscribeOrchestras = onValue(orchestrasRef, (snapshot) => {
             const data = snapshot.val();
@@ -116,6 +109,29 @@ function App() {
           };
         } catch (error) {
           console.error('Error al configurar listeners de datos:', error);
+        }
+      };
+
+      const updateTotalEvents = (staticEv: Event[], dynamicEv: Event[]) => {
+        const eventsMap = new Map();
+        // El orden importa: los dinámicos (Firebase) tienen prioridad si hay IDs repetidos
+        [...staticEv, ...dynamicEv].forEach(event => {
+          if (event.id) eventsMap.set(event.id, event);
+        });
+
+        const totalEvents = Array.from(eventsMap.values());
+        setEvents(totalEvents);
+
+        // Actualizar filtrados (solo si no hay filtro activo)
+        if (!hasActiveFilter.current) {
+          const twoDaysAgo = new Date();
+          twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+          twoDaysAgo.setHours(0, 0, 0, 0);
+          const filtered = totalEvents.filter(event => {
+            const eventDate = new Date(event.day);
+            return eventDate >= twoDaysAgo;
+          });
+          setFilteredEvents(filtered);
         }
       };
 
