@@ -32,7 +32,10 @@ class StaticFileService {
     try {
       // Usamos GET normal porque HEAD suele estar restringido
       const response = await fetch(`${this.archiveBaseUrl}/${year}.json`);
-      return response.ok;
+      if (!response.ok) return false;
+
+      const contentType = response.headers.get('content-type');
+      return !(contentType && contentType.includes('text/html'));
     } catch (error) {
       return false;
     }
@@ -48,6 +51,13 @@ class StaticFileService {
 
       if (!response.ok) {
         console.warn(`[StaticFileService] No se encontró el archivo de ${year}`);
+        return null;
+      }
+
+      // Evitar procesar el index.html (reescritura de Firebase) como JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        console.warn(`[StaticFileService] El archivo de ${year} devolvió HTML (404 reescrito)`);
         return null;
       }
 
@@ -68,13 +78,17 @@ class StaticFileService {
       const indexResponse = await fetch(`${this.archiveBaseUrl}/index.json`);
 
       if (indexResponse.ok) {
-        const index = await indexResponse.json();
-        console.log('[StaticFileService] Índice cargado:', index.years);
-        return index.years || [];
+        // Evitar procesar el index.html como JSON
+        const contentType = indexResponse.headers.get('content-type');
+        if (contentType && !contentType.includes('text/html')) {
+          const index = await indexResponse.json();
+          console.log('[StaticFileService] Índice cargado:', index.years);
+          return index.years || [];
+        }
       }
 
-      // Fallback si no hay índice
-      console.log('[StaticFileService] Índice no encontrado, buscando manualmente...');
+      // Fallback si no hay índice o devolvió HTML
+      console.log('[StaticFileService] Índice no encontrado o inválido, buscando manualmente...');
       const currentYear = new Date().getFullYear();
       const years: number[] = [];
       // Empezamos en 2024 que es el inicio de la plataforma
