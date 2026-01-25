@@ -99,8 +99,82 @@ async function runMigration() {
             lastUpdated: new Date().toISOString(),
             generatedBy: "GitHub Actions"
         }, null, 2));
+        console.log('✅ Índice de eventos actualizado.');
 
-        console.log('✅ Proceso de migración completado con éxito.');
+        // -------------------------------------------------------------------
+        // NUEVO: MIGRACIÓN DE ORQUESTAS
+        // -------------------------------------------------------------------
+        console.log('🎻 Iniciando migración de orquestas con datos...');
+        const orchestrasRef = db.ref('orchestras');
+        const orchSnapshot = await orchestrasRef.once('value');
+
+        if (orchSnapshot.exists()) {
+            const orchestrasData = orchSnapshot.val();
+            const archiveOrchDir = path.join(process.cwd(), 'public', 'orchestra-archive');
+            if (!fs.existsSync(archiveOrchDir)) {
+                fs.mkdirSync(archiveOrchDir, { recursive: true });
+            }
+
+            const orchArchivePath = path.join(archiveOrchDir, 'orchestras.json');
+            let archivedOrchestras: any[] = [];
+
+            if (fs.existsSync(orchArchivePath)) {
+                try {
+                    const content = JSON.parse(fs.readFileSync(orchArchivePath, 'utf-8'));
+                    archivedOrchestras = content.orchestras || [];
+                } catch (e) {
+                    console.log('Error leyendo archivo de orquestas existente.');
+                }
+            }
+
+            const archivedMap = new Map();
+            archivedOrchestras.forEach(o => archivedMap.set(o.name, o));
+
+            const toRemoveFromFirebase: string[] = [];
+            let newlyArchived = 0;
+            let updatedInArchive = 0;
+
+            Object.entries(orchestrasData).forEach(([id, orch]: [string, any]) => {
+                const hasExtraData = orch.phone || orch.facebook || orch.instagram || orch.other || orch.type;
+
+                if (hasExtraData) {
+                    if (!archivedMap.has(orch.name)) {
+                        newlyArchived++;
+                    } else {
+                        updatedInArchive++;
+                    }
+
+                    // Actualizar mapa (Firebase manda sobre archivo previo)
+                    archivedMap.set(orch.name, { ...orch, id });
+
+                    // Marcar para borrar de Firebase para ahorrar espacio
+                    toRemoveFromFirebase.push(id);
+                }
+            });
+
+            if (toRemoveFromFirebase.length > 0) {
+                // Guardar archivo actualizado
+                const finalOrchestras = Array.from(archivedMap.values());
+                fs.writeFileSync(orchArchivePath, JSON.stringify({
+                    orchestras: finalOrchestras,
+                    lastUpdated: new Date().toISOString(),
+                    total: finalOrchestras.length,
+                    generatedBy: "GitHub Actions"
+                }, null, 2));
+
+                console.log(`✅ Archivo de orquestas actualizado: ${newlyArchived} nuevas, ${updatedInArchive} actualizadas. Total: ${finalOrchestras.length}`);
+
+                // Borrar de Firebase
+                const updates: any = {};
+                toRemoveFromFirebase.forEach(id => {
+                    updates[id] = null;
+                });
+                await orchestrasRef.update(updates);
+                console.log(`✅ Eliminadas ${toRemoveFromFirebase.length} orquestas de Firebase (ahora residen en el archivo estático).`);
+            } else {
+                console.log('ℹ️ No hay orquestas nuevas con datos para migrar.');
+            }
+        }
 
         // Cerrar la conexión de Firebase para que el proceso termine
         await admin.app().delete();

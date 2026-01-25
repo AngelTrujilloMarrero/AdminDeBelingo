@@ -6,6 +6,7 @@ import { Music, Phone, Globe, FileText, Save, CheckCircle, AlertCircle } from 'l
 import { Event } from '../types/event';
 import { Orchestra } from '../types/orchestra';
 import { estandarizarNombre, normalizeString } from '../lib/utils';
+import { hybridOrchestraService } from '../services/hybridOrchestraService';
 
 interface OrchestraFormProps {
     events: Event[];
@@ -32,20 +33,39 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const nameInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch existing orchestras
+    // Fetch existing orchestras (Hybrid: Live + Archive)
     useEffect(() => {
-        const orchestrasRef = ref(db, 'orchestras');
-        const unsubscribe = onValue(orchestrasRef, (snapshot) => {
-            const data = snapshot.val();
-            const loaded: Orchestra[] = [];
-            if (data) {
-                Object.entries(data).forEach(([key, value]: [string, any]) => {
-                    loaded.push({ id: key, ...value });
-                });
-            }
-            setStoredOrchestras(loaded);
-        });
-        return () => unsubscribe();
+        const loadOrchestras = async () => {
+            const orchestrasRef = ref(db, 'orchestras');
+
+            // Listen to live changes as before
+            const unsubscribe = onValue(orchestrasRef, async (snapshot) => {
+                const liveData = snapshot.val();
+                const liveLoaded: Orchestra[] = [];
+                if (liveData) {
+                    Object.entries(liveData).forEach(([key, value]: [string, any]) => {
+                        liveLoaded.push({ id: key, ...value });
+                    });
+                }
+
+                // Load archived data
+                const archivedData = await hybridOrchestraService.getArchivedOrchestras();
+
+                // Merge: Live (Firebase) has priority over Archive (Static)
+                const mergedMap = new Map<string, Orchestra>();
+                archivedData.forEach(o => mergedMap.set(o.name, o));
+                liveLoaded.forEach(o => mergedMap.set(o.name, o));
+
+                setStoredOrchestras(Array.from(mergedMap.values()));
+            });
+
+            return unsubscribe;
+        };
+
+        const cleanupPromise = loadOrchestras();
+        return () => {
+            cleanupPromise.then(unsubscribe => unsubscribe());
+        };
     }, []);
 
     useEffect(() => {
