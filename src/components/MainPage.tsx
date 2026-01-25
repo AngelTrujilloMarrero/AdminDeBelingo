@@ -18,6 +18,7 @@ interface MainPageProps {
     onEditEvent: (event: Event) => void;
     onCancelEdit: () => void;
     onFilterChange: (filtered: Event[]) => void;
+    allOrchestraNames: string[];
 }
 
 export default function MainPage({
@@ -28,7 +29,8 @@ export default function MainPage({
     onEventAdded,
     onEditEvent,
     onCancelEdit,
-    onFilterChange
+    onFilterChange,
+    allOrchestraNames
 }: MainPageProps) {
     return (
         <div className="space-y-8 pb-8 animate-fade-in">
@@ -46,6 +48,7 @@ export default function MainPage({
                     editingEvent={editingEvent}
                     onEventAdded={onEventAdded}
                     onCancelEdit={onCancelEdit}
+                    allOrchestraNames={allOrchestraNames}
                 />
             </section>
 

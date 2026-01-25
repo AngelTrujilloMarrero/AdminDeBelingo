@@ -9,6 +9,7 @@ import Login from './components/Login';
 import SessionTimeout from './components/SessionTimeout';
 import MainPage from './components/MainPage';
 import AgendaPage from './components/AgendaPage';
+import MigrationPage from './components/MigrationPanel';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -16,6 +17,7 @@ function App() {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [allOrchestraNames, setAllOrchestraNames] = useState<string[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -56,28 +58,64 @@ function App() {
 
   useEffect(() => {
     if (user) {
-      const eventsRef = ref(db, 'events');
-      const unsubscribe = onValue(eventsRef, snapshot => {
-        const loadedEvents: Event[] = [];
-        const data = snapshot.val();
-        if (data) {
-          Object.entries(data).forEach(([key, value]: [string, any]) => {
-            loadedEvents.push({ id: key, ...value });
+      let staticEvents: Event[] = [];
+      const loadData = async () => {
+        try {
+          // 1. Cargar eventos históricos de JSON
+          const { hybridDataService } = await import('./services/hybridDataService');
+          staticEvents = await hybridDataService.getPreviousYearsEventsFromJSON();
+
+          // 2. Suscribirse a eventos en tiempo real desde Firebase
+          const eventsRef = ref(db, 'events');
+          const unsubscribeEvents = onValue(eventsRef, (snapshot) => {
+            const data = snapshot.val();
+            const firebaseEvents: Event[] = [];
+            if (data) {
+              Object.entries(data).forEach(([key, value]: [string, any]) => {
+                firebaseEvents.push({ id: key, ...value });
+              });
+            }
+
+            // Combinar estáticos y dinámicos
+            const totalEvents = [...staticEvents, ...firebaseEvents];
+            setEvents(totalEvents);
+
+            // Actualizar eventos filtrados si es necesario (mantener lógica de 2 días)
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+            const filtered = totalEvents.filter(event => {
+              const eventDate = new Date(event.day);
+              return eventDate >= twoDaysAgo;
+            });
+            setFilteredEvents(filtered);
           });
+
+          // 3. Suscribirse a nombres de orquestas para autocompletado global
+          const orchestrasRef = ref(db, 'orchestras');
+          const unsubscribeOrchestras = onValue(orchestrasRef, (snapshot) => {
+            const data = snapshot.val();
+            const names: string[] = [];
+            if (data) {
+              Object.values(data).forEach((orch: any) => {
+                if (orch.name) names.push(orch.name);
+              });
+            }
+            setAllOrchestraNames(names);
+          });
+
+          return () => {
+            unsubscribeEvents();
+            unsubscribeOrchestras();
+          };
+        } catch (error) {
+          console.error('Error al configurar listeners de datos:', error);
         }
-        setEvents(loadedEvents);
+      };
 
-        // Aplicar filtro inicial de 2 días
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        const filtered = loadedEvents.filter(event => {
-          const eventDate = new Date(event.day);
-          return eventDate >= twoDaysAgo;
-        });
-        setFilteredEvents(filtered);
-      });
-
-      return () => unsubscribe();
+      const cleanupPromise = loadData();
+      return () => {
+        cleanupPromise.then(cleanup => cleanup && cleanup());
+      };
     }
   }, [user]);
 
@@ -176,12 +214,17 @@ function App() {
                 onEditEvent={handleEditEvent}
                 onCancelEdit={handleCancelEdit}
                 onFilterChange={handleFilterChange}
+                allOrchestraNames={allOrchestraNames}
               />
             }
           />
           <Route
             path="/agenda"
             element={<AgendaPage events={events} />}
+          />
+          <Route
+            path="/migration"
+            element={<MigrationPage />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

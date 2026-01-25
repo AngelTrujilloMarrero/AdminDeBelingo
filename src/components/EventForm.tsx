@@ -27,6 +27,7 @@ interface EventFormProps {
   editingEvent: Event | null;
   onEventAdded: () => void;
   onCancelEdit: () => void;
+  allOrchestraNames?: string[];
 }
 
 import FloatingLabelInput from './FloatingLabelInput';
@@ -34,7 +35,8 @@ export default function EventForm({
   events,
   editingEvent,
   onEventAdded,
-  onCancelEdit
+  onCancelEdit,
+  allOrchestraNames = []
 }: EventFormProps) {
   const [formData, setFormData] = useState({
     eventDate: '',
@@ -106,10 +108,11 @@ export default function EventForm({
   }, []);
 
   useEffect(() => {
-    const allOrquestas = events.flatMap(e =>
-      e.orquesta.split(',').map(o => o.trim())
-    );
-    const uniqueOrquestas = [...new Set(allOrquestas)].sort();
+    const allOrquestas = [
+      ...events.flatMap(e => e.orquesta.split(',').map(o => o.trim())),
+      ...allOrchestraNames
+    ];
+    const uniqueOrquestas = [...new Set(allOrquestas)].filter(Boolean).sort();
     setOrquestaSuggestions(uniqueOrquestas);
 
     const lugares = events

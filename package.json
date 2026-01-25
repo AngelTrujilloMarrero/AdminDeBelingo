@@ -10,7 +10,10 @@
     "lint": "pnpm install --prefer-offline && eslint .",
     "preview": "pnpm install --prefer-offline && vite preview",
     "install-deps": "pnpm install --prefer-offline",
-    "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune"
+    "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune",
+    "migrate": "tsx src/scripts/migrate.ts",
+    "migrate:analyze": "tsx src/scripts/migrate.ts analyze",
+    "migrate:all": "tsx src/scripts/migrate.ts all"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -81,6 +84,7 @@
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1",
     "vite": "^7.3.1",

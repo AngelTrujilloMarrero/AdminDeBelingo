@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { NavLink, useLocation } from 'react-router-dom';
 import { auth, clearLoginTimestamp, getLoginTimestamp } from '../lib/firebase';
-import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X } from 'lucide-react';
+import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X, Database } from 'lucide-react';
 
 interface HeaderProps {
   userEmail: string;
@@ -96,6 +96,18 @@ export default function Header({ userEmail }: HeaderProps) {
               >
                 <BarChart3 className="w-4 h-4" />
                 Estadísticas
+              </NavLink>
+              <NavLink
+                to="/migration"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${isActive
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-white/90 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <Database className="w-4 h-4" />
+                Migración
               </NavLink>
             </nav>
           </div>

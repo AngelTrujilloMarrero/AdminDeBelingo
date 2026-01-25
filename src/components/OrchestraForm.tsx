@@ -49,11 +49,12 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
     }, []);
 
     useEffect(() => {
-        // Extract unique orchestra names from events
-        const allOrquestas = events.flatMap(e =>
-            e.orquesta.split(',').map(o => o.trim())
-        );
-        const uniqueOrquestas = [...new Set(allOrquestas)].sort();
+        // Extract unique orchestra names from events and stored orchestras
+        const allOrquestas = [
+            ...events.flatMap(e => e.orquesta.split(',').map(o => o.trim())),
+            ...storedOrchestras.map(o => o.name)
+        ];
+        const uniqueOrquestas = [...new Set(allOrquestas)].filter(Boolean).sort();
 
         // Map to suggestion objects with hasData flag
         const suggestionsWithData = uniqueOrquestas.map(name => {
