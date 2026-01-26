@@ -2,14 +2,17 @@ name: Auto Migration & Deploy
 
 on:
   schedule:
-    # Se ejecuta cada 1 de enero a las 00:00 UTC
-    - cron: '0 0 1 1 *'
+    # Se ejecuta cada 31 de diciembre a las 23:49 UTC (hora de Canarias)
+    - cron: '49 23 31 12 *'
   workflow_dispatch:
     # Permite ejecución manual desde la pestaña Actions de GitHub
 
 jobs:
   migrate-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,13 +23,12 @@ jobs:
           node-version: '20'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 10
-          run_install: false
+          version: latest
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run Migration Script
         env:
@@ -36,8 +38,8 @@ jobs:
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: auto-migration of previous year events [skip ci]"
-          file_pattern: 'public/events-archive/*'
+          commit_message: "chore: auto-migration of previous year events and orchestras [skip ci]"
+          file_pattern: 'public/events-archive/* public/orchestra-archive/*'
 
       - name: Build and Deploy to Firebase
         run: |

@@ -31,7 +31,6 @@ async function runMigration() {
 
         if (!snapshot.exists()) {
             console.log('ℹ️ No hay eventos en Firebase para migrar.');
-            await admin.app().delete();
             return;
         }
 
@@ -50,7 +49,6 @@ async function runMigration() {
 
         if (yearsToMigrate.length === 0) {
             console.log('✅ No hay años anteriores que necesiten migración.');
-            await admin.app().delete();
             return;
         }
 
