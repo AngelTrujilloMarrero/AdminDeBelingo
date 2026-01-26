@@ -176,7 +176,7 @@ export default function MigrationPanel() {
   };
 
   const scheduleAutomaticMigration = () => {
-    alert('La migración automática está configurada en GitHub Actions para el 1 de enero a las 00:00h. No requiere acción manual.');
+    alert('La migración automática en GitHub está configurada para el 31 de dic. a las 23:40 UTC. Genera los archivos JSON, pero requiere borrar los eventos de Firebase manualmente desde este panel para evitar duplicados.');
   };
 
   const currentYear = new Date().getFullYear();
@@ -184,13 +184,23 @@ export default function MigrationPanel() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="h-5 w-5 text-gray-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Panel de Migración de Eventos</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-gray-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Panel de Migración de Eventos</h2>
+          </div>
+          <a 
+            href="https://github.com/AngelTrujilloMarrero/DeBelingoConAngel/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+          >
+            Proyecto: DeBelingoConAngel
+          </a>
         </div>
         <p className="text-gray-600 mb-6">
-          Optimización de Firebase moviendo eventos de años anteriores a archivos JSON estáticos.
-          <span className="ml-1 font-medium text-indigo-600">Gestionado automáticamente por GitHub Actions.</span>
+          Optimización de Firebase generando archivos JSON para años anteriores.
+          <span className="ml-1 font-medium text-amber-600">GitHub genera los archivos, pero la limpieza de Firebase es manual.</span>
         </p>
 
         <div className="space-y-4">
@@ -224,10 +234,10 @@ export default function MigrationPanel() {
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3 items-start">
             <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
-              <p className="text-sm text-blue-800 font-medium">Automatización Activa</p>
+              <p className="text-sm text-blue-800 font-medium">Automatización en GitHub</p>
               <p className="text-xs text-blue-700 mt-1">
-                GitHub Actions ejecutará la migración el 1 de enero a las 00:00h automáticamente.
-                También puedes lanzarla manualmente desde el panel de GitHub ("Workflow Dispatch").
+                GitHub Actions genera los archivos JSON el 31 de dic. a las 23:40 UTC.
+                A las 00:00h, DeBelingo borra automáticamente los datos de Firebase para finalizar la migración.
               </p>
             </div>
           </div>
