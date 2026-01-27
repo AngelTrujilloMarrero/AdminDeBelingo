@@ -163,12 +163,17 @@ async function runMigration() {
                 console.log(`✅ Archivo de orquestas actualizado: ${newlyArchived} nuevas, ${updatedInArchive} actualizadas. Total: ${finalOrchestras.length}`);
 
                 // Borrar de Firebase
+                /* 
+                // TEMPORALMENTE DESHABILITADO: La web aún lee de Firebase, si borramos aquí desaparecen de la web.
+                // Reactivar esto solo cuando la Web se actualice para leer de 'orchestra-archive/orchestras.json'
                 const updates: any = {};
                 toRemoveFromFirebase.forEach(id => {
                     updates[id] = null;
                 });
                 await orchestrasRef.update(updates);
                 console.log(`✅ Eliminadas ${toRemoveFromFirebase.length} orquestas de Firebase (ahora residen en el archivo estático).`);
+                */
+                console.log(`⚠️ Se omitió la eliminación en Firebase para mantener compatibilidad con la Web.`);
             } else {
                 console.log('ℹ️ No hay orquestas nuevas con datos para migrar.');
             }
