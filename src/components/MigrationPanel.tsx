@@ -237,7 +237,7 @@ export default function MigrationPanel() {
               <p className="text-sm text-blue-800 font-medium">Automatización en GitHub</p>
               <p className="text-xs text-blue-700 mt-1">
                 GitHub Actions genera los archivos JSON el 31 de dic. a las 23:40 UTC.
-                A las 00:00h, DeBelingo borra automáticamente los datos de Firebase para finalizar la migración.
+                Para finalizar la migración, debes borrar los datos de Firebase manualmente usando este panel.
               </p>
             </div>
           </div>
