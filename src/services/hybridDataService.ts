@@ -29,8 +29,14 @@ class HybridDataService {
       // 2. Obtener eventos archivados desde archivos JSON
       const archivedEvents = await this.getPreviousYearsEventsFromJSON();
 
-      // Combinar todos los eventos
-      return [...liveEvents, ...archivedEvents];
+      // Combinar todos los eventos y eliminar duplicados por ID
+      const allEventsMap = new Map<string, Event>();
+      
+      // Los eventos de Firebase (en vivo) tienen prioridad si hay solapamiento
+      archivedEvents.forEach(event => allEventsMap.set(event.id, event));
+      liveEvents.forEach(event => allEventsMap.set(event.id, event));
+
+      return Array.from(allEventsMap.values());
     } catch (error) {
       console.error('Error en getAllEvents:', error);
       return [];

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Loader2, Download, Trash2, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
-import autoMigrationService from '../services/autoMigrationService';
 import hybridDataService from '../services/hybridDataService';
 import { Event } from '../types/event';
 
@@ -176,7 +175,7 @@ export default function MigrationPanel() {
   };
 
   const scheduleAutomaticMigration = () => {
-    alert('La migración automática en GitHub está configurada para el 31 de dic. a las 23:40 UTC. Genera los archivos JSON, pero requiere borrar los eventos de Firebase manualmente desde este panel para evitar duplicados.');
+    alert('La migración automática en GitHub está configurada para el 1 de enero a las 01:00 UTC. El sistema genera los archivos JSON y, posteriormente (03:00 UTC), la Web realiza la limpieza automática de Firebase para evitar duplicados.');
   };
 
   const currentYear = new Date().getFullYear();
@@ -200,7 +199,7 @@ export default function MigrationPanel() {
         </div>
         <p className="text-gray-600 mb-6">
           Optimización de Firebase generando archivos JSON para años anteriores.
-          <span className="ml-1 font-medium text-amber-600">GitHub genera los archivos, pero la limpieza de Firebase es manual.</span>
+          <span className="ml-1 font-medium text-indigo-600">GitHub genera los archivos a las 01:00 UTC y la Web limpia Firebase a las 03:00 UTC.</span>
         </p>
 
         <div className="space-y-4">
@@ -236,8 +235,9 @@ export default function MigrationPanel() {
             <div>
               <p className="text-sm text-blue-800 font-medium">Automatización en GitHub</p>
               <p className="text-xs text-blue-700 mt-1">
-                GitHub Actions genera los archivos JSON el 31 de dic. a las 23:40 UTC.
-                Para finalizar la migración, debes borrar los datos de Firebase manualmente usando este panel.
+                GitHub Actions genera los archivos el 1 de enero (01:00 UTC). 
+                La limpieza de Firebase se realiza automáticamente por el workflow de la Web (03:00 UTC).
+                Usa este panel solo para migraciones manuales fuera de fecha o si falla el proceso automático.
               </p>
             </div>
           </div>
