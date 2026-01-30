@@ -227,14 +227,14 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                     <div className={`p-1.5 rounded-lg ${color} bg-opacity-10`}>
                         <Icon className={`w-4 h-4 ${color.replace('bg-', 'text-')}`} />
                     </div>
-                    <span className="font-semibold text-gray-700">{label}</span>
+                    <span className="font-semibold text-muted-foreground">{label}</span>
                 </div>
                 <div className="text-right">
-                    <span className="block text-lg font-bold text-gray-900">{percentage}%</span>
-                    <span className="text-xs text-gray-500 font-medium">{count} actuaciones</span>
+                    <span className="block text-lg font-bold text-foreground">{percentage}%</span>
+                    <span className="text-xs text-muted-foreground font-medium">{count} actuaciones</span>
                 </div>
             </div>
-            <div className="h-5 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-100 flex items-center relative shadow-inner">
+            <div className="h-5 w-full bg-muted/30 rounded-full overflow-hidden border border-border flex items-center relative shadow-inner">
                 <div
                     className={`h-full ${color} transition-all duration-1000 ease-out flex items-center justify-center`}
                     style={{ width: `${percentage}%` }}
@@ -248,7 +248,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
     );
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8 transition-all duration-500">
+        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden mb-8 transition-all duration-500">
             {/* Header con gradiente Premium */}
             <div
                 className="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-6 cursor-pointer"
@@ -288,8 +288,8 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                 <div className="p-6 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
                         {/* Panel Global */}
-                        <div className="lg:col-span-1 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <div className="lg:col-span-1 bg-muted/20 p-6 rounded-2xl border border-border">
+                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-6 flex items-center gap-2">
                                 <PieChart className="w-4 h-4" /> Distribución Global
                             </h3>
                             <div className="space-y-6">
@@ -316,9 +316,9 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                 />
                             </div>
                             {globalStats.unknown > 0 && (
-                                <div className="mt-8 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-2">
-                                    <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                    <p className="text-[10px] text-amber-700 leading-tight">
+                                <div className="mt-8 p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 flex items-start gap-2">
+                                    <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-tight">
                                         Hay <span className="font-bold">{globalStats.unknown} actuaciones</span> pendientes de clasificar.
                                         Ve a Gestión para completar el análisis.
                                     </p>
@@ -328,7 +328,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
 
                         {/* Análisis Comparativo */}
                         <div className="lg:col-span-2">
-                            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl w-fit mb-6">
+                            <div className="flex gap-2 p-1 bg-muted rounded-xl w-fit mb-6">
                                 {[
                                     { id: 'zona', label: 'Zonas', icon: MapIcon },
                                     { id: 'dia', label: 'Días', icon: Calendar },
@@ -338,8 +338,8 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                         key={tab.id}
                                         onClick={() => setViewMode(tab.id as any)}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === tab.id
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-gray-500 hover:text-indigo-600'
+                                            ? 'bg-background text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                            : 'text-muted-foreground hover:text-indigo-600'
                                             }`}
                                     >
                                         <tab.icon className="w-3.5 h-3.5" />
@@ -350,14 +350,14 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
 
                             <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${viewMode === 'municipio' ? 'max-h-[600px] overflow-y-auto pr-2 custom-scrollbar' : ''}`}>
                                 {viewMode === 'zona' && Object.entries(zonalStats).map(([zona, data]) => (
-                                    <div key={zona} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                                        <h4 className="font-black text-gray-800 mb-3 border-b border-gray-50 pb-2">{zona}</h4>
+                                    <div key={zona} className="bg-card p-4 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
+                                        <h4 className="font-black text-foreground mb-3 border-b border-border pb-2">{zona}</h4>
                                         <div className="space-y-3">
                                             {['orquesta', 'grupo', 'solista'].map(type => (
                                                 <div key={type} className="flex items-center justify-between text-xs">
-                                                    <span className="text-gray-500 capitalize">{type}s</span>
+                                                    <span className="text-muted-foreground capitalize">{type}s</span>
                                                     <div className="flex items-center gap-3 w-2/3 group">
-                                                        <div className="flex-1 h-5 bg-gray-50 rounded-full overflow-hidden border border-gray-100 shadow-inner flex relative">
+                                                        <div className="flex-1 h-5 bg-muted/20 rounded-full overflow-hidden border border-border shadow-inner flex relative">
                                                             <div
                                                                 className={`h-full ${type === 'orquesta' ? 'bg-violet-600' : type === 'grupo' ? 'bg-indigo-600' : 'bg-blue-600'} transition-all duration-700 flex items-center justify-center`}
                                                                 style={{ width: `${(data as any).percentages[type]}%` }}
@@ -367,7 +367,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <span className="w-10 text-right font-black text-gray-900 group-hover:text-indigo-600 transition-colors">{(data as any).percentages[type]}%</span>
+                                                        <span className="w-10 text-right font-black text-foreground group-hover:text-indigo-600 transition-colors">{(data as any).percentages[type]}%</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -376,12 +376,12 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                 ))}
 
                                 {viewMode === 'dia' && Object.entries(diaStats).map(([dia, data]) => (
-                                    <div key={dia} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                                        <h4 className="font-black text-gray-800 mb-3 border-b border-gray-50 pb-2 flex justify-between">
+                                    <div key={dia} className="bg-card p-4 rounded-xl border border-border shadow-sm">
+                                        <h4 className="font-black text-foreground mb-3 border-b border-border pb-2 flex justify-between">
                                             {dia}
-                                            <span className="text-[10px] text-gray-400 font-normal">{(data as any).total} act.</span>
+                                            <span className="text-[10px] text-muted-foreground font-normal">{(data as any).total} act.</span>
                                         </h4>
-                                        <div className="flex h-10 rounded-xl overflow-hidden border border-gray-100 shadow-inner flex relative">
+                                        <div className="flex h-10 rounded-xl overflow-hidden border border-border shadow-inner flex relative">
                                             <div
                                                 className="bg-violet-600 h-full transition-all duration-300 flex items-center justify-center"
                                                 style={{ width: `${(data as any).percentages.orquesta}%` }}
@@ -409,34 +409,34 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                         </div>
                                         <div className="flex justify-between mt-2.5 px-1">
                                             <div className="flex flex-col">
-                                                <span className="text-[8px] uppercase tracking-tighter text-gray-400 font-bold">Orq</span>
+                                                <span className="text-[8px] uppercase tracking-tighter text-muted-foreground font-bold">Orq</span>
                                                 <span className="text-xs font-black text-violet-600">{(data as any).percentages.orquesta}%</span>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <span className="text-[8px] uppercase tracking-tighter text-gray-400 font-bold">Grp</span>
+                                                <span className="text-[8px] uppercase tracking-tighter text-muted-foreground font-bold">Grp</span>
                                                 <span className="text-xs font-black text-indigo-600">{(data as any).percentages.grupo}%</span>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className="text-[8px] uppercase tracking-tighter text-gray-400 font-bold">Sol</span>
+                                                <span className="text-[8px] uppercase tracking-tighter text-muted-foreground font-bold">Sol</span>
                                                 <span className="text-xs font-black text-blue-600">{(data as any).percentages.solista}%</span>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                                 {viewMode === 'municipio' && municipioStats.map(([mun, data]: [string, any]) => (
-                                    <div key={mun} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 group/card hover:shadow-md transition-shadow">
+                                    <div key={mun} className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-4 group/card hover:shadow-md transition-shadow">
                                         <div className="w-24 shrink-0">
-                                            <h4 className="font-bold text-gray-800 text-xs truncate">{mun}</h4>
-                                            <span className="text-[10px] text-gray-400">{data.total} actuaciones</span>
+                                            <h4 className="font-bold text-foreground text-xs truncate">{mun}</h4>
+                                            <span className="text-[10px] text-muted-foreground">{data.total} actuaciones</span>
                                         </div>
                                         <div className="flex-1 space-y-2">
                                             <div className="flex justify-between text-[10px] font-bold">
-                                                <span className="text-gray-400 uppercase tracking-tight">Predomina: <span className="text-indigo-600 transition-colors">
+                                                <span className="text-muted-foreground uppercase tracking-tight">Predomina: <span className="text-indigo-600 transition-colors">
                                                     {data.orquesta >= data.grupo && data.orquesta >= data.solista ? 'Orquesta' :
                                                         data.grupo >= data.orquesta && data.grupo >= data.solista ? 'Grupo' : 'Solista'}
                                                 </span></span>
                                             </div>
-                                            <div className="h-6 w-full bg-gray-50 rounded-full flex overflow-hidden border border-gray-100 shadow-inner relative">
+                                            <div className="h-6 w-full bg-muted rounded-full flex overflow-hidden border border-border shadow-inner relative">
                                                 <div
                                                     className="bg-violet-600 transition-all duration-300 flex items-center justify-center overflow-hidden"
                                                     style={{ width: `${data.percentages.orquesta}%` }}
@@ -470,7 +470,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                     </div>
 
                     {/* Conclusión Rápida */}
-                    <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-6 text-white overflow-hidden relative">
+                    <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-2xl p-6 text-white overflow-hidden relative">
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
                             <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-lg border border-white/10">
                                 <BarChart3 className="w-8 h-8 text-indigo-300" />

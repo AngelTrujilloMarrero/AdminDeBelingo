@@ -215,7 +215,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
             <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <Music className="h-6 w-6" />
@@ -280,8 +280,8 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 </div>
 
                 {/* Type Selection in Form */}
-                <div className="flex flex-wrap gap-4 items-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mr-2">Tipo:</span>
+                <div className="flex flex-wrap gap-4 items-center p-4 bg-muted rounded-xl border border-border">
+                    <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-2">Tipo:</span>
                     {(['orquesta', 'grupo', 'solista'] as const).map((t) => (
                         <button
                             key={t}
@@ -290,7 +290,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                                 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 capitalize
                                 ${formData.type === t
                                     ? 'bg-indigo-600 text-white shadow-md scale-105'
-                                    : 'bg-white text-gray-600 border border-gray-200 hover:border-indigo-300'
+                                    : 'bg-background text-foreground border border-border hover:border-indigo-300'
                                 }
                             `}
                         >
@@ -300,7 +300,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                     {formData.type && (
                         <button
                             onClick={() => setFormData({ ...formData, type: '' })}
-                            className="text-xs text-gray-400 hover:text-red-500 underline ml-auto"
+                            className="text-xs text-muted-foreground hover:text-red-500 underline ml-auto"
                         >
                             Limpiar
                         </button>
@@ -309,14 +309,14 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
 
                 {/* Messages */}
                 {errorMessage && (
-                    <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200">
+                    <div className="flex items-center gap-2 p-4 bg-red-500/10 text-red-700 dark:text-red-300 rounded-xl border border-red-500/20">
                         <AlertCircle className="h-5 w-5 flex-shrink-0" />
                         <p>{errorMessage}</p>
                     </div>
                 )}
 
                 {successMessage && (
-                    <div className="flex items-center gap-2 p-4 bg-green-50 text-green-700 rounded-xl border border-green-200">
+                    <div className="flex items-center gap-2 p-4 bg-green-500/10 text-green-700 dark:text-green-300 rounded-xl border border-green-500/20">
                         <CheckCircle className="h-5 w-5 flex-shrink-0" />
                         <p>{successMessage}</p>
                     </div>
@@ -331,7 +331,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
             transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]
             flex items-center justify-center gap-2
             ${isLoading
-                            ? 'bg-gray-400 cursor-not-allowed'
+                            ? 'bg-muted text-muted-foreground cursor-not-allowed'
                             : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:shadow-cyan-500/30'
                         }
           `}

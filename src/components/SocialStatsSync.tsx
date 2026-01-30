@@ -65,17 +65,17 @@ export default function SocialStatsSync() {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <div className="bg-card rounded-xl shadow-lg p-6 border border-border">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
                         <TrendingUp className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-lg font-bold text-foreground">
                             Sincronización de Redes Sociales
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                             Actualiza las estadísticas de seguidores
                         </p>
                     </div>
@@ -97,8 +97,8 @@ export default function SocialStatsSync() {
 
                     {message && (
                         <div className={`p-3 rounded-lg ${message.includes('✅')
-                            ? 'bg-green-50 border border-green-200 text-green-800'
-                            : 'bg-red-50 border border-red-200 text-red-800'
+                            ? 'bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-300'
+                            : 'bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300'
                             }`}>
                             {message}
                         </div>
@@ -106,15 +106,15 @@ export default function SocialStatsSync() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-purple-900 mb-3">
+                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                        <h4 className="font-semibold text-purple-900 dark:text-purple-300 mb-3">
                             Introduce los valores actuales de tus redes sociales:
                         </h4>
 
                         <div className="grid grid-cols-2 gap-4">
                             {/* Instagram */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Instagram
                                 </label>
                                 <input
@@ -122,14 +122,14 @@ export default function SocialStatsSync() {
                                     value={manualStats.Instagram}
                                     onChange={(e) => setManualStats({ ...manualStats, Instagram: e.target.value })}
                                     placeholder="9.000"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 
+                           focus:ring-purple-500 focus:border-transparent bg-background text-foreground"
                                 />
                             </div>
 
                             {/* WhatsApp */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     WhatsApp
                                 </label>
                                 <input
@@ -137,8 +137,8 @@ export default function SocialStatsSync() {
                                     value={manualStats.WhatsApp}
                                     onChange={(e) => setManualStats({ ...manualStats, WhatsApp: e.target.value })}
                                     placeholder="2.200"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 
+                           focus:ring-purple-500 focus:border-transparent bg-background text-foreground"
                                 />
                             </div>
                         </div>
@@ -156,7 +156,7 @@ export default function SocialStatsSync() {
 
                             <button
                                 onClick={() => setIsManualMode(false)}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
                             >
                                 Cancelar
                             </button>
@@ -165,8 +165,8 @@ export default function SocialStatsSync() {
 
                     {message && (
                         <div className={`p-3 rounded-lg ${message.includes('✅')
-                            ? 'bg-green-50 border border-green-200 text-green-800'
-                            : 'bg-red-50 border border-red-200 text-red-800'
+                            ? 'bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-300'
+                            : 'bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-300'
                             }`}>
                             {message}
                         </div>
@@ -176,14 +176,14 @@ export default function SocialStatsSync() {
 
             {/* Instrucciones para obtener datos reales */}
             <details className="mt-6">
-                <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+                <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
                     📖 ¿Cómo obtener los datos reales?
                 </summary>
-                <div className="mt-3 text-sm text-gray-600 space-y-2 bg-gray-50 p-4 rounded-lg">
+                <div className="mt-3 text-sm text-muted-foreground space-y-2 bg-muted/30 p-4 rounded-lg">
                     <p><strong>Instagram:</strong> Abre tu perfil → Mira el número de seguidores</p>
                     <p><strong>WhatsApp:</strong> Abre tu canal → Configuración → Ver estadísticas</p>
-                    <hr className="my-2" />
-                    <p className="text-xs text-gray-500">
+                    <hr className="my-2 border-border" />
+                    <p className="text-xs text-muted-foreground/60">
                         💡 <strong>Nota:</strong> Facebook y Telegram fueron cerrados el 23 de enero de 2026.
                         Solo se gestionan Instagram y WhatsApp.
                     </p>

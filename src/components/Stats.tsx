@@ -354,12 +354,12 @@ export default function Stats({ events }: StatsProps) {
   if (!statistics) {
     return (
       <div className="w-full p-6 text-center">
-        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-10 flex flex-col items-center justify-center space-y-4">
-          <div className="bg-gray-200 p-4 rounded-full">
-            <BarChart3 className="h-8 w-8 text-gray-400" />
+        <div className="bg-muted/30 rounded-2xl border border-border p-10 flex flex-col items-center justify-center space-y-4">
+          <div className="bg-muted p-4 rounded-full">
+            <BarChart3 className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">Sin datos suficientes</h2>
-          <p className="text-gray-500 max-w-md">No hay suficientes eventos registrados en este período para generar estadísticas fiables.</p>
+          <h2 className="text-lg font-semibold text-foreground">Sin datos suficientes</h2>
+          <p className="text-muted-foreground max-w-md">No hay suficientes eventos registrados en este período para generar estadísticas fiables.</p>
         </div>
       </div>
     );
@@ -367,12 +367,12 @@ export default function Stats({ events }: StatsProps) {
 
   // Helper Components for the new Layout
   const StatCard = ({ title, icon: Icon, children, className = "" }: any) => (
-    <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col ${className}`}>
-      <div className="p-5 border-b border-gray-50 flex items-center gap-3">
-        <div className="p-2 bg-gray-50 rounded-lg text-gray-600">
+    <div className={`bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col ${className}`}>
+      <div className="p-5 border-b border-border flex items-center gap-3">
+        <div className="p-2 bg-muted rounded-lg text-muted-foreground">
           <Icon className="h-5 w-5" />
         </div>
-        <h3 className="font-bold text-gray-800 text-sm tracking-wide uppercase">{title}</h3>
+        <h3 className="font-bold text-foreground text-sm tracking-wide uppercase">{title}</h3>
       </div>
       <div className="p-5 flex-1 relative">
         {children}
@@ -381,14 +381,14 @@ export default function Stats({ events }: StatsProps) {
   );
 
   const MiniStat = ({ label, value, subtext, icon: Icon, colorClass = "text-indigo-600", bgClass = "bg-indigo-50" }: any) => (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between shadow-sm hover:translate-y-[-2px] transition-transform">
+    <div className="bg-card rounded-xl border border-border p-4 flex items-start justify-between shadow-sm hover:translate-y-[-2px] transition-transform">
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 tracking-tight">{value}</p>
-        {subtext && <p className="text-xs text-gray-400 mt-1 font-medium">{subtext}</p>}
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+        <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
+        {subtext && <p className="text-xs text-muted-foreground mt-1 font-medium">{subtext}</p>}
       </div>
-      <div className={`p-2.5 rounded-xl ${bgClass}`}>
-        <Icon className={`h-5 w-5 ${colorClass}`} />
+      <div className={`p-2.5 rounded-xl ${bgClass} dark:bg-opacity-20`}>
+        <Icon className={`h-5 w-5 ${colorClass} dark:text-opacity-90`} />
       </div>
     </div>
   );
@@ -396,23 +396,23 @@ export default function Stats({ events }: StatsProps) {
   return (
     <div className="space-y-8 pb-12">
       {/* 1. Header & Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-indigo-200 shadow-lg">
+          <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-indigo-200 dark:shadow-indigo-900/20 shadow-lg">
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Resumen Estadístico</h2>
-            <p className="text-xs text-gray-500">Mostrando datos de: <span className="font-semibold text-indigo-600">{selectedYear === 'all' ? 'Histórico Completo' : selectedYear}</span></p>
+            <h2 className="text-lg font-bold text-foreground">Resumen Estadístico</h2>
+            <p className="text-xs text-muted-foreground">Mostrando datos de: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{selectedYear === 'all' ? 'Histórico Completo' : selectedYear}</span></p>
           </div>
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl">
+        <div className="flex bg-muted p-1 rounded-xl">
           <button
             onClick={() => setSelectedYear('all')}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedYear === 'all'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-900'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             Todo
@@ -422,8 +422,8 @@ export default function Stats({ events }: StatsProps) {
               key={year}
               onClick={() => setSelectedYear(year)}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedYear === year
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
+                ? 'bg-background text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               {year}
@@ -431,7 +431,6 @@ export default function Stats({ events }: StatsProps) {
           ))}
         </div>
       </div>
-
       {/* 2. Key Metrics - Bento Grid Row 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MiniStat
@@ -481,14 +480,14 @@ export default function Stats({ events }: StatsProps) {
           <StatCard title="🏆 Top 10 Orquestas" icon={Trophy}>
             <div className="space-y-4">
               {statistics.topOrquestas.map(([orq, count]: any, index: number) => (
-                <div key={index} className="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-default">
+                <div key={index} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-lg transition-colors cursor-default">
                   <div className="flex items-center gap-4">
-                    <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold ${index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold ${index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-md' : 'bg-muted text-muted-foreground'}`}>
                       {index + 1}
                     </span>
                     <div>
-                      <p className="font-bold text-gray-800">{orq}</p>
-                      <div className="w-32 md:w-64 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                      <p className="font-bold text-foreground">{orq}</p>
+                      <div className="w-32 md:w-64 h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
                         <div
                           className="h-full bg-indigo-500 rounded-full"
                           style={{ width: `${(count / statistics.topOrquestas[0][1]) * 100}%` }}
@@ -497,8 +496,8 @@ export default function Stats({ events }: StatsProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="block font-bold text-gray-900 text-lg">{count}</span>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">Eventos</span>
+                    <span className="block font-bold text-foreground text-lg">{count}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Eventos</span>
                   </div>
                 </div>
               ))}
@@ -510,22 +509,22 @@ export default function Stats({ events }: StatsProps) {
             <StatCard title="📈 Tendencia Al Alza" icon={TrendingUp}>
               <div className="space-y-3">
                 {statistics.alAlza.length > 0 ? statistics.alAlza.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center bg-green-50/50 p-3 rounded-xl border border-green-100">
-                    <span className="font-semibold text-gray-700">{item.orquest}</span>
-                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs font-bold">+{Math.round(item.change)}%</span>
+                  <div key={i} className="flex justify-between items-center bg-green-500/10 p-3 rounded-xl border border-green-500/20">
+                    <span className="font-semibold text-foreground">{item.orquest}</span>
+                    <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-lg text-xs font-bold">+{Math.round(item.change)}%</span>
                   </div>
-                )) : <p className="text-gray-400 text-sm text-center py-4">Sin cambios significativos</p>}
+                )) : <p className="text-muted-foreground text-sm text-center py-4">Sin cambios significativos</p>}
               </div>
             </StatCard>
 
             <StatCard title="📉 Tendencia A La Baja" icon={TrendingDown}>
               <div className="space-y-3">
                 {statistics.aLaBaja.length > 0 ? statistics.aLaBaja.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center bg-red-50/50 p-3 rounded-xl border border-red-100">
-                    <span className="font-semibold text-gray-700">{item.orquest}</span>
-                    <span className="bg-red-100 text-red-700 px-2 py-1 rounded-lg text-xs font-bold">{Math.round(item.change)}%</span>
+                  <div key={i} className="flex justify-between items-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                    <span className="font-semibold text-foreground">{item.orquest}</span>
+                    <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded-lg text-xs font-bold">{Math.round(item.change)}%</span>
                   </div>
-                )) : <p className="text-gray-400 text-sm text-center py-4">Sin cambios significativos</p>}
+                )) : <p className="text-muted-foreground text-sm text-center py-4">Sin cambios significativos</p>}
               </div>
             </StatCard>
           </div>
@@ -534,23 +533,23 @@ export default function Stats({ events }: StatsProps) {
           <StatCard title="☀️ Estacionalidad" icon={Sun}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Primavera', data: statistics.topPrimavera, color: 'text-green-600', bg: 'bg-green-100' },
-                { label: 'Verano', data: statistics.topVerano, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-                { label: 'Otoño', data: statistics.topOtoño, color: 'text-orange-600', bg: 'bg-orange-100' },
-                { label: 'Invierno', data: statistics.topInvierno, color: 'text-blue-600', bg: 'bg-blue-100' }
+                { label: 'Primavera', data: statistics.topPrimavera, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30' },
+                { label: 'Verano', data: statistics.topVerano, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
+                { label: 'Otoño', data: statistics.topOtoño, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+                { label: 'Invierno', data: statistics.topInvierno, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30' }
               ].map((season, idx) => (
                 <div key={idx} className="space-y-3">
                   <h4 className={`font-bold ${season.color} flex items-center gap-2`}>
-                    <div className={`w-2 h-2 rounded-full ${season.bg.replace('bg-', 'bg-')}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${season.bg}`}></div>
                     {season.label}
                   </h4>
                   <div className="space-y-2">
                     {season.data.length > 0 ? season.data.slice(0, 3).map(([orq, count]: any, ii: number) => (
                       <div key={ii} className="flex justify-between text-xs">
-                        <span className="text-gray-600 truncate mr-2">{orq}</span>
-                        <span className="font-semibold text-gray-900">{count}</span>
+                        <span className="text-muted-foreground truncate mr-2">{orq}</span>
+                        <span className="font-semibold text-foreground">{count}</span>
                       </div>
-                    )) : <span className="text-xs text-gray-400 italic">No Data</span>}
+                    )) : <span className="text-xs text-muted-foreground italic">No Data</span>}
                   </div>
                 </div>
               ))}
@@ -565,13 +564,13 @@ export default function Stats({ events }: StatsProps) {
           <StatCard title="📍 Top Municipios" icon={MapPin}>
             <div className="space-y-1">
               {statistics.topMunicipios.map(([mun, count]: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition-colors">
-                  <span className="text-sm font-medium text-gray-700">{mun}</span>
+                <div key={idx} className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-muted/50 px-2 rounded-lg transition-colors">
+                  <span className="text-sm font-medium text-foreground">{mun}</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className="h-full bg-emerald-500" style={{ width: `${(count / statistics.topMunicipios[0][1]) * 100}%` }}></div>
                     </div>
-                    <span className="text-xs font-bold text-gray-900 w-6 text-right">{count}</span>
+                    <span className="text-xs font-bold text-foreground w-6 text-right">{count}</span>
                   </div>
                 </div>
               ))}
@@ -620,9 +619,9 @@ export default function Stats({ events }: StatsProps) {
           <StatCard title="⏰ Distribución Horaria" icon={Clock}>
             <div className="space-y-2">
               {statistics.horariosPopulares.slice(0, 5).map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center bg-gray-50 rounded-lg p-2.5">
-                  <span className="text-sm font-medium text-gray-600">{item.dia}</span>
-                  <span className="text-sm font-bold text-indigo-600">{item.hora}</span>
+                <div key={idx} className="flex justify-between items-center bg-muted/50 rounded-lg p-2.5">
+                  <span className="text-sm font-medium text-muted-foreground">{item.dia}</span>
+                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{item.hora}</span>
                 </div>
               ))}
             </div>
@@ -634,22 +633,22 @@ export default function Stats({ events }: StatsProps) {
       {/* 4. Footer Section - Detailed Analysis */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard title="⚡ Eficiencia" icon={Zap} className="h-full">
-          <p className="text-xs text-gray-500 mb-4">Eventos por mes activo (Top 5)</p>
+          <p className="text-xs text-muted-foreground mb-4">Eventos por mes activo (Top 5)</p>
           {statistics.metricasAdicionales.eficienciaOrquestas.map((item: any, i: number) => (
-            <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-sm font-medium text-gray-700">{item.orquest}</span>
-              <span className="text-sm font-bold text-green-600">{item.eficiencia} / mes</span>
+            <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+              <span className="text-sm font-medium text-foreground">{item.orquest}</span>
+              <span className="text-sm font-bold text-green-600 dark:text-green-400">{item.eficiencia} / mes</span>
             </div>
           ))}
         </StatCard>
 
         <StatCard title="👑 Orquestas Establecidas" icon={Crown} className="h-full">
-          <p className="text-xs text-gray-500 mb-4">Líderes de la temporada</p>
+          <p className="text-xs text-muted-foreground mb-4">Líderes de la temporada</p>
           <div className="flex flex-wrap gap-2">
             {statistics.orquestasEstablecidas.orquestas.map((item: any, i: number) => (
-              <div key={i} className="bg-indigo-50 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-100 flex items-center gap-2">
+              <div key={i} className="bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-500/20 flex items-center gap-2">
                 {item.orquest}
-                <span className="bg-white px-1.5 rounded text-indigo-600">{item.count}</span>
+                <span className="bg-background px-1.5 rounded text-indigo-600 dark:text-indigo-400">{item.count}</span>
               </div>
             ))}
           </div>
@@ -658,11 +657,11 @@ export default function Stats({ events }: StatsProps) {
         <StatCard title="🎧 Distribución DJs" icon={Music} className="h-full">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="text-4xl font-black text-gray-900 mb-2">{statistics.djEvents}</div>
-              <p className="text-gray-500 text-sm">Total Actuaciones DJ</p>
+              <div className="text-4xl font-black text-foreground mb-2">{statistics.djEvents}</div>
+              <p className="text-muted-foreground text-sm">Total Actuaciones DJ</p>
               <div className="mt-4 flex gap-2 justify-center">
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">1 DJ: {statistics.djDistribution.eventosCon1DJ}</span>
-                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">2 DJs: {statistics.djDistribution.eventosCon2DJ}</span>
+                <span className="text-xs bg-purple-500/10 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">1 DJ: {statistics.djDistribution.eventosCon1DJ}</span>
+                <span className="text-xs bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">2 DJs: {statistics.djDistribution.eventosCon2DJ}</span>
               </div>
             </div>
           </div>

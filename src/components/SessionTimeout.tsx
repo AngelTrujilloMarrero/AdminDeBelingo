@@ -102,7 +102,7 @@ export default function SessionTimeout({ onLogout, onStayConnected, isActive }: 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100 animate-in zoom-in-95 duration-200 border border-gray-100">
+            <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100 animate-in zoom-in-95 duration-200 border border-border">
 
                 {/* Header de Alerta */}
                 <div className="bg-red-500 p-6 flex justify-center relative overflow-hidden">
@@ -113,16 +113,16 @@ export default function SessionTimeout({ onLogout, onStayConnected, isActive }: 
                 </div>
 
                 <div className="p-6 text-center">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    <h3 className="text-xl font-bold text-foreground mb-2">
                         ¿Sigues ahí?
                     </h3>
 
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-muted-foreground mb-6">
                         Hemos detectado inactividad. Para proteger tu seguridad, tu sesión se cerrará automáticamente en:
                     </p>
 
-                    <div className="flex items-center justify-center gap-2 mb-8 bg-gray-50 py-4 rounded-xl border border-gray-100">
-                        <span className={`text-4xl font-mono font-bold ${countdown <= 10 ? 'text-red-500 animate-pulse' : 'text-gray-700'}`}>
+                    <div className="flex items-center justify-center gap-2 mb-8 bg-muted/50 py-4 rounded-xl border border-border">
+                        <span className={`text-4xl font-mono font-bold ${countdown <= 10 ? 'text-red-500 animate-pulse' : 'text-foreground'}`}>
                             {formatTime(countdown)}
                         </span>
                     </div>
@@ -140,8 +140,8 @@ export default function SessionTimeout({ onLogout, onStayConnected, isActive }: 
 
                         <button
                             onClick={onLogout}
-                            className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl
-                       border-2 border-gray-100 transition-colors flex items-center justify-center gap-2"
+                            className="w-full bg-background hover:bg-muted text-foreground font-medium py-3 px-6 rounded-xl
+                       border-2 border-border transition-colors flex items-center justify-center gap-2"
                         >
                             <LogOut className="w-4 h-4" />
                             Cerrar sesión

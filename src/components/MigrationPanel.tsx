@@ -182,24 +182,24 @@ export default function MigrationPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-gray-600" />
-            <h2 className="text-xl font-semibold text-gray-900">Panel de Migración de Eventos</h2>
+            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold text-foreground">Panel de Migración de Eventos</h2>
           </div>
           <a 
             href="https://github.com/AngelTrujilloMarrero/DeBelingoConAngel/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline flex items-center gap-1"
           >
             Proyecto: DeBelingoConAngel
           </a>
         </div>
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           Optimización de Firebase generando archivos JSON para años anteriores.
-          <span className="ml-1 font-medium text-indigo-600">GitHub genera los archivos a las 01:00 UTC y la Web limpia Firebase a las 03:00 UTC.</span>
+          <span className="ml-1 font-medium text-indigo-600 dark:text-indigo-400">GitHub genera los archivos a las 01:00 UTC y la Web limpia Firebase a las 03:00 UTC.</span>
         </p>
 
         <div className="space-y-4">
@@ -207,7 +207,7 @@ export default function MigrationPanel() {
             <button
               onClick={analyzeCurrentState}
               disabled={isAnalyzing}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-4 py-2 border border-input rounded-md text-sm font-medium text-foreground bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAnalyzing ? (
                 <>
@@ -224,17 +224,17 @@ export default function MigrationPanel() {
 
             <button
               onClick={scheduleAutomaticMigration}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Info Migración GitHub
             </button>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 flex gap-3 items-start">
-            <Calendar className="h-5 w-5 text-blue-500 mt-0.5" />
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 flex gap-3 items-start">
+            <Calendar className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5" />
             <div>
-              <p className="text-sm text-blue-800 font-medium">Automatización en GitHub</p>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">Automatización en GitHub</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                 GitHub Actions genera los archivos el 1 de enero (01:00 UTC). 
                 La limpieza de Firebase se realiza automáticamente por el workflow de la Web (03:00 UTC).
                 Usa este panel solo para migraciones manuales fuera de fecha o si falla el proceso automático.
@@ -243,11 +243,11 @@ export default function MigrationPanel() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
               <div className="flex">
                 <AlertTriangle className="h-5 w-5 text-red-400" />
                 <div className="ml-3">
-                  <p className="text-sm text-red-800">{error}</p>
+                  <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
                 </div>
               </div>
             </div>
@@ -255,8 +255,8 @@ export default function MigrationPanel() {
 
           {migrationResult && (
             <div className={`border rounded-md p-4 ${migrationResult.success
-              ? 'bg-green-50 border-green-200'
-              : 'bg-red-50 border-red-200'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
               }`}>
               <div className="flex">
                 {migrationResult.success ? (
@@ -265,7 +265,7 @@ export default function MigrationPanel() {
                   <AlertTriangle className="h-5 w-5 text-red-400" />
                 )}
                 <div className="ml-3">
-                  <p className={`text-sm ${migrationResult.success ? 'text-green-800' : 'text-red-800'
+                  <p className={`text-sm ${migrationResult.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
                     }`}>
                     {migrationResult.success
                       ? `✅ Migración completada: ${migrationResult.eventsMigrated} eventos migrados del año ${migrationResult.year}`
@@ -279,35 +279,35 @@ export default function MigrationPanel() {
 
           {analysis && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Estado Actual de Eventos</h3>
+              <h3 className="text-lg font-semibold text-foreground">Estado Actual de Eventos</h3>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h4 className="text-base font-medium text-gray-900 mb-3">Resumen General</h4>
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <h4 className="text-base font-medium text-foreground mb-3">Resumen General</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Total de eventos:</span>
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      <span className="text-muted-foreground">Total de eventos:</span>
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-muted text-foreground">
                         {analysis.totalEvents}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Año actual:</span>
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="text-muted-foreground">Año actual:</span>
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                         {currentYear}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Años con datos:</span>
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      <span className="text-muted-foreground">Años con datos:</span>
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-muted text-foreground">
                         {Object.keys(analysis.eventsByYear).length}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h4 className="text-base font-medium text-gray-900 mb-3">Distribución por Año</h4>
+                <div className="bg-card border border-border rounded-lg p-4">
+                  <h4 className="text-base font-medium text-foreground mb-3">Distribución por Año</h4>
                   <div className="space-y-2 text-sm">
                     {Object.keys(analysis.eventsByYear)
                       .sort()
@@ -315,11 +315,11 @@ export default function MigrationPanel() {
                         const isCurrentYear = year === currentYear.toString();
                         const count = analysis.eventsByYear[year].length;
                         return (
-                          <div key={year} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md transition-colors">
+                          <div key={year} className="flex justify-between items-center p-2 hover:bg-muted/50 rounded-md transition-colors">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-700">{year}</span>
+                              <span className="font-semibold text-foreground">{year}</span>
                               {archivesExist[parseInt(year)] && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-tight">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800 uppercase tracking-tight">
                                   JSON Existe
                                 </span>
                               )}
@@ -327,8 +327,8 @@ export default function MigrationPanel() {
                             <div className="flex items-center gap-3">
                               <span
                                 className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${isCurrentYear
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-gray-100 text-gray-800"
+                                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+                                  : "bg-muted text-foreground"
                                   }`}
                               >
                                 {count} eventos
@@ -338,7 +338,7 @@ export default function MigrationPanel() {
                                   <button
                                     onClick={() => executeManualMigration(parseInt(year))}
                                     disabled={isMigrating}
-                                    className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all disabled:opacity-50"
+                                    className="p-1 text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-all disabled:opacity-50"
                                     title="Crear JSON y borrar de Firebase"
                                   >
                                     <Download className="h-4 w-4" />
@@ -347,8 +347,8 @@ export default function MigrationPanel() {
                                     onClick={() => handleOnlyDelete(parseInt(year))}
                                     disabled={isMigrating || !archivesExist[parseInt(year)]}
                                     className={`p-1 rounded transition-all ${archivesExist[parseInt(year)]
-                                      ? "text-red-400 hover:text-red-600 hover:bg-red-50"
-                                      : "text-gray-300 cursor-not-allowed"
+                                      ? "text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                      : "text-muted-foreground cursor-not-allowed opacity-50"
                                       }`}
                                     title={archivesExist[parseInt(year)] ? "Borrar de Firebase (Requiere JSON)" : "Primero crea el archivo JSON"}
                                   >
@@ -364,8 +364,8 @@ export default function MigrationPanel() {
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h4 className="text-base font-medium text-gray-900 mb-3">Acciones de Migración</h4>
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h4 className="text-base font-medium text-foreground mb-3">Acciones de Migración</h4>
                 {analysis.previousYears.map((year: number) => {
                   const hasArchive = archivesExist[year];
                   return (
@@ -373,13 +373,13 @@ export default function MigrationPanel() {
                       <button
                         onClick={() => executeManualMigration(year)}
                         disabled={isMigrating}
-                        className="flex items-center justify-between px-4 py-2 border border-indigo-200 rounded-md text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center justify-between px-4 py-2 border border-indigo-200 dark:border-indigo-800 rounded-md text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <div className="flex items-center gap-2">
                           <Download className="h-4 w-4" />
                           <span>Migrar año {year}</span>
                         </div>
-                        <span className="text-xs bg-white px-1.5 rounded border border-indigo-100">
+                        <span className="text-xs bg-white dark:bg-black/20 px-1.5 rounded border border-indigo-100 dark:border-indigo-800">
                           {analysis.eventsByYear[year].length} ev.
                         </span>
                       </button>
@@ -388,8 +388,8 @@ export default function MigrationPanel() {
                         onClick={() => handleOnlyDelete(year)}
                         disabled={isMigrating || !hasArchive}
                         className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-md text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${hasArchive
-                          ? "border-red-200 text-red-700 bg-red-50 hover:bg-red-100 focus:ring-red-500"
-                          : "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                          ? "border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 focus:ring-red-500"
+                          : "border-border text-muted-foreground bg-muted cursor-not-allowed"
                           }`}
                       >
                         <Trash2 className="h-4 w-4" />

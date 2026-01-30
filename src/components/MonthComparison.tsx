@@ -260,13 +260,13 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                     {foundItems.map((item, index) => (
                         <div
                             key={`found-${index}`}
-                            className="bg-white rounded-[2.5rem] border-2 border-emerald-100 hover:border-emerald-300 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-50"
+                            className="bg-card rounded-[2.5rem] border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-50 dark:hover:shadow-none"
                         >
                             <div className="p-8 lg:p-10 flex flex-col xl:flex-row items-stretch gap-8">
                                 {/* Left: Reference (Last Year) */}
                                 <div className="flex-1 space-y-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">
+                                        <div className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em]">
                                             Referencia {selectedYear - 1}
                                         </div>
                                         {item.isCarnaval && (
@@ -276,25 +276,25 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <h4 className="text-3xl font-black text-slate-900 uppercase tracking-tight leading-none">
+                                        <h4 className="text-3xl font-black text-foreground uppercase tracking-tight leading-none">
                                             {item.prevEvent.municipio}
                                         </h4>
-                                        <p className="text-xl font-bold text-slate-500 uppercase">
+                                        <p className="text-xl font-bold text-muted-foreground uppercase">
                                             {item.prevEvent.lugar || 'Casco'}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-4 pt-2">
-                                        <span className="text-base font-black text-slate-600 uppercase bg-slate-100 px-4 py-2 rounded-xl flex items-center gap-2">
-                                            <Calendar className="w-5 h-5 text-slate-400" />
+                                        <span className="text-base font-black text-foreground uppercase bg-muted px-4 py-2 rounded-xl flex items-center gap-2">
+                                            <Calendar className="w-5 h-5 text-muted-foreground" />
                                             {formatDateFull(item.prevEvent.day)}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-3 pt-2">
-                                        <span className="text-sm font-bold text-indigo-700 bg-indigo-50 px-4 py-2 rounded-xl shadow-sm border border-indigo-100 flex items-center gap-2">
+                                        <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-800 flex items-center gap-2">
                                             <Music className="w-4 h-4" /> {item.prevEvent.orquesta}
                                         </span>
                                         {item.prevEvent.tipo && (
-                                            <span className="text-xs font-bold text-slate-600 uppercase bg-slate-100 px-3 py-2 rounded-lg">
+                                            <span className="text-xs font-bold text-muted-foreground uppercase bg-muted px-3 py-2 rounded-lg">
                                                 {item.prevEvent.tipo}
                                             </span>
                                         )}
@@ -302,24 +302,24 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                                 </div>
 
                                 {/* Arrow */}
-                                <div className="hidden xl:flex items-center justify-center text-emerald-300">
+                                <div className="hidden xl:flex items-center justify-center text-emerald-300 dark:text-emerald-700">
                                     <ArrowRight className="w-10 h-10 stroke-[3]" />
                                 </div>
 
                                 {/* Right: Current Year Match */}
-                                <div className="xl:w-[400px] bg-emerald-50 rounded-3xl p-8 border-2 border-emerald-100 space-y-4">
-                                    <div className="text-xs font-black text-emerald-600 uppercase tracking-[0.3em]">
+                                <div className="xl:w-[400px] bg-emerald-50 dark:bg-emerald-950/20 rounded-3xl p-8 border-2 border-emerald-100 dark:border-emerald-900/30 space-y-4">
+                                    <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.3em]">
                                         Registrada en {selectedYear}
                                     </div>
-                                    <div className="text-2xl font-black text-emerald-900 uppercase">
+                                    <div className="text-2xl font-black text-emerald-900 dark:text-emerald-200 uppercase">
                                         {formatDateFull(item.foundEvent!.day)}
                                     </div>
                                     <div className="flex flex-wrap gap-3">
-                                        <span className="text-sm font-bold text-indigo-700 bg-white px-4 py-2 rounded-xl shadow-sm border border-indigo-100 flex items-center gap-2">
+                                        <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 bg-background px-4 py-2 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-800 flex items-center gap-2">
                                             <Music className="w-4 h-4" /> {item.foundEvent!.orquesta}
                                         </span>
                                         {item.foundEvent!.tipo && (
-                                            <span className="text-xs font-bold text-emerald-600 uppercase bg-emerald-100 px-3 py-2 rounded-lg">
+                                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-100 dark:bg-emerald-900/40 px-3 py-2 rounded-lg">
                                                 {item.foundEvent!.tipo}
                                             </span>
                                         )}
@@ -336,20 +336,20 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                 <div className="space-y-6">
                     <div className="flex items-center gap-4 px-4">
                         <AlertTriangle className="w-8 h-8 text-rose-500" />
-                        <h3 className="text-2xl font-black text-rose-700 uppercase tracking-[0.2em]">Pendientes ({stats.missing})</h3>
-                        <div className="h-px flex-1 bg-rose-100" />
+                        <h3 className="text-2xl font-black text-rose-700 dark:text-rose-400 uppercase tracking-[0.2em]">Pendientes ({stats.missing})</h3>
+                        <div className="h-px flex-1 bg-rose-100 dark:bg-rose-900/30" />
                     </div>
 
                     {missingItems.map((item, index) => (
                         <div
                             key={`missing-${index}`}
-                            className="bg-rose-50/50 rounded-[2.5rem] border-2 border-rose-200 hover:border-rose-300 transition-all duration-300"
+                            className="bg-rose-50/50 dark:bg-rose-950/10 rounded-[2.5rem] border-2 border-rose-200 dark:border-rose-900/30 hover:border-rose-300 dark:hover:border-rose-700 transition-all duration-300"
                         >
                             <div className="p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
                                 {/* Left: Reference */}
                                 <div className="flex-1 space-y-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="text-xs font-black text-rose-400 uppercase tracking-[0.3em]">
+                                        <div className="text-xs font-black text-rose-400 dark:text-rose-500 uppercase tracking-[0.3em]">
                                             No encontrada para {selectedYear}
                                         </div>
                                         {item.isCarnaval && (
@@ -359,25 +359,25 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <h4 className="text-3xl font-black text-slate-900 uppercase tracking-tight leading-none">
+                                        <h4 className="text-3xl font-black text-foreground uppercase tracking-tight leading-none">
                                             {item.prevEvent.municipio}
                                         </h4>
-                                        <p className="text-xl font-bold text-slate-500 uppercase">
+                                        <p className="text-xl font-bold text-muted-foreground uppercase">
                                             {item.prevEvent.lugar || 'Casco'}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-4 pt-2">
-                                        <span className="text-base font-black text-slate-600 uppercase bg-white px-4 py-2 rounded-xl flex items-center gap-2 border border-slate-200">
-                                            <Calendar className="w-5 h-5 text-slate-400" />
+                                        <span className="text-base font-black text-foreground uppercase bg-background px-4 py-2 rounded-xl flex items-center gap-2 border border-border">
+                                            <Calendar className="w-5 h-5 text-muted-foreground" />
                                             {formatDateFull(item.prevEvent.day)}
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-3 pt-2">
-                                        <span className="text-sm font-bold text-indigo-700 bg-indigo-50 px-4 py-2 rounded-xl shadow-sm border border-indigo-100 flex items-center gap-2">
+                                        <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl shadow-sm border border-indigo-100 dark:border-indigo-800 flex items-center gap-2">
                                             <Music className="w-4 h-4" /> {item.prevEvent.orquesta}
                                         </span>
                                         {item.prevEvent.tipo && (
-                                            <span className="text-xs font-bold text-slate-600 uppercase bg-slate-100 px-3 py-2 rounded-lg">
+                                            <span className="text-xs font-bold text-muted-foreground uppercase bg-muted px-3 py-2 rounded-lg">
                                                 {item.prevEvent.tipo}
                                             </span>
                                         )}
@@ -386,7 +386,7 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
 
                                 {/* Right: Action Prompt */}
                                 <div className="lg:w-[300px] text-center lg:text-right">
-                                    <p className="text-sm text-rose-500 font-bold leading-relaxed">
+                                    <p className="text-sm text-rose-500 dark:text-rose-400 font-bold leading-relaxed">
                                         Buscando un <span className="underline uppercase">{formatDateFull(item.prevEvent.day).split(' ')[0]}</span> en <span className="font-black">{item.prevEvent.municipio}</span>{item.prevEvent.lugar ? ` (${item.prevEvent.lugar})` : ''}.
                                     </p>
                                 </div>
@@ -398,20 +398,20 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
 
             {/* Empty State */}
             {analysis.length === 0 && (
-                <div className="py-24 text-center bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-200">
-                    <Calendar className="w-24 h-24 text-slate-200 mx-auto mb-6" />
-                    <h3 className="text-3xl font-black text-slate-400 uppercase tracking-[0.2em]">Sin Histórico</h3>
-                    <p className="text-slate-400 mt-2 font-bold text-lg">No hay eventos de {monthNames[selectedMonth]} {selectedYear - 1}.</p>
+                <div className="py-24 text-center bg-muted/30 rounded-[4rem] border-4 border-dashed border-border">
+                    <Calendar className="w-24 h-24 text-muted-foreground/30 mx-auto mb-6" />
+                    <h3 className="text-3xl font-black text-muted-foreground uppercase tracking-[0.2em]">Sin Histórico</h3>
+                    <p className="text-muted-foreground mt-2 font-bold text-lg">No hay eventos de {monthNames[selectedMonth]} {selectedYear - 1}.</p>
                 </div>
             )}
 
             {/* Footer Legend */}
-            <div className="flex flex-wrap justify-center gap-10 pt-8 text-sm font-black uppercase tracking-[0.2em] text-slate-400">
+            <div className="flex flex-wrap justify-center gap-10 pt-8 text-sm font-black uppercase tracking-[0.2em] text-muted-foreground">
                 <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-200" /> Mismo día de la semana + Lugar
+                    <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-200 dark:shadow-none" /> Mismo día de la semana + Lugar
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full bg-rose-500 shadow-lg shadow-rose-200" /> Sin equivalente registrado
+                    <div className="w-4 h-4 rounded-full bg-rose-500 shadow-lg shadow-rose-200 dark:shadow-none" /> Sin equivalente registrado
                 </div>
             </div>
         </div>

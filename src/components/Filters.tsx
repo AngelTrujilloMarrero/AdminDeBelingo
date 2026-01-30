@@ -204,9 +204,9 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+   return (
+     <div className="max-w-4xl mx-auto p-6">
+       <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
           <div className="flex items-center justify-center space-x-2">
@@ -224,7 +224,7 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
           {showSearch && (
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className="h-5 w-5 text-muted-foreground" />
               </div>
               <input
                 ref={searchInputRef}
@@ -237,37 +237,37 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
                     setShowSuggestions(false);
                   }
                 }}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl
+                className="w-full pl-10 pr-4 py-3 border-2 border-border rounded-xl
                            focus:border-indigo-500 focus:outline-none transition-all duration-300
-                           bg-white text-gray-900 placeholder-gray-500"
+                           bg-background text-foreground placeholder-muted-foreground"
               />
 
-              {/* Sugerencias de autocompletado */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
-                    {suggestions
-                      .filter(suggestion => {
-                        const normalizedSuggestion = normalizeString(suggestion);
-                        const normalizedSearch = normalizeString(searchInput);
-                        return normalizedSuggestion.includes(normalizedSearch) &&
-                          normalizedSuggestion !== normalizedSearch;
-                      })
-                      .slice(0, 10) // Mostrar un poco más ahora que hay 2 columnas
-                      .map((suggestion, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => selectSuggestion(suggestion)}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-50 border rounded-lg
-                                   border-transparent hover:border-gray-100 transition-all duration-200"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )}
+               {/* Sugerencias de autocompletado */}
+               {showSuggestions && suggestions.length > 0 && (
+                 <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                   <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
+                     {suggestions
+                       .filter(suggestion => {
+                         const normalizedSuggestion = normalizeString(suggestion);
+                         const normalizedSearch = normalizeString(searchInput);
+                         return normalizedSuggestion.includes(normalizedSearch) &&
+                           normalizedSuggestion !== normalizedSearch;
+                       })
+                       .slice(0, 10) // Mostrar un poco más ahora que hay 2 columnas
+                       .map((suggestion, index) => (
+                         <button
+                           key={index}
+                           type="button"
+                           onClick={() => selectSuggestion(suggestion)}
+                           className="w-full px-4 py-2 text-left hover:bg-muted border rounded-lg
+                                    border-transparent hover:border-border transition-all duration-200 text-foreground"
+                         >
+                           {suggestion}
+                         </button>
+                       ))}
+                   </div>
+                 </div>
+               )}
             </div>
           )}
 
@@ -276,9 +276,9 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
             <select
               value={filterSelect}
               onChange={e => handleFilterSelectChange(e.target.value)}
-              className="w-full px-4 py-3 pl-11 border-2 border-gray-200 rounded-xl 
+              className="w-full px-4 py-3 pl-11 border-2 border-border rounded-xl 
                          focus:border-indigo-500 focus:outline-none transition-all duration-300
-                         bg-white text-gray-900 appearance-none cursor-pointer"
+                         bg-background text-foreground appearance-none cursor-pointer"
             >
               <option value="">Filtrar por/Quitar Filtro</option>
               <option value="orquesta">🎵 Orquesta</option>
@@ -288,58 +288,58 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
               <option value="ultimoMesYMedio">⏰ Mostrar últimos 45 días</option>
               <option value="intervaloFechas">📅 Intervalo de fechas</option>
             </select>
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
               {getFilterIcon(filterSelect)}
             </div>
             {/* Flecha personalizada */}
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
 
-          {/* Rango de fechas */}
-          {showDateRange && (
-            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-              <h4 className="font-semibold text-gray-800 flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
-                <span>Seleccionar intervalo de fechas</span>
-              </h4>
+           {/* Rango de fechas */}
+           {showDateRange && (
+             <div className="bg-muted rounded-xl p-4 space-y-4">
+               <h4 className="font-semibold text-foreground flex items-center space-x-2">
+                 <Calendar className="h-4 w-4" />
+                 <span>Seleccionar intervalo de fechas</span>
+               </h4>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de inicio
-                  </label>
-                  <input
-                    type="date"
-                    id="startDate"
-                    value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl
-                               focus:border-indigo-500 focus:outline-none transition-all duration-300
-                               bg-white text-gray-900"
-                  />
-                </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label htmlFor="startDate" className="block text-sm font-medium-foreground mb-2">
+                     Fecha de inicio
+                   </label>
+                   <input
+                     type="date"
+                     id="startDate"
+                     value={startDate}
+                     onChange={e => setStartDate(e.target.value)}
+                     className="w-full px-4 py-3 border-2 border-border rounded-xl
+                                focus:border-indigo-500 focus:outline-none transition-all duration-300
+                                bg-background text-foreground"
+                   />
+                 </div>
 
-                <div>
-                  <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de fin
-                  </label>
-                  <input
-                    type="date"
-                    id="endDate"
-                    value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl
-                               focus:border-indigo-500 focus:outline-none transition-all duration-300
-                               bg-white text-gray-900"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+                 <div>
+                   <label htmlFor="endDate" className="block text-sm font-medium-foreground mb-2">
+                     Fecha de fin
+                   </label>
+                   <input
+                     type="date"
+                     id="endDate"
+                     value={endDate}
+                     onChange={e => setEndDate(e.target.value)}
+                     className="w-full px-4 py-3 border-2 border-border rounded-xl
+                                focus:border-indigo-500 focus:outline-none transition-all duration-300
+                                bg-background text-foreground"
+                   />
+                 </div>
+               </div>
+             </div>
+           )}
 
           {/* Botones de acción */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -366,48 +366,48 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
             </button>
           </div>
 
-          {/* Indicadores activos */}
-          {(filterSelect || searchInput || startDate || endDate) && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-blue-800">
-                    Filtros activos
-                  </span>
-                </div>
-                <button
-                  onClick={clearFilters}
-                  className="text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+           {/* Indicadores activos */}
+           {(filterSelect || searchInput || startDate || endDate) && (
+             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center space-x-2">
+                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                   <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                     Filtros activos
+                   </span>
+                 </div>
+                 <button
+                   onClick={clearFilters}
+                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 transition-colors"
+                 >
+                   <X className="h-4 w-4" />
+                 </button>
+               </div>
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                {filterSelect && (
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-lg">
-                    Tipo: {filterSelect}
-                  </span>
-                )}
-                {searchInput && (
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-lg">
-                    Búsqueda: "{searchInput}"
-                  </span>
-                )}
-                {startDate && (
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-lg">
-                    Desde: {startDate}
-                  </span>
-                )}
-                {endDate && (
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-lg">
-                    Hasta: {endDate}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+               <div className="mt-2 flex flex-wrap gap-2">
+                 {filterSelect && (
+                   <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 rounded-lg">
+                     Tipo: {filterSelect}
+                   </span>
+                 )}
+                 {searchInput && (
+                   <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 rounded-lg">
+                     Búsqueda: "{searchInput}"
+                   </span>
+                 )}
+                 {startDate && (
+                   <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 rounded-lg">
+                     Desde: {startDate}
+                   </span>
+                 )}
+                 {endDate && (
+                   <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs font-medium px-2 py-1 rounded-lg">
+                     Hasta: {endDate}
+                   </span>
+                 )}
+               </div>
+             </div>
+           )}
         </div>
       </div>
     </div>

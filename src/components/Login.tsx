@@ -212,13 +212,13 @@ export default function Login() {
   const attemptsRemaining = SECURITY_CONFIG.maxAttempts - securityState.attempts;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/20"></div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/20 dark:bg-black/30"></div>
 
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 dark:bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 dark:bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -249,7 +249,7 @@ export default function Login() {
         </div>
 
         {/* Formulario */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl border border-white/20">
+        <div className="bg-card/20 backdrop-blur-lg rounded-2xl p-6 shadow-2xl border border-white/20">
           <h2 className="text-2xl font-bold text-white text-center mb-6">Iniciar Sesión</h2>
 
           {isLocked ? (
@@ -313,7 +313,7 @@ export default function Login() {
                   onBlur={() => validateEmail(email)}
                   onKeyPress={handleKeyPress}
                   placeholder="Correo electrónico"
-                  className={`w-full pl-10 pr-4 py-3 bg-white/20 border rounded-xl
+                  className={`w-full pl-10 pr-4 py-3 bg-white/10 dark:bg-black/20 border rounded-xl
                              text-white placeholder-white/60 focus:outline-none focus:ring-2 
                              transition-all duration-300
                              ${emailError
@@ -338,7 +338,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Contraseña"
-                  className="w-full pl-10 pr-12 py-3 bg-white/20 border border-white/30 rounded-xl
+                  className="w-full pl-10 pr-12 py-3 bg-white/10 dark:bg-black/20 border border-white/30 rounded-xl
                              text-white placeholder-white/60 focus:outline-none focus:ring-2 
                              focus:ring-white/50 focus:border-white/50 transition-all duration-300"
                   autoComplete="current-password"

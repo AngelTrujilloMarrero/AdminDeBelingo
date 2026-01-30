@@ -121,7 +121,7 @@ export default function FormationTagger({ events }: FormationTaggerProps) {
     const currentFormation = untaggedFormations[currentIndex];
 
     return (
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-indigo-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-card rounded-2xl shadow-xl border-2 border-indigo-100 dark:border-indigo-900 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4">
                 <div className="flex justify-between items-center">
                     <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -136,7 +136,7 @@ export default function FormationTagger({ events }: FormationTaggerProps) {
 
             <div className="p-6">
                 <div className="text-center mb-8">
-                    <p className="text-sm text-gray-500 uppercase tracking-wider font-semibold mb-1">Formación actual</p>
+                    <p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold mb-1">Formación actual</p>
                     <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 truncate px-4">
                         {currentFormation}
                     </h2>
@@ -146,43 +146,43 @@ export default function FormationTagger({ events }: FormationTaggerProps) {
                     <button
                         onClick={() => handleTag('orquesta')}
                         disabled={isSaving}
-                        className="group flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-gray-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-300 transform hover:scale-105"
+                        className="group flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-300 transform hover:scale-105"
                     >
                         <div className="relative">
-                            <Triangle className="w-12 h-12 text-indigo-500 fill-indigo-100 group-hover:fill-indigo-500 group-hover:text-indigo-600 transition-colors" />
-                            <Users className="w-5 h-5 text-indigo-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3" />
+                            <Triangle className="w-12 h-12 text-indigo-500 fill-indigo-100 dark:fill-indigo-900 group-hover:fill-indigo-500 group-hover:text-indigo-600 transition-colors" />
+                            <Users className="w-5 h-5 text-indigo-700 dark:text-indigo-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3" />
                         </div>
-                        <span className="font-bold text-gray-700">Orquesta</span>
+                        <span className="font-bold text-foreground">Orquesta</span>
                     </button>
 
                     <button
                         onClick={() => handleTag('grupo')}
                         disabled={isSaving}
-                        className="group flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-gray-100 hover:border-purple-500 hover:bg-purple-50 transition-all duration-300 transform hover:scale-105"
+                        className="group flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300 transform hover:scale-105"
                     >
                         <div className="relative">
-                            <Triangle className="w-12 h-12 text-purple-500 fill-purple-100 group-hover:fill-purple-500 group-hover:text-purple-600 transition-colors" />
-                            <Music className="w-5 h-5 text-purple-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3" />
+                            <Triangle className="w-12 h-12 text-purple-500 fill-purple-100 dark:fill-purple-900 group-hover:fill-purple-500 group-hover:text-purple-600 transition-colors" />
+                            <Music className="w-5 h-5 text-purple-700 dark:text-purple-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3" />
                         </div>
-                        <span className="font-bold text-gray-700">Grupo</span>
+                        <span className="font-bold text-foreground">Grupo</span>
                     </button>
 
                     <button
                         onClick={() => handleTag('solista')}
                         disabled={isSaving}
-                        className="group flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-gray-100 hover:border-pink-500 hover:bg-pink-50 transition-all duration-300 transform hover:scale-105"
+                        className="group flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all duration-300 transform hover:scale-105"
                     >
                         <div className="relative">
-                            <Triangle className="w-12 h-12 text-pink-500 fill-pink-100 group-hover:fill-pink-500 group-hover:text-pink-600 transition-colors" />
-                            <User className="w-5 h-5 text-pink-700 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3" />
+                            <Triangle className="w-12 h-12 text-pink-500 fill-pink-100 dark:fill-pink-900 group-hover:fill-pink-500 group-hover:text-pink-600 transition-colors" />
+                            <User className="w-5 h-5 text-pink-700 dark:text-pink-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3" />
                         </div>
-                        <span className="font-bold text-gray-700">Solista</span>
+                        <span className="font-bold text-foreground">Solista</span>
                     </button>
                 </div>
             </div>
 
             {isSaving && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
                     <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                 </div>
             )}

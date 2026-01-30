@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { NavLink, useLocation } from 'react-router-dom';
 import { auth, clearLoginTimestamp, getLoginTimestamp } from '../lib/firebase';
-import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X, Database } from 'lucide-react';
+import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X, Database, Moon, Sun } from 'lucide-react';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 interface HeaderProps {
   userEmail: string;
@@ -12,6 +13,7 @@ export default function Header({ userEmail }: HeaderProps) {
   const [sessionTime, setSessionTime] = useState<string>('00:00:00');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { isDark, toggle } = useDarkMode();
 
   useEffect(() => {
     const updateTimer = () => {
@@ -114,6 +116,21 @@ export default function Header({ userEmail }: HeaderProps) {
 
           {/* User Info & Timer */}
           <div className="flex items-center gap-2 md:gap-6">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggle}
+              className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 
+                         transition-all duration-300 ease-in-out text-white hover:scale-105 active:scale-95 
+                         border border-white/10"
+              title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            >
+              {isDark ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+
             {/* Session Timer */}
             <div className="hidden lg:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
               <Clock className="w-4 h-4 text-white/80" />

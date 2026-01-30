@@ -13,15 +13,15 @@ const MONTHS_ES = [
 
 const getDayColors = (dayName: string): string => {
   const colors: Record<string, string> = {
-    'lunes': 'bg-gradient-to-br from-amber-200 to-amber-300 hover:from-amber-300 hover:to-amber-400 border-amber-400',
-    'martes': 'bg-gradient-to-br from-orange-200 to-orange-300 hover:from-orange-300 hover:to-orange-400 border-orange-400',
-    'miércoles': 'bg-gradient-to-br from-yellow-200 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 border-yellow-400',
-    'jueves': 'bg-gradient-to-br from-purple-200 to-purple-300 hover:from-purple-300 hover:to-purple-400 border-purple-400',
-    'viernes': 'bg-gradient-to-br from-green-200 to-green-300 hover:from-green-300 hover:to-green-400 border-green-400',
-    'sabado': 'bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 border-blue-300',
-    'domingo': 'bg-gradient-to-br from-pink-200 to-pink-300 hover:from-pink-300 hover:to-pink-400 border-pink-400'
+    'lunes': 'bg-gradient-to-br from-amber-200 to-amber-300 hover:from-amber-300 hover:to-amber-400 border-amber-400 dark:from-amber-950/60 dark:to-amber-900/60 dark:border-amber-800/60 dark:text-amber-100/90',
+    'martes': 'bg-gradient-to-br from-orange-200 to-orange-300 hover:from-orange-300 hover:to-orange-400 border-orange-400 dark:from-orange-950/60 dark:to-orange-900/60 dark:border-orange-800/60 dark:text-orange-100/90',
+    'miércoles': 'bg-gradient-to-br from-yellow-200 to-yellow-300 hover:from-yellow-300 hover:to-yellow-400 border-yellow-400 dark:from-yellow-950/60 dark:to-yellow-900/60 dark:border-yellow-800/60 dark:text-yellow-100/90',
+    'jueves': 'bg-gradient-to-br from-purple-200 to-purple-300 hover:from-purple-300 hover:to-purple-400 border-purple-400 dark:from-purple-950/60 dark:to-purple-900/60 dark:border-purple-800/60 dark:text-purple-100/90',
+    'viernes': 'bg-gradient-to-br from-green-200 to-green-300 hover:from-green-300 hover:to-green-400 border-green-400 dark:from-green-950/60 dark:to-green-900/60 dark:border-green-800/60 dark:text-green-100/90',
+    'sabado': 'bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 border-blue-300 dark:from-blue-950/60 dark:to-blue-900/60 dark:border-blue-800/60 dark:text-blue-100/90',
+    'domingo': 'bg-gradient-to-br from-pink-200 to-pink-300 hover:from-pink-300 hover:to-pink-400 border-pink-400 dark:from-pink-950/60 dark:to-pink-900/60 dark:border-pink-800/60 dark:text-pink-100/90'
   };
-  return colors[dayName] || 'bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 border-gray-300';
+  return colors[dayName] || 'bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 border-gray-300 dark:from-gray-800 dark:to-gray-700 dark:border-gray-600 dark:text-gray-200';
 };
 
 function generateCalendar(year: number, month: number, onDateSelect: (date: string) => void) {
@@ -38,7 +38,7 @@ function generateCalendar(year: number, month: number, onDateSelect: (date: stri
       if (i === 0 && j < adjustedFirstDay) {
         days.push(
           <td key={`empty-${i}-${j}`} className="p-1">
-            <div className="h-16 w-full rounded-lg bg-gray-50"></div>
+            <div className="h-16 w-full rounded-lg bg-muted/20 dark:bg-muted/10"></div>
           </td>
         );
       } else if (date > daysInMonth) {
@@ -60,13 +60,13 @@ function generateCalendar(year: number, month: number, onDateSelect: (date: stri
                 transform hover:scale-105 active:scale-95 shadow-sm hover:shadow-md
                 flex flex-col items-center justify-center text-sm font-medium
                 ${getDayColors(dayName)}
-                ${isToday ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+                ${isToday ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-background' : ''}
               `}
             >
               <span className="text-xs opacity-70 font-semibold uppercase tracking-wide">
                 {shortDay}
               </span>
-              <span className="text-lg font-bold text-gray-800">
+              <span className={`text-lg font-bold ${dayName === 'domingo' || dayName === 'sabado' ? '' : 'text-gray-800 dark:text-white'}`}>
                 {currentDate}
               </span>
             </button>
@@ -95,7 +95,7 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
   }
 
   return (
-    <div className="w-full bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+    <div className="w-full bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
         <div className="flex items-center justify-center space-x-2">
@@ -118,14 +118,14 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
             `}
           >
             {/* Título del mes */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-4 border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-800 text-center uppercase tracking-wide">
+            <div className="bg-muted/30 dark:bg-muted/10 rounded-xl p-4 mb-4 border border-border">
+              <h3 className="text-xl font-bold text-foreground text-center uppercase tracking-wide">
                 {MONTHS_ES[cal.month]} {cal.year}
               </h3>
             </div>
 
             {/* Grid del calendario */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-background rounded-xl border border-border overflow-hidden">
               <table className="w-full">
                 <tbody>
                   {Array.from({

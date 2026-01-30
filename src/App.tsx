@@ -205,13 +205,13 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-background to-purple-50 dark:from-indigo-950 dark:via-background dark:to-purple-950 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-4">
             <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <p className="text-xl font-semibold text-gray-700">Cargando...</p>
-          <p className="text-gray-500 mt-2">Iniciando aplicación</p>
+          <p className="text-xl font-semibold text-foreground">Cargando...</p>
+          <p className="text-muted-foreground mt-2">Iniciando aplicación</p>
         </div>
       </div>
     );
@@ -223,11 +223,11 @@ function App() {
 
   const userEmail = user.email || 'Usuario';
 
-  return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        {/* Header moderno */}
-        <Header userEmail={userEmail} />
+   return (
+     <Router>
+       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-background to-purple-50 dark:from-indigo-950 dark:via-background dark:to-purple-950">
+         {/* Header moderno */}
+         <Header userEmail={userEmail} />
 
         {/* Monitor de inactividad */}
         <SessionTimeout

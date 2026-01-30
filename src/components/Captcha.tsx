@@ -327,7 +327,7 @@ export default function Captcha({ onValidate }: CaptchaProps) {
                 )}
             </div>
 
-            <p className="text-white/50 text-xs mt-2 text-center">
+            <p className="text-white/70 dark:text-white/60 text-xs mt-2 text-center font-medium">
                 {mode === 'math'
                     ? 'Resuelve la operación matemática'
                     : 'Ingrese los caracteres que ve en la imagen'}
