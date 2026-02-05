@@ -11,6 +11,7 @@ export interface Event {
   FechaAgregado: string;
   FechaEditado: string;
   isArchived?: boolean;
+  programa?: string;
 }
 
 export interface EventFormData {
@@ -21,6 +22,7 @@ export interface EventFormData {
   day: string;
   tipo: string;
   customTipo: string;
+  programa?: string;
 }
 
 export const MUNICIPIOS = [

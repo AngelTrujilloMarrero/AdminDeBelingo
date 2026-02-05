@@ -19,7 +19,8 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Globe
 } from 'lucide-react';
 
 interface EventFormProps {
@@ -45,7 +46,8 @@ export default function EventForm({
     municipio: '',
     hora: '',
     tipo: 'Baile Normal',
-    customTipo: ''
+    customTipo: '',
+    programa: ''
   });
 
   const [showCustomTipo, setShowCustomTipo] = useState(false);
@@ -61,8 +63,13 @@ export default function EventForm({
   const [lugarSuggestions, setLugarSuggestions] = useState<Array<{ lugar: string; municipio: string }>>([]);
   const [showLugarSuggestions, setShowLugarSuggestions] = useState(false);
 
+  // Autocompletado para programas
+  const [programaSuggestions, setProgramaSuggestions] = useState<string[]>([]);
+  const [showProgramaSuggestions, setShowProgramaSuggestions] = useState(false);
+
   const orquestaInputRef = useRef<HTMLInputElement>(null);
   const lugarInputRef = useRef<HTMLInputElement>(null);
+  const programaInputRef = useRef<HTMLInputElement>(null);
   const timeDropdownRef = useRef<HTMLDivElement>(null);
   const tipoDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -88,7 +95,8 @@ export default function EventForm({
         municipio: editingEvent.municipio,
         hora: editingEvent.hora,
         tipo: isCustomTipo ? 'Otro' : editingEvent.tipo,
-        customTipo: isCustomTipo ? editingEvent.tipo : ''
+        customTipo: isCustomTipo ? editingEvent.tipo : '',
+        programa: editingEvent.programa || ''
       });
       setMunicipioSearch(editingEvent.municipio);
       setShowCustomTipo(isCustomTipo);
@@ -134,6 +142,14 @@ export default function EventForm({
     });
 
     setLugarSuggestions(uniquePairs);
+
+    // Extraer programas únicos para autocompletado
+    const uniqueProgramas = [...new Set(
+      events
+        .filter(e => e.programa && e.programa.trim())
+        .map(e => e.programa.trim())
+    )].sort();
+    setProgramaSuggestions(uniqueProgramas);
   }, [events]);
 
   // Cerrar dropdowns al hacer clic fuera
@@ -187,6 +203,21 @@ export default function EventForm({
     }
   };
 
+  const handleProgramaInput = (value: string) => {
+    setFormData({ ...formData, programa: value });
+    const val = value.trim();
+
+    if (val) {
+      const normalizedVal = normalizeString(val);
+      const filtered = programaSuggestions.filter(programa =>
+        normalizeString(programa).includes(normalizedVal)
+      );
+      setShowProgramaSuggestions(filtered.length > 0);
+    } else {
+      setShowProgramaSuggestions(false);
+    }
+  };
+
   const selectOrquesta = (orq: string) => {
     const parts = formData.orquesta.split(',');
     parts[parts.length - 1] = orq;
@@ -202,8 +233,14 @@ export default function EventForm({
     lugarInputRef.current?.focus();
   };
 
+  const selectPrograma = (programa: string) => {
+    setFormData({ ...formData, programa });
+    setShowProgramaSuggestions(false);
+    programaInputRef.current?.focus();
+  };
+
   const validateAndSave = async () => {
-    const { eventDate, orquesta, municipio, hora, tipo, customTipo } = formData;
+    const { eventDate, orquesta, municipio, hora, tipo, customTipo, programa } = formData;
 
     const missing: string[] = [];
     if (!eventDate) missing.push('Fecha');
@@ -398,6 +435,29 @@ export default function EventForm({
       );
     }
 
+    // Validar duplicados de programa con plazo de 1 mes
+    if (programa && programa.trim()) {
+      const programaDuplicado = events.find(ev => {
+        if (editingEvent && ev.id === editingEvent.id) return false;
+        if (!ev.programa || ev.programa.trim() !== programa.trim()) return false;
+
+        const existingDate = new Date(ev.day);
+        const newDate = new Date(eventDate);
+        const diffDays = Math.abs(existingDate.getTime() - newDate.getTime()) / (1000 * 60 * 60 * 24);
+
+        return diffDays <= 30; // 30 días = 1 mes
+      });
+
+      if (programaDuplicado) {
+        const daysDiff = Math.round(
+          Math.abs(new Date(programaDuplicado.day).getTime() - new Date(eventDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        warnings.push(
+          `El programa "${programa}" ya fue utilizado hace ${daysDiff} días el ${programaDuplicado.day}. Se recomienda un mínimo de 30 días entre eventos con el mismo programa.`
+        );
+      }
+    }
+
     // Mostrar advertencias pero permitir guardar
     if (warnings.length > 0) {
       setConflictWarnings(warnings);
@@ -408,7 +468,7 @@ export default function EventForm({
 
   const saveEvent = async () => {
     setIsLoading(true);
-    const { eventDate, orquesta, lugar, municipio, hora, tipo, customTipo } = formData;
+    const { eventDate, orquesta, lugar, municipio, hora, tipo, customTipo, programa } = formData;
 
     const orquestas = orquesta
       .split(',')
@@ -425,7 +485,8 @@ export default function EventForm({
       editing: false,
       cancelado: false,
       FechaAgregado: editingEvent?.FechaAgregado || new Date().toISOString(),
-      FechaEditado: new Date().toISOString()
+      FechaEditado: new Date().toISOString(),
+      programa: programa && programa.trim() ? programa.trim() : undefined
     };
 
     try {
@@ -457,7 +518,8 @@ export default function EventForm({
       municipio: '',
       hora: '',
       tipo: 'Baile Normal',
-      customTipo: ''
+      customTipo: '',
+      programa: ''
     });
     setMunicipioSearch('');
     setShowCustomTipo(false);
@@ -542,6 +604,70 @@ export default function EventForm({
             onSuggestionClick={selectLugar}
             inputRef={lugarInputRef}
           />
+
+          {/* Programa con autocompletado */}
+          <div className="relative">
+            <div className="relative">
+              <input
+                ref={programaInputRef}
+                type="url"
+                value={formData.programa}
+                onChange={(e) => {
+                  handleProgramaInput(e.target.value);
+                }}
+                onFocus={() => {
+                  if (formData.programa.trim()) {
+                    setShowProgramaSuggestions(true);
+                  }
+                }}
+                onBlur={() => {
+                  setTimeout(() => setShowProgramaSuggestions(false), 200);
+                }}
+                placeholder=" "
+                className={`
+                  w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
+                  transition-all duration-300 bg-background text-foreground
+                  ${showProgramaSuggestions ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
+                `}
+              />
+
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
+                <Globe className="h-5 w-5" />
+              </div>
+
+              <label className={`
+                absolute left-11 transition-all duration-300 pointer-events-none
+                text-muted-foreground origin-left
+                ${formData.programa
+                  ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
+                  : 'top-1/2 -translate-y-1/2 text-base'
+                }
+              `}>
+                Programa (URL web)
+              </label>
+            </div>
+
+            {/* Dropdown de sugerencias de programas */}
+            {showProgramaSuggestions && programaSuggestions.length > 0 && (
+              <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                <div className="p-2 space-y-1">
+                  {programaSuggestions.map((programa, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => selectPrograma(programa)}
+                      className="w-full px-4 py-3 text-left rounded-lg transition-colors duration-200 text-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm truncate">{programa}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Grid de municipio y hora */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
