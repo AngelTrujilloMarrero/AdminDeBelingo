@@ -83,6 +83,38 @@ export default function EventForm({
 
   const timeOptions = generateTimeOptions();
 
+  // Effect to auto-fill program
+  useEffect(() => {
+    const { eventDate, lugar, municipio, programa } = formData;
+
+    // Only run if we have the necessary fields and program is empty
+    if (eventDate && lugar && municipio && !programa) {
+      // Debounce slightly to avoid rapid updates while typing? Not strictly necessary for local filtering
+      const dateObj = new Date(eventDate);
+      if (!isNaN(dateObj.getTime())) {
+        // Find NEAREST event with program
+        const nearbyEvent = events
+          .filter(ev =>
+            ev.programa &&
+            ev.programa.trim() !== '' &&
+            normalizeString(ev.municipio) === normalizeString(municipio) &&
+            normalizeString(ev.lugar) === normalizeString(lugar)
+          )
+          .map(ev => {
+            const diff = Math.abs(new Date(ev.day).getTime() - dateObj.getTime());
+            return { ...ev, diff };
+          })
+          .filter(ev => ev.diff <= 20 * 24 * 60 * 60 * 1000) // 20 days window
+          .sort((a, b) => a.diff - b.diff)[0]; // Sort by proximity
+
+        if (nearbyEvent && nearbyEvent.programa) {
+          setFormData(prev => ({ ...prev, programa: nearbyEvent.programa! }));
+        }
+      }
+    }
+  }, [formData.eventDate, formData.lugar, formData.municipio]); // Don't include formData.programa to avoid loops (we only set if empty)
+
+
   useEffect(() => {
     if (editingEvent) {
       const tipoOptions = TIPOS_EVENTO;
@@ -143,6 +175,45 @@ export default function EventForm({
 
     setLugarSuggestions(uniquePairs);
 
+    setLugarSuggestions(uniquePairs);
+
+    // LOGICA DE PROGRAMA AUTOMATICO:
+    // Si estamos editando datos (fecha, lugar, municipio) y el campo programa está vácio...
+    // Buscar si existe un evento cercano (mismo lugar/municipio, +/- 20 días) que tenga programa.
+    const { eventDate, lugar, municipio, programa } = formData;
+
+    // Solo si tenemos fecha, lugar, municipio y NO hay programa escrito manualmente
+    if (eventDate && lugar && municipio && !programa) {
+      const dateObj = new Date(eventDate);
+      if (!isNaN(dateObj.getTime())) {
+        const nearbyEventWithProgram = events.find(ev => {
+          // Mismo sitio
+          if (normalizeString(ev.municipio) !== normalizeString(municipio) ||
+            normalizeString(ev.lugar) !== normalizeString(lugar)) {
+            return false;
+          }
+
+          // Tiene programa
+          if (!ev.programa || !ev.programa.trim()) return false;
+
+          // Diferencia de fechas <= 20 días (para capturar eventos de "varios días")
+          // Pero > 0 (no el mismo día, aunque si fuera el mismo día también valdría)
+          const evDate = new Date(ev.day);
+          const diffTime = Math.abs(evDate.getTime() - dateObj.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          return diffDays <= 20;
+        });
+
+        if (nearbyEventWithProgram && nearbyEventWithProgram.programa) {
+          // Autocompletar el programa
+          setFormData(prev => ({ ...prev, programa: nearbyEventWithProgram.programa! }));
+          // Opcional: Mostrar un toast o indicación de que se ha copiado el programa
+          console.log("Programa autocompletado desde evento cercano:", nearbyEventWithProgram);
+        }
+      }
+    }
+
     // Extraer programas únicos para autocompletado
     const uniqueProgramas = [...new Set(
       events
@@ -189,7 +260,15 @@ export default function EventForm({
   };
 
   const handleLugarInput = (value: string) => {
-    setFormData({ ...formData, lugar: value });
+    // Check for auto-program when lugar changes (and we have date/municipio)
+    setFormData(prev => {
+      const newData = { ...prev, lugar: value };
+      // Trigger logic on next render via useEffect or separate function? 
+      // Logic is in useEffect([events, formData]) or similar? 
+      // Actually, let's put the auto-fill logic in a dedicated useEffect responding to formData changes
+      return newData;
+    });
+
     const val = value.trim();
 
     if (val) {
@@ -359,6 +438,7 @@ export default function EventForm({
         }
       });
     });
+
     // Detectar coincidencia en 4 de 5 parámetros
     const parametrosCoincidentes = events.filter(e => {
       if (editingEvent && e.id === editingEvent.id) return false;
@@ -403,6 +483,8 @@ export default function EventForm({
       });
     }
 
+    // NOTE: validation for 'conflictoLugar' handled separately below (removed from here in replacement)
+
     // ALERT CRÍTICO para eventos duplicados de orquesta
     if (conflictosCriticos.length > 0) {
       const alertMessage = `⚠️ CONFLICTO DETECTADO:\n\n${conflictosCriticos.join('\n')}\n\n¿Deseas continuar con el guardado?`;
@@ -434,6 +516,7 @@ export default function EventForm({
         `Ya existe un evento el ${conflictoLugar.day} en ${conflictoLugar.lugar || 'casco'} (${conflictoLugar.municipio}) alrededor de la hora ${conflictoLugar.hora}, con otra orquesta.`
       );
     }
+
 
     // Validar duplicados de programa con plazo de 1 mes
     if (programa && programa.trim()) {
@@ -533,9 +616,9 @@ export default function EventForm({
     onCancelEdit();
   };
 
-   return (
-     <div className="max-w-4xl mx-auto p-6" id="form-container">
-       <div className="bg-card rounded-2xl shadow-xl border border-border">
+  return (
+    <div className="max-w-4xl mx-auto p-6" id="form-container">
+      <div className="bg-card rounded-2xl shadow-xl border border-border">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
@@ -686,42 +769,42 @@ export default function EventForm({
                     setShowMunicipioDropdown(true);
                   }}
                   placeholder=" "
-                   className={`
+                  className={`
                      w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
                      transition-all duration-300 bg-background text-foreground
                      ${showMunicipioDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
                    `}
                 />
 
-                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
-                   <MapPin className="h-5 w-5" />
-                 </div>
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
+                  <MapPin className="h-5 w-5" />
+                </div>
 
-                 <label className={`
+                <label className={`
                    absolute left-11 transition-all duration-300 pointer-events-none
                    text-muted-foreground origin-left
                    ${municipioSearch || formData.municipio
-                     ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                     : 'top-1/2 -translate-y-1/2 text-base'
-                   }
+                    ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
+                    : 'top-1/2 -translate-y-1/2 text-base'
+                  }
                  `}>
                   Municipio
                 </label>
 
-                 <button
-                   type="button"
-                   onClick={() => setShowMunicipioDropdown(!showMunicipioDropdown)}
-                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-                 >
+                <button
+                  type="button"
+                  onClick={() => setShowMunicipioDropdown(!showMunicipioDropdown)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                >
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showMunicipioDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
               </div>
 
-               {/* Dropdown Menu */}
-               {showMunicipioDropdown && (
-                 <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
+              {/* Dropdown Menu */}
+              {showMunicipioDropdown && (
+                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
                   <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
                     {MUNICIPIOS
                       .filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase()))
@@ -734,22 +817,22 @@ export default function EventForm({
                             setMunicipioSearch(m);
                             setShowMunicipioDropdown(false);
                           }}
-                           className={`
+                          className={`
                              px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
                              ${formData.municipio === m
-                               ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                               : 'text-foreground hover:bg-muted hover:text-foreground'
-                             }
+                              ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
+                              : 'text-foreground hover:bg-muted hover:text-foreground'
+                            }
                            `}
                         >
                           {m}
                         </button>
                       ))}
-                     {MUNICIPIOS.filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase())).length === 0 && (
-                       <div className="col-span-2 p-4 text-center text-muted-foreground italic">
-                         No se encontraron municipios
-                       </div>
-                     )}
+                    {MUNICIPIOS.filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase())).length === 0 && (
+                      <div className="col-span-2 p-4 text-center text-muted-foreground italic">
+                        No se encontraron municipios
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -761,48 +844,48 @@ export default function EventForm({
                 onClick={() => setShowTimeDropdown(!showTimeDropdown)}
                 className="relative cursor-pointer"
               >
-                 <div className={`
+                <div className={`
                    w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
                    transition-all duration-300 bg-background text-foreground
                    ${showTimeDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
                  `}>
-                   {formData.hora || <span className="text-transparent">Seleccione la hora</span>}
-                 </div>
+                  {formData.hora || <span className="text-transparent">Seleccione la hora</span>}
+                </div>
 
-                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                   <Clock className="h-5 w-5" />
-                 </div>
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  <Clock className="h-5 w-5" />
+                </div>
 
-                 <label className={`
+                <label className={`
                    absolute left-11 transition-all duration-300 pointer-events-none
                    text-muted-foreground origin-left
                    ${formData.hora
-                     ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                     : 'top-1/2 -translate-y-1/2 text-base'
-                   }
+                    ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
+                    : 'top-1/2 -translate-y-1/2 text-base'
+                  }
                  `}>
                   Hora de comienzo
                 </label>
               </div>
 
-               {/* Dropdown Menu */}
-               {showTimeDropdown && (
-                 <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                   <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                     {timeOptions.map((time) => (
-                       <button
-                         key={time}
-                         type="button"
-                         onClick={() => {
-                           setFormData({ ...formData, hora: time });
-                           setShowTimeDropdown(false);
-                         }}
-                         className={`
+              {/* Dropdown Menu */}
+              {showTimeDropdown && (
+                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                  <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                    {timeOptions.map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, hora: time });
+                          setShowTimeDropdown(false);
+                        }}
+                        className={`
                            px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200
                            ${formData.hora === time
-                             ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                             : 'text-foreground hover:bg-muted hover:text-foreground'
-                           }
+                            ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
+                            : 'text-foreground hover:bg-muted hover:text-foreground'
+                          }
                          `}
                       >
                         {time}
@@ -820,49 +903,49 @@ export default function EventForm({
               onClick={() => setShowTipoDropdown(!showTipoDropdown)}
               className="relative cursor-pointer"
             >
-               <div className={`
+              <div className={`
                  w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
                  transition-all duration-300 bg-background text-foreground
                  ${showTipoDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
                `}>
-                 {formData.tipo || <span className="text-transparent">Selecciona el tipo</span>}
-               </div>
+                {formData.tipo || <span className="text-transparent">Selecciona el tipo</span>}
+              </div>
 
-               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                 <Tag className="h-5 w-5" />
-               </div>
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                <Tag className="h-5 w-5" />
+              </div>
 
-               <label className={`
+              <label className={`
                  absolute left-11 transition-all duration-300 pointer-events-none
                  text-muted-foreground origin-left
                  ${formData.tipo
-                   ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                   : 'top-1/2 -translate-y-1/2 text-base'
-                 }
+                  ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
+                  : 'top-1/2 -translate-y-1/2 text-base'
+                }
                `}>
                 Tipo de evento
               </label>
             </div>
 
-             {/* Dropdown Menu */}
-             {showTipoDropdown && (
-               <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                 <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                   {TIPOS_EVENTO.map((tipo) => (
-                     <button
-                       key={tipo}
-                       type="button"
-                       onClick={() => {
-                         setFormData({ ...formData, tipo });
-                         setShowCustomTipo(tipo === 'Otro');
-                         setShowTipoDropdown(false);
-                       }}
-                       className={`
+            {/* Dropdown Menu */}
+            {showTipoDropdown && (
+              <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                  {TIPOS_EVENTO.map((tipo) => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, tipo });
+                        setShowCustomTipo(tipo === 'Otro');
+                        setShowTipoDropdown(false);
+                      }}
+                      className={`
                          px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
                          ${formData.tipo === tipo
-                           ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                           : 'text-foreground hover:bg-muted hover:text-foreground'
-                         }
+                          ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
+                          : 'text-foreground hover:bg-muted hover:text-foreground'
+                        }
                        `}
                     >
                       {tipo}
@@ -884,46 +967,46 @@ export default function EventForm({
             />
           )}
 
-           {/* Mensajes */}
-           {missingFields && (
-             <div className="flex items-center space-x-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
-               <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-               <p className="text-destructive font-medium">{missingFields}</p>
-             </div>
-           )}
+          {/* Mensajes */}
+          {missingFields && (
+            <div className="flex items-center space-x-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+              <p className="text-destructive font-medium">{missingFields}</p>
+            </div>
+          )}
 
-           {duplicateWarning && (
-             <div className="flex items-center space-x-2 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-               <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-               <p className="text-yellow-700 dark:text-yellow-300 font-medium">{duplicateWarning}</p>
-             </div>
-           )}
+          {duplicateWarning && (
+            <div className="flex items-center space-x-2 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+              <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+              <p className="text-yellow-700 dark:text-yellow-300 font-medium">{duplicateWarning}</p>
+            </div>
+          )}
 
-           {conflictWarnings.length > 0 && (
-             <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl space-y-2">
-               <div className="flex items-center space-x-2">
-                 <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-                 <p className="text-yellow-800 dark:text-yellow-200 font-semibold">Advertencias detectadas:</p>
-               </div>
-               <ul className="ml-7 space-y-1">
-                 {conflictWarnings.map((warning, idx) => (
-                   <li key={idx} className="text-yellow-700 dark:text-yellow-300 text-sm">
-                     {warning}
-                   </li>
-                 ))}
-               </ul>
-               <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-2 ml-7">
-                 El evento se guardara de todos modos. Verifica que la informacion sea correcta.
-               </p>
-             </div>
-           )}
+          {conflictWarnings.length > 0 && (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl space-y-2">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+                <p className="text-yellow-800 dark:text-yellow-200 font-semibold">Advertencias detectadas:</p>
+              </div>
+              <ul className="ml-7 space-y-1">
+                {conflictWarnings.map((warning, idx) => (
+                  <li key={idx} className="text-yellow-700 dark:text-yellow-300 text-sm">
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-2 ml-7">
+                El evento se guardara de todos modos. Verifica que la informacion sea correcta.
+              </p>
+            </div>
+          )}
 
-           {successMessage && (
-             <div className="flex items-center space-x-2 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-               <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-               <p className="text-green-700 dark:text-green-300 font-medium">{successMessage}</p>
-             </div>
-           )}
+          {successMessage && (
+            <div className="flex items-center space-x-2 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <p className="text-green-700 dark:text-green-300 font-medium">{successMessage}</p>
+            </div>
+          )}
 
           {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
