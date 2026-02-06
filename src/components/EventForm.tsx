@@ -569,7 +569,7 @@ export default function EventForm({
       cancelado: false,
       FechaAgregado: editingEvent?.FechaAgregado || new Date().toISOString(),
       FechaEditado: new Date().toISOString(),
-      programa: programa && programa.trim() ? programa.trim() : undefined
+      programa: programa || ""
     };
 
     try {
