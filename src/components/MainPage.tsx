@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Event } from '../types/event';
 import Calendar from './Calendar';
 import EventForm from './EventForm';
@@ -8,6 +9,8 @@ import SocialStatsSync from './SocialStatsSync';
 import OrchestraForm from './OrchestraForm';
 import FormationTagger from './FormationTagger';
 import MessageAdmin from './MessageAdmin';
+import ExportFestivalDialog from './ExportFestivalDialog';
+import { FileImage } from 'lucide-react';
 
 interface MainPageProps {
     events: Event[];
@@ -34,6 +37,8 @@ export default function MainPage({
     onClearFilter,
     allOrchestraNames
 }: MainPageProps) {
+    const [showExportDialog, setShowExportDialog] = useState(false);
+
     return (
         <div className="space-y-8 pb-8 animate-fade-in">
             {/* Sección de calendarios */}
@@ -52,6 +57,19 @@ export default function MainPage({
                     onCancelEdit={onCancelEdit}
                     allOrchestraNames={allOrchestraNames}
                 />
+            </section>
+
+             {/* Sección de Herramientas (Exportar) */}
+             <section>
+                <div className="max-w-4xl mx-auto px-6 flex justify-end">
+                    <button
+                        onClick={() => setShowExportDialog(true)}
+                        className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                    >
+                        <FileImage className="w-5 h-5" />
+                        Crear Cartel de Fiestas
+                    </button>
+                </div>
             </section>
 
             {/* Sección de datos de orquestas */}
@@ -95,6 +113,14 @@ export default function MainPage({
                     <MessageAdmin />
                 </div>
             </section>
+
+            {/* Dialogs */}
+            {showExportDialog && (
+                <ExportFestivalDialog 
+                    events={events} 
+                    onClose={() => setShowExportDialog(false)} 
+                />
+            )}
         </div>
     );
 }
