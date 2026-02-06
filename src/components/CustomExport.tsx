@@ -261,7 +261,7 @@ const CustomExport: React.FC<CustomExportProps> = ({ events, onClose }) => {
 
         if (event.lugar) {
           eventHTML += `
-            <div style="margin-top: 8px; font-size: 1.1em; color: #7f8c8d; display: flex; align-items: center; gap: 5px;">
+            <div style="margin-top: 8px; font-size: 1.1em; color: #000000; display: flex; align-items: center; gap: 5px;">
               <span>📍</span> ${event.lugar}
             </div>
           `;

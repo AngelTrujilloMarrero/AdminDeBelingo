@@ -294,7 +294,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                     eventText += `<strong style="font-size: 1.3em; color: black; font-family: 'Helvetica Black', 'Arial Black', sans-serif; text-shadow: -2px -2px 0 red, 2px 2px 0 red;">${event.orquesta}</strong>`;
                     
                     if (event.lugar) {
-                        eventText += `|<strong style="font-size: 1.1em; color: #006400;">${event.lugar.toUpperCase()}</strong>`;
+                        eventText += `|<strong style="font-size: 1.1em; color: #000000;">${event.lugar.toUpperCase()}</strong>`;
                     }
     
                     const eventParagraph = document.createElement('p');

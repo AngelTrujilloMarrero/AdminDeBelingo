@@ -61,7 +61,7 @@ export default function MainPage({
 
              {/* Sección de Herramientas (Exportar) */}
              <section>
-                <div className="max-w-4xl mx-auto px-6 flex justify-end">
+                <div className="max-w-4xl mx-auto px-6 flex justify-center">
                     <button
                         onClick={() => setShowExportDialog(true)}
                         className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
