@@ -173,14 +173,14 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                 border: 1px solid #000000;
                 padding: 40px;
                 border-radius: 15px;
-                max-width: 95%;
+                max-width: 98%;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 box-sizing: border-box;
-                width: 95%;
-                margin: 20px;
+                width: 98%;
+                margin: 10px;
                 box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             `;
     
@@ -219,7 +219,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                 letter-spacing: 2px;
                 line-height: 1.2;
                 text-align: center;
-                transform: rotate(-1deg);
+                transform: none;
             `;
     
             const createHeaderLine = (text: string, baseSize: number) => {
@@ -231,7 +231,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
             };
     
             // Titular personalizado: "Verbenas [Municipio]"
-            festivalHeader.appendChild(createHeaderLine(`VERBENAS ${municipio.toUpperCase()}`, 3.5));
+            festivalHeader.appendChild(createHeaderLine(`VERBENAS ${municipio.toUpperCase()}`, 5.0));
             // Optional: Add Lugar if it's consistent across selected events? 
             // For now, simpler is better as per request "Verbenas Municipio Correspondiente"
             
@@ -275,8 +275,8 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                     font-weight: bold;
                     text-decoration: underline;
                     text-decoration-color: #006400;
-                    margin-bottom: 8px;
-                    font-size: 1.8em;
+                    margin-bottom: 12px;
+                    font-size: 2.5em;
                     font-family: Impact, sans-serif;
                     text-shadow: -2px -2px 0 yellow, 2px 2px 0 gold;
                     text-align: center;
@@ -285,24 +285,24 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
     
                 dayEvents.forEach(event => {
                     // Match WEB debelingo styles exactly
-                    let eventText = `<strong style="font-size: 1.3em; color: blue;">${event.hora}H</strong>|`;
+                    let eventText = `<strong style="font-size: 1.7em; color: blue;">${event.hora}H</strong>|`;
                     
                     if (event.tipo !== 'Baile Normal') {
-                        eventText += `<strong style="font-size: 1.3em;">${event.tipo}</strong>|`;
+                        eventText += `<strong style="font-size: 1.7em;">${event.tipo}</strong>|`;
                     }
                     
-                    eventText += `<strong style="font-size: 1.3em; color: black; font-family: 'Helvetica Black', 'Arial Black', sans-serif; text-shadow: -2px -2px 0 red, 2px 2px 0 red;">${event.orquesta}</strong>`;
+                    eventText += `<strong style="font-size: 1.7em; color: black; font-family: 'Helvetica Black', 'Arial Black', sans-serif; text-shadow: -2px -2px 0 red, 2px 2px 0 red;">${event.orquesta}</strong>`;
                     
                     if (event.lugar) {
-                        eventText += `|<strong style="font-size: 1.1em; color: #000000;">${event.lugar.toUpperCase()}</strong>`;
+                        eventText += `|<strong style="font-size: 1.5em; color: #000000;">${event.lugar.toUpperCase()}</strong>`;
                     }
     
                     const eventParagraph = document.createElement('p');
                     eventParagraph.innerHTML = eventText;
                     eventParagraph.style.cssText = `
                         color: #000000;
-                        margin: 3px 0;
-                        font-size: 1.3em;
+                        margin: 6px 0;
+                        font-size: 1.7em;
                         font-family: Impact, sans-serif;
                         text-shadow: -2px -2px 0 yellow, 2px 2px 0 gold;
                         text-align: center;
@@ -316,11 +316,11 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
     
             const infoText = document.createElement('p');
             infoText.style.cssText = `
-                font-size: 1.5em;
+                font-size: 2.2em;
                 color: #FF0000;
                 margin-top: 30px;
                 font-family: Arial, sans-serif;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
                 font-weight: bold;
             `;
             infoText.innerHTML = 'Más info en: debelingoconangel.web.app';
