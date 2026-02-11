@@ -314,11 +314,23 @@ const CustomExport: React.FC<CustomExportProps> = ({ events, onClose }) => {
           useCORS: true,
           scale: 1
         }).then(canvas => {
-          const dataURL = canvas.toDataURL('image/png', 0.9);
+          // Opción 4: Compresión Adaptativa
+          // Calidad dinámica según altura del canvas
+          let quality = 0.85; // Calidad base 85%
+          
+          if (finalHeight > 2000) {
+              quality = 0.65;  // Canvas muy alto: calidad 65%
+          } else if (finalHeight > 1500) {
+              quality = 0.75;  // Canvas alto: calidad 75%
+          } else if (finalHeight < 800) {
+              quality = 0.90;  // Canvas pequeño: calidad 90%
+          }
+          
+          const dataURL = canvas.toDataURL('image/jpeg', quality);
           
           // Download the image
           const link = document.createElement('a');
-          link.download = `verbenas_${municipio.toLowerCase()}_personalizadas_${new Date().toISOString().split('T')[0]}.png`;
+          link.download = `verbenas_${municipio.toLowerCase()}_personalizadas_${new Date().toISOString().split('T')[0]}.jpg`;
           link.href = dataURL;
           link.click();
           
