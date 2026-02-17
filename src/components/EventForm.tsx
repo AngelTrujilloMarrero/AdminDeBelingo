@@ -693,7 +693,9 @@ export default function EventForm({
             <div className="relative">
               <input
                 ref={programaInputRef}
-                type="url"
+                type="text"
+                inputMode="url"
+                autoComplete="url"
                 value={formData.programa}
                 onChange={(e) => {
                   handleProgramaInput(e.target.value);

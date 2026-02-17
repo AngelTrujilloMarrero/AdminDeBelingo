@@ -18,5 +18,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    port: 3000, // Puerto comúnmente aceptado por Firebase
+    host: true, // Permitir acceso desde red local
+    strictPort: false, // Buscar puerto alternativo si 3000 está ocupado
+  },
 })
 

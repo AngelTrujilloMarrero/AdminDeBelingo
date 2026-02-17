@@ -110,6 +110,13 @@ export default function Login() {
   const handleLogin = async () => {
     const now = Date.now();
 
+    // LOGGING: Información de diagnóstico
+    console.log('🔐 Intentando login...');
+    console.log('🌐 Dominio actual:', window.location.origin);
+    console.log('🌐 Host completo:', window.location.host);
+    console.log('🌐 Puerto actual:', window.location.port);
+    console.log('🔐 Firebase Auth Domain:', import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
+
     // Check if locked out
     if (timeLeft > 0) return;
 
@@ -172,6 +179,14 @@ export default function Login() {
 
 
     } catch (error: any) {
+      // LOGGING: Error detallado para diagnóstico
+      console.error('❌ Error de autenticación:', {
+        code: error.code,
+        message: error.message,
+        email: error.customData?.email,
+        stack: error.stack
+      });
+
       // Failed attempt
       const newAttempts = securityState.attempts + 1;
 
