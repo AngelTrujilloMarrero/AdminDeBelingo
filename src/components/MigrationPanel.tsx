@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, Download, Trash2, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
-import hybridDataService from '../services/hybridDataService';
+import { hybridDataService } from '../services/hybridDataService';
 import { Event } from '../types/event';
 
 interface MigrationResult {

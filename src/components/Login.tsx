@@ -27,7 +27,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [mountTime] = useState(Date.now());
+  const [mountTime] = useState(() => Date.now());
 
   // Honeypot field - bots will fill this
   const [honeypot, setHoneypot] = useState('');

@@ -76,4 +76,3 @@ class HybridOrchestraService {
 }
 
 export const hybridOrchestraService = new HybridOrchestraService();
-export default hybridOrchestraService;

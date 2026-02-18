@@ -32,14 +32,49 @@ interface AnalysisData {
     total: number;
     orquesta: number;
     grupo: number;
-    solista: number;
+    ista: number;
     unknown: number;
     percentages: {
         orquesta: number;
         grupo: number;
-        solista: number;
+        ista: number;
     };
 }
+
+interface StatBarProps {
+    label: string;
+    count: number;
+    percentage: number;
+    color: string;
+    icon: React.ComponentType<{ className?: string }>;
+}
+
+const StatBar = ({ label, count, percentage, color, icon: Icon }: StatBarProps) => (
+    <div className="space-y-2">
+        <div className="flex justify-between items-end">
+            <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-lg ${color} bg-opacity-10`}>
+                    <Icon className={`w-4 h-4 ${color.replace('bg-', 'text-')}`} />
+                </div>
+                <span className="font-semibold text-muted-foreground">{label}</span>
+            </div>
+            <div className="text-right">
+                <span className="block text-lg font-bold text-foreground">{percentage}%</span>
+                <span className="text-xs text-muted-foreground font-medium">{count} actuaciones</span>
+            </div>
+        </div>
+        <div className="h-5 w-full bg-muted/30 rounded-full overflow-hidden border border-border flex items-center relative shadow-inner">
+            <div
+                className={`h-full ${color} transition-all duration-1000 ease-out flex items-center justify-center`}
+                style={{ width: `${percentage}%` }}
+            >
+                {percentage > 10 && (
+                    <span className="text-[10px] text-white font-black leading-none drop-shadow-sm">{percentage}%</span>
+                )}
+            </div>
+        </div>
+    </div>
+);
 
 export default function FormationStats({ events, selectedYear = 'Total' }: FormationStatsProps) {
     const [orchestras, setOrchestras] = useState<Orchestra[]>([]);
@@ -96,7 +131,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
     const calculateStats = (filteredEvents: Event[]): AnalysisData => {
         let orquesta = 0;
         let grupo = 0;
-        let solista = 0;
+        let ista = 0;
         let unknown = 0;
 
         filteredEvents.forEach(e => {
@@ -105,22 +140,22 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                 const type = getFormationType(f);
                 if (type === 'orquesta') orquesta++;
                 else if (type === 'grupo') grupo++;
-                else if (type === 'solista') solista++;
+                else if (type === 'ista') ista++;
                 else unknown++;
             });
         });
 
-        const total = orquesta + grupo + solista;
+        const total = orquesta + grupo + ista;
         return {
             total,
             orquesta,
             grupo,
-            solista,
+            ista,
             unknown,
             percentages: {
                 orquesta: total > 0 ? Math.round((orquesta / total) * 100) : 0,
                 grupo: total > 0 ? Math.round((grupo / total) * 100) : 0,
-                solista: total > 0 ? Math.round((solista / total) * 100) : 0,
+                ista: total > 0 ? Math.round((ista / total) * 100) : 0,
             }
         };
     };
@@ -220,33 +255,6 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
         }
     };
 
-    const StatBar = ({ label, count, percentage, color, icon: Icon }: any) => (
-        <div className="space-y-2">
-            <div className="flex justify-between items-end">
-                <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg ${color} bg-opacity-10`}>
-                        <Icon className={`w-4 h-4 ${color.replace('bg-', 'text-')}`} />
-                    </div>
-                    <span className="font-semibold text-muted-foreground">{label}</span>
-                </div>
-                <div className="text-right">
-                    <span className="block text-lg font-bold text-foreground">{percentage}%</span>
-                    <span className="text-xs text-muted-foreground font-medium">{count} actuaciones</span>
-                </div>
-            </div>
-            <div className="h-5 w-full bg-muted/30 rounded-full overflow-hidden border border-border flex items-center relative shadow-inner">
-                <div
-                    className={`h-full ${color} transition-all duration-1000 ease-out flex items-center justify-center`}
-                    style={{ width: `${percentage}%` }}
-                >
-                    {percentage > 10 && (
-                        <span className="text-[10px] text-white font-black leading-none drop-shadow-sm">{percentage}%</span>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-
     return (
         <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden mb-8 transition-all duration-500">
             {/* Header con gradiente Premium */}
@@ -277,7 +285,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                         <div className="hidden sm:flex gap-2">
                             <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white border border-white/20">ORQUESTAS: {globalStats.percentages.orquesta}%</span>
                             <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white border border-white/20">GRUPOS: {globalStats.percentages.grupo}%</span>
-                            <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white border border-white/20">SOLISTAS: {globalStats.percentages.solista}%</span>
+                            <span className="bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white border border-white/20">SOLISTAS: {globalStats.percentages.ista}%</span>
                         </div>
                         {isExpanded ? <ChevronUp className="text-white" /> : <ChevronDown className="text-white" />}
                     </div>
@@ -309,8 +317,8 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                 />
                                 <StatBar
                                     label="Solistas"
-                                    count={globalStats.solista}
-                                    percentage={globalStats.percentages.solista}
+                                    count={globalStats.ista}
+                                    percentage={globalStats.percentages.ista}
                                     color="bg-blue-600"
                                     icon={User}
                                 />
@@ -353,7 +361,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                     <div key={zona} className="bg-card p-4 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow">
                                         <h4 className="font-black text-foreground mb-3 border-b border-border pb-2">{zona}</h4>
                                         <div className="space-y-3">
-                                            {['orquesta', 'grupo', 'solista'].map(type => (
+                                            {['orquesta', 'grupo', 'ista'].map(type => (
                                                 <div key={type} className="flex items-center justify-between text-xs">
                                                     <span className="text-muted-foreground capitalize">{type}s</span>
                                                     <div className="flex items-center gap-3 w-2/3 group">
@@ -400,10 +408,10 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                             </div>
                                             <div
                                                 className="bg-blue-600 h-full transition-all duration-300 flex items-center justify-center"
-                                                style={{ width: `${(data as any).percentages.solista}%` }}
+                                                style={{ width: `${(data as any).percentages.ista}%` }}
                                             >
-                                                {(data as any).percentages.solista > 12 && (
-                                                    <span className="text-[11px] text-white font-black">{(data as any).percentages.solista}%</span>
+                                                {(data as any).percentages.ista > 12 && (
+                                                    <span className="text-[11px] text-white font-black">{(data as any).percentages.ista}%</span>
                                                 )}
                                             </div>
                                         </div>
@@ -418,7 +426,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                             </div>
                                             <div className="flex flex-col items-end">
                                                 <span className="text-[8px] uppercase tracking-tighter text-muted-foreground font-bold">Sol</span>
-                                                <span className="text-xs font-black text-blue-600">{(data as any).percentages.solista}%</span>
+                                                <span className="text-xs font-black text-blue-600">{(data as any).percentages.ista}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -432,8 +440,8 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                         <div className="flex-1 space-y-2">
                                             <div className="flex justify-between text-[10px] font-bold">
                                                 <span className="text-muted-foreground uppercase tracking-tight">Predomina: <span className="text-indigo-600 transition-colors">
-                                                    {data.orquesta >= data.grupo && data.orquesta >= data.solista ? 'Orquesta' :
-                                                        data.grupo >= data.orquesta && data.grupo >= data.solista ? 'Grupo' : 'Solista'}
+                                                    {data.orquesta >= data.grupo && data.orquesta >= data.ista ? 'Orquesta' :
+                                                        data.grupo >= data.orquesta && data.grupo >= data.ista ? 'Grupo' : 'Solista'}
                                                 </span></span>
                                             </div>
                                             <div className="h-6 w-full bg-muted rounded-full flex overflow-hidden border border-border shadow-inner relative">
@@ -455,10 +463,10 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                                 </div>
                                                 <div
                                                     className="bg-blue-600 transition-all duration-300 flex items-center justify-center overflow-hidden"
-                                                    style={{ width: `${data.percentages.solista}%` }}
+                                                    style={{ width: `${data.percentages.ista}%` }}
                                                 >
-                                                    {data.percentages.solista > 15 && (
-                                                        <span className="text-[9px] text-white font-black">{data.percentages.solista}%</span>
+                                                    {data.percentages.ista > 15 && (
+                                                        <span className="text-[9px] text-white font-black">{data.percentages.ista}%</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -479,12 +487,12 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                 <h4 className="text-lg font-bold mb-1">Tendencia de Contratación</h4>
                                 <p className="text-indigo-100/70 text-sm leading-relaxed max-w-2xl">
                                     A nivel global, {
-                                        globalStats.orquesta > globalStats.grupo && globalStats.orquesta > globalStats.solista
+                                        globalStats.orquesta > globalStats.grupo && globalStats.orquesta > globalStats.ista
                                             ? "las orquestas siguen siendo el motor principal de los eventos,"
-                                            : globalStats.grupo > globalStats.orquesta && globalStats.grupo > globalStats.solista
+                                            : globalStats.grupo > globalStats.orquesta && globalStats.grupo > globalStats.ista
                                                 ? "los grupos están ganando un terreno impresionante en la escena actual,"
-                                                : "los solistas están liderando la demanda de actuaciones,"
-                                    } con un <span className="text-white font-bold">{Math.max(globalStats.percentages.orquesta, globalStats.percentages.grupo, globalStats.percentages.solista)}%</span> de cuota.
+                                                : "los istas están liderando la demanda de actuaciones,"
+                                    } con un <span className="text-white font-bold">{Math.max(globalStats.percentages.orquesta, globalStats.percentages.grupo, globalStats.percentages.ista)}%</span> de cuota.
                                     Se observa {viewMode === 'zona' ? 'una clara diferenciación regional' : 'una variación según el perfil del día'} en las preferencias de los organizadores.
                                 </p>
                             </div>
@@ -526,8 +534,8 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                     <div style={{ backgroundColor: '#4f46e5', width: `${data.percentages.grupo}%`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '900' }}>
                                         {data.percentages.grupo > 10 && `${data.percentages.grupo}%`}
                                     </div>
-                                    <div style={{ backgroundColor: '#2563eb', width: `${data.percentages.solista}%`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '900' }}>
-                                        {data.percentages.solista > 10 && `${data.percentages.solista}%`}
+                                    <div style={{ backgroundColor: '#2563eb', width: `${data.percentages.ista}%`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '12px', fontWeight: '900' }}>
+                                        {data.percentages.ista > 10 && `${data.percentages.ista}%`}
                                     </div>
                                 </div>
 
@@ -542,7 +550,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <div style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: '#2563eb' }}></div>
-                                        <span>SOLI: {data.percentages.solista}%</span>
+                                        <span>SOLI: {data.percentages.ista}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -567,12 +575,12 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                                 <div style={{ display: 'flex', gap: '3px', height: '16px', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#f3f4f6' }}>
                                     <div style={{ background: '#7c3aed', width: `${data.percentages.orquesta}%` }}></div>
                                     <div style={{ background: '#4f46e5', width: `${data.percentages.grupo}%` }}></div>
-                                    <div style={{ background: '#2563eb', width: `${data.percentages.solista}%` }}></div>
+                                    <div style={{ background: '#2563eb', width: `${data.percentages.ista}%` }}></div>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '9px', fontWeight: '800', color: '#6b7280' }}>
                                     <span>O: {data.percentages.orquesta}%</span>
                                     <span>G: {data.percentages.grupo}%</span>
-                                    <span>S: {data.percentages.solista}%</span>
+                                    <span>S: {data.percentages.ista}%</span>
                                 </div>
                             </div>
                         ))}

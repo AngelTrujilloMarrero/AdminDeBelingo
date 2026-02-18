@@ -253,10 +253,10 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
                          return normalizedSuggestion.includes(normalizedSearch) &&
                            normalizedSuggestion !== normalizedSearch;
                        })
-                       .slice(0, 10) // Mostrar un poco más ahora que hay 2 columnas
-                       .map((suggestion, index) => (
-                         <button
-                           key={index}
+                        .slice(0, 10)
+                        .map((suggestion) => (
+                          <button
+                            key={suggestion}
                            type="button"
                            onClick={() => selectSuggestion(suggestion)}
                            className="w-full px-4 py-2 text-left hover:bg-muted border rounded-lg

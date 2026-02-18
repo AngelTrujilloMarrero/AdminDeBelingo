@@ -1,7 +1,7 @@
 import { ref, onValue } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event } from '../types/event';
-import staticFileService from './staticFileService';
+import { staticFileService } from './staticFileService';
 
 export interface ArchivedEventData {
   year: number;
@@ -153,4 +153,3 @@ class HybridDataService {
 
 // Exportar instancia singleton
 export const hybridDataService = new HybridDataService();
-export default hybridDataService;

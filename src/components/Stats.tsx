@@ -43,6 +43,49 @@ interface StatItem {
   subtitle?: string;
 }
 
+interface StatCardProps {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const StatCard = ({ title, icon: Icon, children, className = "" }: StatCardProps) => (
+  <div className={`bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col ${className}`}>
+    <div className="p-5 border-b border-border flex items-center gap-3">
+      <div className="p-2 bg-muted rounded-lg text-muted-foreground">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h3 className="font-bold text-foreground text-sm tracking-wide uppercase">{title}</h3>
+    </div>
+    <div className="p-5 flex-1 relative">
+      {children}
+    </div>
+  </div>
+);
+
+interface MiniStatProps {
+  label: string;
+  value: string | number;
+  subtext?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  colorClass?: string;
+  bgClass?: string;
+}
+
+const MiniStat = ({ label, value, subtext, icon: Icon, colorClass = "text-indigo-600", bgClass = "bg-indigo-50" }: MiniStatProps) => (
+  <div className="bg-card rounded-xl border border-border p-4 flex items-start justify-between shadow-sm hover:translate-y-[-2px] transition-transform">
+    <div>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
+      {subtext && <p className="text-xs text-muted-foreground mt-1 font-medium">{subtext}</p>}
+    </div>
+    <div className={`p-2.5 rounded-xl ${bgClass} dark:bg-opacity-20`}>
+      <Icon className={`h-5 w-5 ${colorClass} dark:text-opacity-90`} />
+    </div>
+  </div>
+);
+
 export default function Stats({ events }: StatsProps) {
   const years = useMemo(() => {
     const allYears = events.map(e => new Date(e.day).getFullYear());
@@ -365,34 +408,6 @@ export default function Stats({ events }: StatsProps) {
     );
   }
 
-  // Helper Components for the new Layout
-  const StatCard = ({ title, icon: Icon, children, className = "" }: any) => (
-    <div className={`bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col ${className}`}>
-      <div className="p-5 border-b border-border flex items-center gap-3">
-        <div className="p-2 bg-muted rounded-lg text-muted-foreground">
-          <Icon className="h-5 w-5" />
-        </div>
-        <h3 className="font-bold text-foreground text-sm tracking-wide uppercase">{title}</h3>
-      </div>
-      <div className="p-5 flex-1 relative">
-        {children}
-      </div>
-    </div>
-  );
-
-  const MiniStat = ({ label, value, subtext, icon: Icon, colorClass = "text-indigo-600", bgClass = "bg-indigo-50" }: any) => (
-    <div className="bg-card rounded-xl border border-border p-4 flex items-start justify-between shadow-sm hover:translate-y-[-2px] transition-transform">
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
-        {subtext && <p className="text-xs text-muted-foreground mt-1 font-medium">{subtext}</p>}
-      </div>
-      <div className={`p-2.5 rounded-xl ${bgClass} dark:bg-opacity-20`}>
-        <Icon className={`h-5 w-5 ${colorClass} dark:text-opacity-90`} />
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-8 pb-12">
       {/* 1. Header & Controls */}
@@ -480,7 +495,7 @@ export default function Stats({ events }: StatsProps) {
           <StatCard title="🏆 Top 10 Orquestas" icon={Trophy}>
             <div className="space-y-4">
               {statistics.topOrquestas.map(([orq, count]: any, index: number) => (
-                <div key={index} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-lg transition-colors cursor-default">
+                <div key={orq} className="flex items-center justify-between group p-2 hover:bg-muted/50 rounded-lg transition-colors cursor-default">
                   <div className="flex items-center gap-4">
                     <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold ${index < 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-md' : 'bg-muted text-muted-foreground'}`}>
                       {index + 1}
@@ -508,9 +523,9 @@ export default function Stats({ events }: StatsProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard title="📈 Tendencia Al Alza" icon={TrendingUp}>
               <div className="space-y-3">
-                {statistics.alAlza.length > 0 ? statistics.alAlza.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center bg-green-500/10 p-3 rounded-xl border border-green-500/20">
-                    <span className="font-semibold text-foreground">{item.orquest}</span>
+                {statistics.alAlza.length > 0 ? statistics.alAlza.map((item: any) => (
+                  <div key={item.orquet} className="flex justify-between items-center bg-green-500/10 p-3 rounded-xl border border-green-500/20">
+                    <span className="font-semibold text-foreground">{item.orquet}</span>
                     <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-lg text-xs font-bold">+{Math.round(item.change)}%</span>
                   </div>
                 )) : <p className="text-muted-foreground text-sm text-center py-4">Sin cambios significativos</p>}
@@ -519,9 +534,9 @@ export default function Stats({ events }: StatsProps) {
 
             <StatCard title="📉 Tendencia A La Baja" icon={TrendingDown}>
               <div className="space-y-3">
-                {statistics.aLaBaja.length > 0 ? statistics.aLaBaja.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between items-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">
-                    <span className="font-semibold text-foreground">{item.orquest}</span>
+                {statistics.aLaBaja.length > 0 ? statistics.aLaBaja.map((item: any) => (
+                  <div key={item.orquet} className="flex justify-between items-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                    <span className="font-semibold text-foreground">{item.orquet}</span>
                     <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded-lg text-xs font-bold">{Math.round(item.change)}%</span>
                   </div>
                 )) : <p className="text-muted-foreground text-sm text-center py-4">Sin cambios significativos</p>}
@@ -537,15 +552,15 @@ export default function Stats({ events }: StatsProps) {
                 { label: 'Verano', data: statistics.topVerano, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/30' },
                 { label: 'Otoño', data: statistics.topOtoño, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/30' },
                 { label: 'Invierno', data: statistics.topInvierno, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30' }
-              ].map((season, idx) => (
-                <div key={idx} className="space-y-3">
+              ].map((season) => (
+                <div key={season.label} className="space-y-3">
                   <h4 className={`font-bold ${season.color} flex items-center gap-2`}>
                     <div className={`w-2 h-2 rounded-full ${season.bg}`}></div>
                     {season.label}
                   </h4>
                   <div className="space-y-2">
-                    {season.data.length > 0 ? season.data.slice(0, 3).map(([orq, count]: any, ii: number) => (
-                      <div key={ii} className="flex justify-between text-xs">
+                    {season.data.length > 0 ? season.data.slice(0, 3).map(([orq, count]: any) => (
+                      <div key={orq} className="flex justify-between text-xs">
                         <span className="text-muted-foreground truncate mr-2">{orq}</span>
                         <span className="font-semibold text-foreground">{count}</span>
                       </div>
@@ -563,8 +578,8 @@ export default function Stats({ events }: StatsProps) {
           {/* Top Municipios */}
           <StatCard title="📍 Top Municipios" icon={MapPin}>
             <div className="space-y-1">
-              {statistics.topMunicipios.map(([mun, count]: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-muted/50 px-2 rounded-lg transition-colors">
+              {statistics.topMunicipios.map(([mun, count]: any) => (
+                <div key={mun} className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-muted/50 px-2 rounded-lg transition-colors">
                   <span className="text-sm font-medium text-foreground">{mun}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -618,8 +633,8 @@ export default function Stats({ events }: StatsProps) {
           {/* Time Distribution */}
           <StatCard title="⏰ Distribución Horaria" icon={Clock}>
             <div className="space-y-2">
-              {statistics.horariosPopulares.slice(0, 5).map((item: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center bg-muted/50 rounded-lg p-2.5">
+              {statistics.horariosPopulares.slice(0, 5).map((item: any) => (
+                <div key={`${item.dia}-${item.hora}`} className="flex justify-between items-center bg-muted/50 rounded-lg p-2.5">
                   <span className="text-sm font-medium text-muted-foreground">{item.dia}</span>
                   <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{item.hora}</span>
                 </div>
@@ -634,9 +649,9 @@ export default function Stats({ events }: StatsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard title="⚡ Eficiencia" icon={Zap} className="h-full">
           <p className="text-xs text-muted-foreground mb-4">Eventos por mes activo (Top 5)</p>
-          {statistics.metricasAdicionales.eficienciaOrquestas.map((item: any, i: number) => (
-            <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
-              <span className="text-sm font-medium text-foreground">{item.orquest}</span>
+          {statistics.metricasAdicionales.eficienciaOrquestas.map((item: any) => (
+            <div key={item.orquet} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+              <span className="text-sm font-medium text-foreground">{item.orquet}</span>
               <span className="text-sm font-bold text-green-600 dark:text-green-400">{item.eficiencia} / mes</span>
             </div>
           ))}
@@ -645,8 +660,8 @@ export default function Stats({ events }: StatsProps) {
         <StatCard title="👑 Orquestas Establecidas" icon={Crown} className="h-full">
           <p className="text-xs text-muted-foreground mb-4">Líderes de la temporada</p>
           <div className="flex flex-wrap gap-2">
-            {statistics.orquestasEstablecidas.orquestas.map((item: any, i: number) => (
-              <div key={i} className="bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-500/20 flex items-center gap-2">
+            {statistics.orquestasEstablecidas.orquestas.map((item: any) => (
+              <div key={item.orquet} className="bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-500/20 flex items-center gap-2">
                 {item.orquest}
                 <span className="bg-background px-1.5 rounded text-indigo-600 dark:text-indigo-400">{item.count}</span>
               </div>

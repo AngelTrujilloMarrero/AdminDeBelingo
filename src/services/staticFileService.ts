@@ -108,4 +108,3 @@ class StaticFileService {
 }
 
 export const staticFileService = new StaticFileService();
-export default staticFileService;

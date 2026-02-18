@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { ref, push, set } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event, MUNICIPIOS, TIPOS_EVENTO } from '../types/event';
+
+const EMPTY_ORCHESTRA_NAMES: string[] = [];
+
 import {
   normalizeString,
   levenshteinDistance,
@@ -37,7 +40,7 @@ export default function EventForm({
   editingEvent,
   onEventAdded,
   onCancelEdit,
-  allOrchestraNames = []
+  allOrchestraNames = EMPTY_ORCHESTRA_NAMES
 }: EventFormProps) {
   const [formData, setFormData] = useState({
     eventDate: '',
@@ -736,9 +739,9 @@ export default function EventForm({
             {showProgramaSuggestions && programaSuggestions.length > 0 && (
               <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
                 <div className="p-2 space-y-1">
-                  {programaSuggestions.map((programa, idx) => (
+                  {programaSuggestions.map((programa) => (
                     <button
-                      key={idx}
+                      key={programa}
                       type="button"
                       onClick={() => selectPrograma(programa)}
                       className="w-full px-4 py-3 text-left rounded-lg transition-colors duration-200 text-foreground hover:bg-muted hover:text-foreground"
@@ -991,8 +994,8 @@ export default function EventForm({
                 <p className="text-yellow-800 dark:text-yellow-200 font-semibold">Advertencias detectadas:</p>
               </div>
               <ul className="ml-7 space-y-1">
-                {conflictWarnings.map((warning, idx) => (
-                  <li key={idx} className="text-yellow-700 dark:text-yellow-300 text-sm">
+                {conflictWarnings.map((warning) => (
+                  <li key={warning} className="text-yellow-700 dark:text-yellow-300 text-sm">
                     {warning}
                   </li>
                 ))}

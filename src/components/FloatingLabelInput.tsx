@@ -1,5 +1,7 @@
 import React from 'react';
 
+const EMPTY_SUGGESTIONS: string[] = [];
+
 interface FloatingLabelInputProps {
     id: string;
     label: string;
@@ -24,7 +26,7 @@ export default function FloatingLabelInput({
     icon,
     className = '',
     placeholder = '',
-    suggestions = [],
+    suggestions = EMPTY_SUGGESTIONS,
     onSuggestionClick,
     showSuggestions = false,
     inputRef
@@ -73,9 +75,9 @@ export default function FloatingLabelInput({
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => (
+                    {suggestions.map((suggestion) => (
                         <button
-                            key={index}
+                            key={typeof suggestion === 'object' ? (suggestion as any).id || suggestion.lugar || JSON.stringify(suggestion) : suggestion}
                             type="button"
                             onClick={() => onSuggestionClick?.(suggestion)}
                             className="w-full px-4 py-3 text-left hover:bg-muted/50 border-b last:border-b-0 

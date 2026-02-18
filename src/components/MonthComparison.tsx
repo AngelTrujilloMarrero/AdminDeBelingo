@@ -52,8 +52,8 @@ const getMartesCarnaval = (year: number): Date => {
 
 export default function MonthComparison({ events }: MonthComparisonProps) {
     const currentDate = new Date();
-    const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
-    const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState(() => currentDate.getMonth());
+    const [selectedYear, setSelectedYear] = useState(() => currentDate.getFullYear());
 
     const monthNames = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -211,7 +211,7 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                             className="bg-transparent text-white px-8 py-4 focus:outline-none font-black text-xl cursor-pointer hover:text-indigo-400 transition-colors uppercase tracking-widest"
                         >
                             {monthNames.map((month, index) => (
-                                <option key={index} value={index} className="bg-slate-900 text-white">{month}</option>
+                                <option key={month} value={index} className="bg-slate-900 text-white">{month}</option>
                             ))}
                         </select>
                         <div className="w-px h-12 bg-white/10 my-auto mx-3" />
@@ -257,9 +257,9 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                         <div className="h-px flex-1 bg-emerald-100" />
                     </div>
 
-                    {foundItems.map((item, index) => (
+                    {foundItems.map((item) => (
                         <div
-                            key={`found-${index}`}
+                            key={item.prevEvent.id}
                             className="bg-card rounded-[2.5rem] border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-50 dark:hover:shadow-none"
                         >
                             <div className="p-8 lg:p-10 flex flex-col xl:flex-row items-stretch gap-8">
@@ -340,9 +340,9 @@ export default function MonthComparison({ events }: MonthComparisonProps) {
                         <div className="h-px flex-1 bg-rose-100 dark:bg-rose-900/30" />
                     </div>
 
-                    {missingItems.map((item, index) => (
+                    {missingItems.map((item) => (
                         <div
-                            key={`missing-${index}`}
+                            key={item.prevEvent.id}
                             className="bg-rose-50/50 dark:bg-rose-950/10 rounded-[2.5rem] border-2 border-rose-200 dark:border-rose-900/30 hover:border-rose-300 dark:hover:border-rose-700 transition-all duration-300"
                         >
                             <div className="p-8 lg:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
