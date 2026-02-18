@@ -372,9 +372,9 @@ const CustomExport: React.FC<CustomExportProps> = ({ events, onClose }) => {
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           {/* Municipio Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <span className="block text-sm font-semibold text-gray-700 mb-3">
               Selecciona un municipio:
-            </label>
+            </span>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {municipios.map(municipio => (
                 <button
@@ -435,9 +435,10 @@ const CustomExport: React.FC<CustomExportProps> = ({ events, onClose }) => {
                     </h4>
                     <div className="space-y-2">
                       {dayEvents.map(event => (
-                        <div
+                        <button
+                          type="button"
                           key={event.id}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all w-full text-left ${
                             selectedEvents.has(event.id)
                               ? 'border-blue-500 bg-blue-50'
                               : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -474,7 +475,7 @@ const CustomExport: React.FC<CustomExportProps> = ({ events, onClose }) => {
                               <span>{event.orquesta}</span>
                             </div>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>

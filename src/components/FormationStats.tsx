@@ -258,8 +258,9 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
     return (
         <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden mb-8 transition-all duration-500">
             {/* Header con gradiente Premium */}
-            <div
-                className="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-6 cursor-pointer"
+            <button
+                type="button"
+                className="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-6 cursor-pointer w-full text-left"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex justify-between items-center">
@@ -290,7 +291,7 @@ export default function FormationStats({ events, selectedYear = 'Total' }: Forma
                         {isExpanded ? <ChevronUp className="text-white" /> : <ChevronDown className="text-white" />}
                     </div>
                 </div>
-            </div>
+            </button>
 
             {isExpanded && (
                 <div className="p-6 animate-in fade-in slide-in-from-top-4 duration-500">

@@ -1,4 +1,4 @@
-export interface SocialStats {
+interface SocialStats {
     Facebook: string;
     Instagram: string;
     WhatsApp: string;

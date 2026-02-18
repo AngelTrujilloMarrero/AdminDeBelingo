@@ -37,7 +37,7 @@ function generateCalendar(year: number, month: number, onDateSelect: (date: stri
     for (let j = 0; j < 7; j++) {
       if (i === 0 && j < adjustedFirstDay) {
         days.push(
-          <td key={`empty-${i}-${j}`} className="p-1">
+          <td key={`empty-${year}-${month}-${i}-${j}`} className="p-1">
             <div className="h-16 w-full rounded-lg bg-muted/20 dark:bg-muted/10"></div>
           </td>
         );
@@ -132,7 +132,7 @@ export default function Calendar({ onDateSelect }: CalendarProps) {
                     length: Math.ceil((new Date(cal.year, cal.month + 1, 0).getDate() +
                       (new Date(cal.year, cal.month, 1).getDay() === 0 ? 6 : new Date(cal.year, cal.month, 1).getDay() - 1)) / 7)
                   }).map((_, weekIndex) => (
-                    <tr key={weekIndex}>
+                    <tr key={`${cal.year}-${cal.month}-week-${weekIndex}`}>
                       {generateCalendar(cal.year, cal.month, onDateSelect)
                         .slice(weekIndex * 7, (weekIndex + 1) * 7)}
                     </tr>

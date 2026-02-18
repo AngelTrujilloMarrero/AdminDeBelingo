@@ -217,7 +217,7 @@ export default function Login() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
       handleLogin();
     }
@@ -315,10 +315,12 @@ export default function Login() {
 
               {/* Email */}
               <div className="relative mb-4">
+                <label htmlFor="login-email" className="sr-only">Correo electrónico</label>
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-white/60" />
                 </div>
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => {
@@ -326,7 +328,7 @@ export default function Login() {
                     if (emailError) validateEmail(e.target.value);
                   }}
                   onBlur={() => validateEmail(email)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="Correo electrónico"
                   className={`w-full pl-10 pr-4 py-3 bg-white/10 dark:bg-black/20 border rounded-xl
                              text-white placeholder-white/60 focus:outline-none focus:ring-2 
@@ -344,14 +346,16 @@ export default function Login() {
 
               {/* Password */}
               <div className="relative mb-6">
+                <label htmlFor="login-password" className="sr-only">Contraseña</label>
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-white/60" />
                 </div>
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="Contraseña"
                   className="w-full pl-10 pr-12 py-3 bg-white/10 dark:bg-black/20 border border-white/30 rounded-xl
                              text-white placeholder-white/60 focus:outline-none focus:ring-2 
@@ -360,6 +364,7 @@ export default function Login() {
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >

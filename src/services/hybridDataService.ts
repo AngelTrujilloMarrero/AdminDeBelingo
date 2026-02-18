@@ -3,14 +3,6 @@ import { db } from '../lib/firebase';
 import { Event } from '../types/event';
 import { staticFileService } from './staticFileService';
 
-export interface ArchivedEventData {
-  year: number;
-  totalEvents: number;
-  events: Event[];
-  exportDate: string;
-  migratedFromFirebase: boolean;
-}
-
 class HybridDataService {
   private currentYear: string;
 

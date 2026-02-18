@@ -14,17 +14,6 @@ export interface Event {
   programa?: string;
 }
 
-export interface EventFormData {
-  orquesta: string;
-  municipio: string;
-  lugar: string;
-  hora: string;
-  day: string;
-  tipo: string;
-  customTipo: string;
-  programa?: string;
-}
-
 export const MUNICIPIOS = [
   'Adeje', 'Arafo', 'Arico', 'Arona', 'Buenavista', 'Candelaria',
   'Rosario', 'Sauzal', 'Tanque', 'Fasnia', 'Garachico', 'Granadilla',

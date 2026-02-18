@@ -200,16 +200,10 @@ export default function Captcha({ onValidate }: CaptchaProps) {
         }
     }, [mode, generateMathChallenge, generateTextCaptcha, drawCaptcha, onValidate]);
 
+    // Initial captcha generation on mount
     useEffect(() => {
         generateCaptcha();
-    }, [mode]); // Regenerate when mode changes
-
-    useEffect(() => {
-        // Initial draw
-        if (captchaText) {
-            drawCaptcha(captchaText, mode === 'math');
-        }
-    }, [captchaText, drawCaptcha, mode]);
+    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -233,6 +227,7 @@ export default function Captcha({ onValidate }: CaptchaProps) {
 
     const toggleMode = () => {
         setMode(prev => prev === 'text' ? 'math' : 'text');
+        generateCaptcha();
     };
 
     // Text-to-speech for accessibility
@@ -299,7 +294,11 @@ export default function Captcha({ onValidate }: CaptchaProps) {
             </div>
 
             <div className="relative">
+                <label htmlFor="captcha-input" className="sr-only">
+                    {mode === 'math' ? 'Resultado de la operación' : 'Código de verificación'}
+                </label>
                 <input
+                    id="captcha-input"
                     type={mode === 'math' ? 'number' : 'text'}
                     value={userInput}
                     onChange={handleInputChange}

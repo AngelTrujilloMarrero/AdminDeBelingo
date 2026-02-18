@@ -114,10 +114,11 @@ export default function SocialStatsSync() {
                         <div className="grid grid-cols-2 gap-4">
                             {/* Instagram */}
                             <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                <label htmlFor="instagram-input" className="block text-sm font-medium text-muted-foreground mb-1">
                                     Instagram
                                 </label>
                                 <input
+                                    id="instagram-input"
                                     type="text"
                                     value={manualStats.Instagram}
                                     onChange={(e) => setManualStats({ ...manualStats, Instagram: e.target.value })}
@@ -129,10 +130,11 @@ export default function SocialStatsSync() {
 
                             {/* WhatsApp */}
                             <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                <label htmlFor="whatsapp-input" className="block text-sm font-medium text-muted-foreground mb-1">
                                     WhatsApp
                                 </label>
                                 <input
+                                    id="whatsapp-input"
                                     type="text"
                                     value={manualStats.WhatsApp}
                                     onChange={(e) => setManualStats({ ...manualStats, WhatsApp: e.target.value })}

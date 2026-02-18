@@ -15,10 +15,12 @@ import { hybridOrchestraService } from './services/hybridOrchestraService';
 function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [allOrchestraNames, setAllOrchestraNames] = useState<string[]>([]);
+  const [appState, setAppState] = useState({
+    events: [] as Event[],
+    filteredEvents: [] as Event[],
+    editingEvent: null as Event | null,
+    allOrchestraNames: [] as string[]
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -43,16 +45,17 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Verificar periódicamente si la sesión ha expirado (backup check)
+  // Session expiration check - runs periodically as backup
+  const checkSessionExpiration = () => {
+    if (isSessionExpired()) {
+      performLogout();
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
 
-    // Verificar cada minuto si la sesión ha expirado
-    const intervalId = setInterval(async () => {
-      if (isSessionExpired()) {
-        await performLogout();
-      }
-    }, 60000); // 60000ms = 1 minuto
+    const intervalId = setInterval(checkSessionExpiration, 60000);
 
     return () => clearInterval(intervalId);
   }, [user]);
@@ -103,7 +106,7 @@ function App() {
 
             // Combine and unique
             const allNames = [...new Set([...liveNames, ...archivedNames])].sort();
-            setAllOrchestraNames(allNames);
+            setAppState(prev => ({ ...prev, allOrchestraNames: allNames }));
           });
 
           return () => {
@@ -126,7 +129,7 @@ function App() {
         });
 
         const totalEvents = Array.from(eventsMap.values());
-        setEvents(totalEvents);
+        setAppState(prev => ({ ...prev, events: totalEvents }));
 
         // Actualizar filtrados (solo si no hay filtro activo)
         if (!hasActiveFilter.current) {
@@ -137,7 +140,7 @@ function App() {
             const eventDate = new Date(event.day);
             return eventDate >= twoDaysAgo;
           });
-          setFilteredEvents(filtered);
+          setAppState(prev => ({ ...prev, filteredEvents: filtered }));
         }
       };
 
@@ -167,8 +170,8 @@ function App() {
     }
 
     // Si hay un evento siendo editado, cancelar la edición
-    if (editingEvent) {
-      setEditingEvent(null);
+    if (appState.editingEvent) {
+      setAppState(prev => ({ ...prev, editingEvent: null }));
     }
 
     // Disparar evento personalizado para establecer la fecha
@@ -176,12 +179,12 @@ function App() {
   };
 
   const handleEventAdded = () => {
-    setEditingEvent(null);
+    setAppState(prev => ({ ...prev, editingEvent: null }));
     // Los eventos se actualizan automáticamente por onValue
   };
 
   const handleEditEvent = (event: Event) => {
-    setEditingEvent(event);
+    setAppState(prev => ({ ...prev, editingEvent: event }));
     const formContainer = document.getElementById('form-container');
     if (formContainer) {
       formContainer.scrollIntoView({ behavior: 'smooth' });
@@ -189,14 +192,14 @@ function App() {
   };
 
   const handleCancelEdit = () => {
-    setEditingEvent(null);
+    setAppState(prev => ({ ...prev, editingEvent: null }));
   };
 
   const hasActiveFilter = useRef(false);
 
   const handleFilterChange = (filtered: Event[]) => {
     hasActiveFilter.current = true;
-    setFilteredEvents(filtered);
+    setAppState(prev => ({ ...prev, filteredEvents: filtered }));
   };
 
   const clearFilterFlag = () => {
@@ -242,22 +245,22 @@ function App() {
             path="/"
             element={
               <MainPage
-                events={events}
-                filteredEvents={filteredEvents}
-                editingEvent={editingEvent}
+                events={appState.events}
+                filteredEvents={appState.filteredEvents}
+                editingEvent={appState.editingEvent}
                 onDateSelect={handleDateSelect}
                 onEventAdded={handleEventAdded}
                 onEditEvent={handleEditEvent}
                 onCancelEdit={handleCancelEdit}
                 onFilterChange={handleFilterChange}
                 onClearFilter={clearFilterFlag}
-                allOrchestraNames={allOrchestraNames}
+                allOrchestraNames={appState.allOrchestraNames}
               />
             }
           />
           <Route
             path="/agenda"
-            element={<AgendaPage events={events} />}
+            element={<AgendaPage events={appState.events} />}
           />
           <Route
             path="/migration"

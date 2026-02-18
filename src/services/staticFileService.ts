@@ -1,7 +1,7 @@
 // Servicio de archivos estáticos para Vite
 import { Event } from '../types/event';
 
-export interface ArchiveData {
+interface ArchiveData {
   year: number;
   totalEvents: number;
   events: Event[];

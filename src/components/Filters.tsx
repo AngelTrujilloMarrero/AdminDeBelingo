@@ -223,10 +223,12 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
           {/* Barra de búsqueda con autocompletado */}
           {showSearch && (
             <div className="relative">
+              <label htmlFor="filters-search" className="sr-only">Buscar</label>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-muted-foreground" />
               </div>
               <input
+                id="filters-search"
                 ref={searchInputRef}
                 type="text"
                 placeholder={`Buscar por ${filterSelect}...`}

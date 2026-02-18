@@ -92,7 +92,7 @@ export const socialFollowersRef = ref(db, 'socialFollowers');
  * Se conecta con el scraper para obtener datos frescos o usa fallbacks.
  * Se debe llamar cada vez que un usuario inicia sesión.
  */
-export const updateSocialFollowers = async () => {
+const updateSocialFollowers = async () => {
   try {
     console.log('Iniciando sincronización de redes sociales...');
 

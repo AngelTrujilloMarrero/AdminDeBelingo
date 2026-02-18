@@ -435,10 +435,11 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Step 1: Municipio */}
                         <div className="space-y-4">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="municipio-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 1. Selecciona Municipio
                             </label>
                             <select
+                                id="municipio-select"
                                 value={selectedMunicipio}
                                 onChange={(e) => setSelectedMunicipio(e.target.value)}
                                 className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 focus:ring-2 focus:ring-pink-500 outline-none transition-all"
@@ -469,11 +470,12 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                             {selectedMunicipio ? (
                                 <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 max-h-[300px] overflow-y-auto p-2 space-y-2">
                                     {municipioEvents.map(event => (
-                                        <div 
+                                        <button
+                                            type="button"
                                             key={event.id}
                                             onClick={() => toggleEvent(event.id)}
                                             className={`
-                                                flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all
+                                                flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all w-full text-left
                                                 ${selectedEventIds.has(event.id) 
                                                     ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800' 
                                                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-pink-300'}
@@ -505,7 +507,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </button>
                                     ))}
                                     {municipioEvents.length === 0 && (
                                         <p className="text-center text-gray-500 py-4">No hay eventos para este municipio.</p>
