@@ -178,8 +178,6 @@ export default function EventForm({
 
     setLugarSuggestions(uniquePairs);
 
-    setLugarSuggestions(uniquePairs);
-
     // LOGICA DE PROGRAMA AUTOMATICO:
     // Si estamos editando datos (fecha, lugar, municipio) y el campo programa está vácio...
     // Buscar si existe un evento cercano (mismo lugar/municipio, +/- 20 días) que tenga programa.
@@ -274,10 +272,12 @@ export default function EventForm({
 
     const val = value.trim();
 
-    if (val) {
+    if (val && lugarSuggestions.length > 0) {
       const normalizedVal = normalizeString(val);
       const filtered = lugarSuggestions.filter(({ lugar, municipio }) =>
-        normalizeString(`${lugar} (${municipio})`).includes(normalizedVal)
+        normalizeString(lugar).includes(normalizedVal) ||
+        normalizeString(municipio).includes(normalizedVal) ||
+        normalizeString(`${lugar} ${municipio}`).includes(normalizedVal)
       );
       setShowLugarSuggestions(filtered.length > 0);
     } else {
@@ -683,9 +683,12 @@ export default function EventForm({
             onChange={handleLugarInput}
             icon={<MapPin className="h-5 w-5" />}
             placeholder="Déjalo en blanco si es el sitio habitual o casco"
-            suggestions={lugarSuggestions.filter(({ lugar, municipio }) =>
-              normalizeString(`${lugar} (${municipio})`).includes(normalizeString(formData.lugar))
-            )}
+            suggestions={lugarSuggestions.filter(({ lugar, municipio }) => {
+              const normalizedInput = normalizeString(formData.lugar);
+              return normalizeString(lugar).includes(normalizedInput) ||
+                normalizeString(municipio).includes(normalizedInput) ||
+                normalizeString(`${lugar} ${municipio}`).includes(normalizedInput);
+            })}
             showSuggestions={showLugarSuggestions}
             onSuggestionClick={selectLugar}
             inputRef={lugarInputRef}
