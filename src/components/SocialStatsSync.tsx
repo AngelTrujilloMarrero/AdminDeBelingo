@@ -12,7 +12,8 @@ export default function SocialStatsSync() {
     // Estados para edición manual
     const [manualStats, setManualStats] = useState({
         Instagram: '',
-        WhatsApp: ''
+        WhatsApp: '',
+        TikTok: ''
     });
 
     // Cargar datos existentes al montar
@@ -24,13 +25,15 @@ export default function SocialStatsSync() {
                     const data = snapshot.val();
                     setManualStats({
                         Instagram: data.Instagram || '9.000',
-                        WhatsApp: data.WhatsApp || '2.200'
+                        WhatsApp: data.WhatsApp || '2.200',
+                        TikTok: data.TikTok || '0'
                     });
                 } else {
                     // Fallback por defecto si no existen datos
                     setManualStats({
                         Instagram: '9.000',
-                        WhatsApp: '2.200'
+                        WhatsApp: '2.200',
+                        TikTok: '0'
                     });
                 }
             } catch (error) {
@@ -143,6 +146,22 @@ export default function SocialStatsSync() {
                            focus:ring-purple-500 focus:border-transparent bg-background text-foreground"
                                 />
                             </div>
+
+                            {/* TikTok */}
+                            <div className="col-span-2">
+                                <label htmlFor="tiktok-input" className="block text-sm font-medium text-muted-foreground mb-1">
+                                    TikTok
+                                </label>
+                                <input
+                                    id="tiktok-input"
+                                    type="text"
+                                    value={manualStats.TikTok}
+                                    onChange={(e) => setManualStats({ ...manualStats, TikTok: e.target.value })}
+                                    placeholder="0"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 
+                           focus:ring-purple-500 focus:border-transparent bg-background text-foreground"
+                                />
+                            </div>
                         </div>
 
                         <div className="flex gap-3 mt-4">
@@ -184,10 +203,11 @@ export default function SocialStatsSync() {
                 <div className="mt-3 text-sm text-muted-foreground space-y-2 bg-muted/30 p-4 rounded-lg">
                     <p><strong>Instagram:</strong> Abre tu perfil → Mira el número de seguidores</p>
                     <p><strong>WhatsApp:</strong> Abre tu canal → Configuración → Ver estadísticas</p>
+                    <p><strong>TikTok:</strong> Abre tu perfil → Mira el número de seguidores</p>
                     <hr className="my-2 border-border" />
                     <p className="text-xs text-muted-foreground/60">
                         💡 <strong>Nota:</strong> Facebook y Telegram fueron cerrados el 23 de enero de 2026.
-                        Solo se gestionan Instagram y WhatsApp.
+                        Solo se gestionan Instagram, WhatsApp y TikTok.
                     </p>
                 </div>
             </details>
