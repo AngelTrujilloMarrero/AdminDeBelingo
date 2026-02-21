@@ -13,7 +13,8 @@ export default function SocialStatsSync() {
     const [manualStats, setManualStats] = useState({
         Instagram: '',
         WhatsApp: '',
-        TikTok: ''
+        TikTok: '',
+        TikTokLikes: ''
     });
 
     // Cargar datos existentes al montar
@@ -26,14 +27,16 @@ export default function SocialStatsSync() {
                     setManualStats({
                         Instagram: data.Instagram || '9.000',
                         WhatsApp: data.WhatsApp || '2.200',
-                        TikTok: data.TikTok || '0'
+                        TikTok: data.TikTok || '0',
+                        TikTokLikes: data.TikTokLikes || '0'
                     });
                 } else {
                     // Fallback por defecto si no existen datos
                     setManualStats({
                         Instagram: '9.000',
                         WhatsApp: '2.200',
-                        TikTok: '0'
+                        TikTok: '0',
+                        TikTokLikes: '0'
                     });
                 }
             } catch (error) {
@@ -148,7 +151,7 @@ export default function SocialStatsSync() {
                             </div>
 
                             {/* TikTok */}
-                            <div className="col-span-2">
+                            <div>
                                 <label htmlFor="tiktok-input" className="block text-sm font-medium text-muted-foreground mb-1">
                                     TikTok
                                 </label>
@@ -157,6 +160,22 @@ export default function SocialStatsSync() {
                                     type="text"
                                     value={manualStats.TikTok}
                                     onChange={(e) => setManualStats({ ...manualStats, TikTok: e.target.value })}
+                                    placeholder="0"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 
+                           focus:ring-purple-500 focus:border-transparent bg-background text-foreground"
+                                />
+                            </div>
+
+                            {/* TikTok Likes */}
+                            <div>
+                                <label htmlFor="tiktok-likes-input" className="block text-sm font-medium text-muted-foreground mb-1">
+                                    TikTok Me gusta
+                                </label>
+                                <input
+                                    id="tiktok-likes-input"
+                                    type="text"
+                                    value={manualStats.TikTokLikes}
+                                    onChange={(e) => setManualStats({ ...manualStats, TikTokLikes: e.target.value })}
                                     placeholder="0"
                                     className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 
                            focus:ring-purple-500 focus:border-transparent bg-background text-foreground"
