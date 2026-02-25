@@ -261,12 +261,8 @@ export default function EventForm({
   };
 
   const handleLugarInput = (value: string) => {
-    // Check for auto-program when lugar changes (and we have date/municipio)
     setFormData(prev => {
       const newData = { ...prev, lugar: value };
-      // Trigger logic on next render via useEffect or separate function? 
-      // Logic is in useEffect([events, formData]) or similar? 
-      // Actually, let's put the auto-fill logic in a dedicated useEffect responding to formData changes
       return newData;
     });
 
@@ -274,12 +270,37 @@ export default function EventForm({
 
     if (val && lugarSuggestions.length > 0) {
       const normalizedVal = normalizeString(val);
-      const filtered = lugarSuggestions.filter(({ lugar, municipio }) =>
-        normalizeString(lugar).includes(normalizedVal) ||
-        normalizeString(municipio).includes(normalizedVal) ||
-        normalizeString(`${lugar} ${municipio}`).includes(normalizedVal)
-      );
-      setShowLugarSuggestions(filtered.length > 0);
+      
+      const scored = lugarSuggestions
+        .map(item => {
+          const normLugar = normalizeString(item.lugar);
+          const normMunicipio = normalizeString(item.municipio);
+          const normFull = `${normLugar} ${normMunicipio}`;
+          
+          let score = 100;
+          
+          if (normLugar.startsWith(normalizedVal)) {
+            score = 1;
+          } else if (normMunicipio.startsWith(normalizedVal)) {
+            score = 2;
+          } else if (normFull.startsWith(normalizedVal)) {
+            score = 3;
+          } else if (normLugar.includes(normalizedVal)) {
+            score = 10 + levenshteinDistance(normalizedVal, normLugar);
+          } else if (normMunicipio.includes(normalizedVal)) {
+            score = 20 + levenshteinDistance(normalizedVal, normMunicipio);
+          } else if (normFull.includes(normalizedVal)) {
+            score = 30 + levenshteinDistance(normalizedVal, normFull);
+          } else {
+            return null;
+          }
+          
+          return { item, score };
+        })
+        .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
+        .sort((a, b) => a.score - b.score);
+
+      setShowLugarSuggestions(scored.length > 0);
     } else {
       setShowLugarSuggestions(false);
     }
@@ -683,12 +704,42 @@ export default function EventForm({
             onChange={handleLugarInput}
             icon={<MapPin className="h-5 w-5" />}
             placeholder="Déjalo en blanco si es el sitio habitual o casco"
-            suggestions={lugarSuggestions.filter(({ lugar, municipio }) => {
-              const normalizedInput = normalizeString(formData.lugar);
-              return normalizeString(lugar).includes(normalizedInput) ||
-                normalizeString(municipio).includes(normalizedInput) ||
-                normalizeString(`${lugar} ${municipio}`).includes(normalizedInput);
-            })}
+            suggestions={(() => {
+              const val = formData.lugar.trim();
+              if (!val) return lugarSuggestions;
+              
+              const normalizedVal = normalizeString(val);
+              
+              return lugarSuggestions
+                .map(item => {
+                  const normLugar = normalizeString(item.lugar);
+                  const normMunicipio = normalizeString(item.municipio);
+                  const normFull = `${normLugar} ${normMunicipio}`;
+                  
+                  let score = 100;
+                  
+                  if (normLugar.startsWith(normalizedVal)) {
+                    score = 1;
+                  } else if (normMunicipio.startsWith(normalizedVal)) {
+                    score = 2;
+                  } else if (normFull.startsWith(normalizedVal)) {
+                    score = 3;
+                  } else if (normLugar.includes(normalizedVal)) {
+                    score = 10 + levenshteinDistance(normalizedVal, normLugar);
+                  } else if (normMunicipio.includes(normalizedVal)) {
+                    score = 20 + levenshteinDistance(normalizedVal, normMunicipio);
+                  } else if (normFull.includes(normalizedVal)) {
+                    score = 30 + levenshteinDistance(normalizedVal, normFull);
+                  } else {
+                    return null;
+                  }
+                  
+                  return { item, score };
+                })
+                .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
+                .sort((a, b) => a.score - b.score)
+                .map(s => s.item);
+            })()}
             showSuggestions={showLugarSuggestions}
             onSuggestionClick={selectLugar}
             inputRef={lugarInputRef}
