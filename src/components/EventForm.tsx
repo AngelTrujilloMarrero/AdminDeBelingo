@@ -29,18 +29,22 @@ import {
 interface EventFormProps {
   events: Event[];
   editingEvent: Event | null;
+  isRestoredEvent?: boolean;
   onEventAdded: () => void;
   onCancelEdit: () => void;
   allOrchestraNames?: string[];
+  deletionIdToRemove?: string | null;
 }
 
 import FloatingLabelInput from './FloatingLabelInput';
 export default function EventForm({
   events,
   editingEvent,
+  isRestoredEvent,
   onEventAdded,
   onCancelEdit,
-  allOrchestraNames = EMPTY_ORCHESTRA_NAMES
+  allOrchestraNames = EMPTY_ORCHESTRA_NAMES,
+  deletionIdToRemove
 }: EventFormProps) {
   const [formData, setFormData] = useState({
     eventDate: '',
@@ -270,15 +274,15 @@ export default function EventForm({
 
     if (val && lugarSuggestions.length > 0) {
       const normalizedVal = normalizeString(val);
-      
+
       const scored = lugarSuggestions
         .map(item => {
           const normLugar = normalizeString(item.lugar);
           const normMunicipio = normalizeString(item.municipio);
           const normFull = `${normLugar} ${normMunicipio}`;
-          
+
           let score = 100;
-          
+
           if (normLugar.startsWith(normalizedVal)) {
             score = 1;
           } else if (normMunicipio.startsWith(normalizedVal)) {
@@ -294,7 +298,7 @@ export default function EventForm({
           } else {
             return null;
           }
-          
+
           return { item, score };
         })
         .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
@@ -582,6 +586,7 @@ export default function EventForm({
       .map(o => o.trim())
       .filter(o => o.length > 0);
 
+    const now = new Date().toISOString();
     const event = {
       orquesta: orquestas.map(estandarizarNombre).join(', '),
       municipio,
@@ -591,18 +596,27 @@ export default function EventForm({
       tipo: tipo === 'Otro' ? customTipo : tipo,
       editing: false,
       cancelado: false,
-      FechaAgregado: editingEvent?.FechaAgregado || new Date().toISOString(),
-      FechaEditado: new Date().toISOString(),
-      programa: programa || ""
+      FechaAgregado: editingEvent?.FechaAgregado || now,
+      FechaEditado: now,
+      programa: programa || "",
+      ...(isRestoredEvent ? { reAgregado: true } : {})
     };
 
     try {
-      if (editingEvent) {
+      if (editingEvent && !isRestoredEvent) {
         const eventRef = ref(db, `events/${editingEvent.id}`);
         await set(eventRef, event);
       } else {
         const eventsRef = ref(db, 'events');
         await push(eventsRef, event);
+
+        // Si es un evento restaurado, eliminarlo de la lista de eliminaciones
+        if (isRestoredEvent && deletionIdToRemove) {
+          const { remove } = await import('firebase/database');
+          const deletionRecordRef = ref(db, `eventDeletions/${deletionIdToRemove}`);
+          await remove(deletionRecordRef);
+          console.log(`Restored event saved and removed from eventDeletions: ${deletionIdToRemove}`);
+        }
       }
 
       clearForm();
@@ -707,17 +721,17 @@ export default function EventForm({
             suggestions={(() => {
               const val = formData.lugar.trim();
               if (!val) return lugarSuggestions;
-              
+
               const normalizedVal = normalizeString(val);
-              
+
               return lugarSuggestions
                 .map(item => {
                   const normLugar = normalizeString(item.lugar);
                   const normMunicipio = normalizeString(item.municipio);
                   const normFull = `${normLugar} ${normMunicipio}`;
-                  
+
                   let score = 100;
-                  
+
                   if (normLugar.startsWith(normalizedVal)) {
                     score = 1;
                   } else if (normMunicipio.startsWith(normalizedVal)) {
@@ -733,7 +747,7 @@ export default function EventForm({
                   } else {
                     return null;
                   }
-                  
+
                   return { item, score };
                 })
                 .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)

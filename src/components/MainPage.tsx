@@ -16,9 +16,11 @@ interface MainPageProps {
     events: Event[];
     filteredEvents: Event[];
     editingEvent: Event | null;
+    isRestoredEvent?: boolean;
+    deletionIdToRemove?: string | null;
     onDateSelect: (date: string) => void;
     onEventAdded: () => void;
-    onEditEvent: (event: Event) => void;
+    onEditEvent: (event: Event, isRestored?: boolean, deletionId?: string) => void;
     onCancelEdit: () => void;
     onFilterChange: (filtered: Event[]) => void;
     onClearFilter: () => void;
@@ -29,6 +31,8 @@ export default function MainPage({
     events,
     filteredEvents,
     editingEvent,
+    isRestoredEvent,
+    deletionIdToRemove,
     onDateSelect,
     onEventAdded,
     onEditEvent,
@@ -53,6 +57,8 @@ export default function MainPage({
                 <EventForm
                     events={events}
                     editingEvent={editingEvent}
+                    isRestoredEvent={isRestoredEvent}
+                    deletionIdToRemove={deletionIdToRemove}
                     onEventAdded={onEventAdded}
                     onCancelEdit={onCancelEdit}
                     allOrchestraNames={allOrchestraNames}

@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { ref, onValue, remove } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event } from '../types/event';
-import { Trash2, RotateCcw, Calendar, MapPin, Music, Clock, AlertCircle } from 'lucide-react';
+import { Trash2, RotateCcw, Calendar, MapPin, Music, Clock, AlertCircle, XCircle } from 'lucide-react';
 
 interface DeletedEventsPanelProps {
-    onRestore: (event: Event) => void;
+    onRestore: (event: Event, isRestored?: boolean, deletionId?: string) => void;
 }
 
 interface DeletionRecord {
@@ -41,12 +41,8 @@ export default function DeletedEventsPanel({ onRestore }: DeletedEventsPanelProp
 
     const handleRestore = async (record: DeletionRecord) => {
         try {
-            // 1. Llamar a la función de restauración (cargar en el formulario arriba)
-            onRestore(record.eventData);
-
-            // 2. Eliminar de la lista de eliminados automáticamente
-            const recordRef = ref(db, `eventDeletions/${record.id}`);
-            await remove(recordRef);
+            // Pasar el ID de la eliminación para que se elimine cuando se guarde el evento
+            onRestore(record.eventData, true, record.id);
 
             // Scroll up to form
             const formContainer = document.getElementById('form-container');
@@ -56,6 +52,25 @@ export default function DeletedEventsPanel({ onRestore }: DeletedEventsPanelProp
         } catch (error) {
             console.error('Error al procesar restauración:', error);
             alert('Error al intentar restaurar el evento');
+        }
+    };
+
+    const handleDeletePermanently = async (record: DeletionRecord) => {
+        const confirmDelete = window.confirm(
+            `¿Estás seguro de eliminar DEFINITIVAMENTE este evento?\n\n` +
+            `${record.eventData.orquesta}\n` +
+            `${record.eventData.day} - ${record.eventData.municipio}\n\n` +
+            `Esta acción no se puede deshacer.`
+        );
+        
+        if (!confirmDelete) return;
+
+        try {
+            const recordRef = ref(db, `eventDeletions/${record.id}`);
+            await remove(recordRef);
+        } catch (error) {
+            console.error('Error al eliminar permanentemente:', error);
+            alert('Error al intentar eliminar el evento');
         }
     };
 
@@ -106,13 +121,23 @@ export default function DeletedEventsPanel({ onRestore }: DeletedEventsPanelProp
                                                 {event.hora}
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => handleRestore(record)}
-                                            className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all"
-                                        >
-                                            <RotateCcw className="w-3.5 h-3.5" />
-                                            Restaurar
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRestore(record)}
+                                                className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all"
+                                            >
+                                                <RotateCcw className="w-3.5 h-3.5" />
+                                                Restaurar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeletePermanently(record)}
+                                                className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white dark:hover:bg-red-600 transition-all"
+                                                title="Eliminar definitivamente"
+                                            >
+                                                <XCircle className="w-3.5 h-3.5" />
+                                                Eliminar
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-1">

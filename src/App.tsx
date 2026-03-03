@@ -19,7 +19,9 @@ function App() {
     events: [] as Event[],
     filteredEvents: [] as Event[],
     editingEvent: null as Event | null,
-    allOrchestraNames: [] as string[]
+    allOrchestraNames: [] as string[],
+    isRestoredEvent: false as boolean,
+    deletionIdToRemove: null as string | null
   });
 
   useEffect(() => {
@@ -179,12 +181,12 @@ function App() {
   };
 
   const handleEventAdded = () => {
-    setAppState(prev => ({ ...prev, editingEvent: null }));
+    setAppState(prev => ({ ...prev, editingEvent: null, isRestoredEvent: false, deletionIdToRemove: null }));
     // Los eventos se actualizan automáticamente por onValue
   };
 
-  const handleEditEvent = (event: Event) => {
-    setAppState(prev => ({ ...prev, editingEvent: event }));
+  const handleEditEvent = (event: Event, isRestored?: boolean, deletionId?: string) => {
+    setAppState(prev => ({ ...prev, editingEvent: event, isRestoredEvent: isRestored ?? false, deletionIdToRemove: deletionId }));
     const formContainer = document.getElementById('form-container');
     if (formContainer) {
       formContainer.scrollIntoView({ behavior: 'smooth' });
@@ -192,7 +194,7 @@ function App() {
   };
 
   const handleCancelEdit = () => {
-    setAppState(prev => ({ ...prev, editingEvent: null }));
+    setAppState(prev => ({ ...prev, editingEvent: null, isRestoredEvent: false, deletionIdToRemove: null }));
   };
 
   const hasActiveFilter = useRef(false);
@@ -226,11 +228,11 @@ function App() {
 
   const userEmail = user.email || 'Usuario';
 
-   return (
-     <Router>
-       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-background to-purple-50 dark:from-indigo-950 dark:via-background dark:to-purple-950">
-         {/* Header moderno */}
-         <Header userEmail={userEmail} />
+  return (
+    <Router>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-background to-purple-50 dark:from-indigo-950 dark:via-background dark:to-purple-950">
+        {/* Header moderno */}
+        <Header userEmail={userEmail} />
 
         {/* Monitor de inactividad */}
         <SessionTimeout
@@ -248,6 +250,8 @@ function App() {
                 events={appState.events}
                 filteredEvents={appState.filteredEvents}
                 editingEvent={appState.editingEvent}
+                isRestoredEvent={appState.isRestoredEvent}
+                deletionIdToRemove={appState.deletionIdToRemove}
                 onDateSelect={handleDateSelect}
                 onEventAdded={handleEventAdded}
                 onEditEvent={handleEditEvent}
