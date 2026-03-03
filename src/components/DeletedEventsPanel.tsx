@@ -82,7 +82,7 @@ export default function DeletedEventsPanel({ onRestore }: DeletedEventsPanelProp
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {deletedEvents.slice(0, 6).map((record) => {
+                        {deletedEvents.slice(0, 10).map((record) => {
                             const event = record.eventData;
                             const date = new Date(event.day).toLocaleDateString('es-ES', {
                                 weekday: 'short',
@@ -134,9 +134,9 @@ export default function DeletedEventsPanel({ onRestore }: DeletedEventsPanelProp
                         })}
                     </div>
 
-                    {deletedEvents.length > 6 && (
+                    {deletedEvents.length > 10 && (
                         <p className="text-center text-xs text-muted-foreground mt-4">
-                            Mostrando los últimos 6 de {deletedEvents.length} eventos eliminados.
+                            Mostrando los últimos 10 de {deletedEvents.length} eventos eliminados.
                         </p>
                     )}
                 </div>
