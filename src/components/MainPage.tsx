@@ -9,6 +9,7 @@ import OrchestraForm from './OrchestraForm';
 import FormationTagger from './FormationTagger';
 import MessageAdmin from './MessageAdmin';
 import ExportFestivalDialog from './ExportFestivalDialog';
+import DeletedEventsPanel from './DeletedEventsPanel';
 import { FileImage } from 'lucide-react';
 
 interface MainPageProps {
@@ -58,8 +59,8 @@ export default function MainPage({
                 />
             </section>
 
-             {/* Sección de Herramientas (Exportar) */}
-             <section>
+            {/* Sección de Herramientas (Exportar) */}
+            <section>
                 <div className="max-w-4xl mx-auto px-6 flex justify-center">
                     <button
                         onClick={() => setShowExportDialog(true)}
@@ -99,6 +100,11 @@ export default function MainPage({
                 <EventList events={filteredEvents} onEditEvent={onEditEvent} />
             </section>
 
+            {/* Panel de eventos eliminados */}
+            <section>
+                <DeletedEventsPanel onRestore={onEditEvent} />
+            </section>
+
             {/* Sección de administración del chat */}
             <section>
                 <div className="max-w-4xl mx-auto px-6">
@@ -108,9 +114,9 @@ export default function MainPage({
 
             {/* Dialogs */}
             {showExportDialog && (
-                <ExportFestivalDialog 
-                    events={events} 
-                    onClose={() => setShowExportDialog(false)} 
+                <ExportFestivalDialog
+                    events={events}
+                    onClose={() => setShowExportDialog(false)}
                 />
             )}
         </div>
