@@ -61,10 +61,10 @@ export default function FloatingLabelInput({
             absolute ${icon ? 'left-11' : 'left-4'} transition-all duration-300 pointer-events-none
             text-muted-foreground origin-left
             ${isDateInput
-                            ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
+                            ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90'
                             : `peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base
-                 peer-focus:top-2 peer-focus:text-xs peer-focus:font-medium peer-focus:text-indigo-600 peer-focus:dark:text-indigo-400 peer-focus:scale-90
-                 ${hasValue ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90' : 'top-1/2 -translate-y-1/2 text-base'}`
+                 peer-focus:top-2 peer-focus:text-xs peer-focus:font-medium peer-focus:text-blue-800 peer-focus:dark:text-indigo-400 peer-focus:scale-90
+                 ${hasValue ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90' : 'top-1/2 -translate-y-1/2 text-base'}`
                         }
           `}
                 >
