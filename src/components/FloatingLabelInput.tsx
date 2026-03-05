@@ -38,7 +38,7 @@ export default function FloatingLabelInput({
         <div className={`relative ${className}`}>
             <div className="relative">
                 {icon && (
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground dark:text-white pointer-events-none">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground dark:!text-white pointer-events-none">
                         {icon}
                     </div>
                 )}
