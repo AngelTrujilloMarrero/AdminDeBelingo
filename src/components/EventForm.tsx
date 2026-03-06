@@ -596,7 +596,19 @@ export default function EventForm({
       const changes: string[] = [];
       if (editingEvent.hora !== hora) changes.push('hora');
       if (editingEvent.day !== eventDate) changes.push('dia');
-      if (editingEvent.orquesta !== finalOrquesta) changes.push('orquestas');
+      
+      if (editingEvent.orquesta !== finalOrquesta) {
+        const oldOrqs = editingEvent.orquesta.split(',').map(o => o.trim()).filter(Boolean);
+        const newOrqs = finalOrquesta.split(',').map(o => o.trim()).filter(Boolean);
+        
+        const added = newOrqs.filter(o => !oldOrqs.includes(o));
+        const removed = oldOrqs.filter(o => !newOrqs.includes(o));
+        
+        if (added.length > 0 && removed.length === 0) changes.push('orquesta_add');
+        else if (removed.length > 0 && added.length === 0) changes.push('orquesta_rem');
+        else changes.push('orquestas');
+      }
+
       if ((editingEvent.lugar || '') !== (lugar || '')) changes.push('lugar');
       if (editingEvent.municipio !== municipio) changes.push('municipio');
       if (editingEvent.tipo !== finalTipo) changes.push('tipo');
