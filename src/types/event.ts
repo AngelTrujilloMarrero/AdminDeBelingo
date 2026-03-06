@@ -12,6 +12,7 @@ export interface Event {
   FechaEditado: string;
   isArchived?: boolean;
   programa?: string;
+  cambios?: string[];
 }
 
 export const MUNICIPIOS = [

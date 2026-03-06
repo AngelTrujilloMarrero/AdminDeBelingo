@@ -587,19 +587,36 @@ export default function EventForm({
       .filter(o => o.length > 0);
 
     const now = new Date().toISOString();
+    const finalOrquesta = orquestas.map(estandarizarNombre).join(', ');
+    const finalTipo = tipo === 'Otro' ? customTipo : tipo;
+
+    // Detectar qué campos cambiaron respecto al evento original
+    let cambios: string[] | undefined;
+    if (editingEvent && !isRestoredEvent) {
+      const changes: string[] = [];
+      if (editingEvent.hora !== hora) changes.push('hora');
+      if (editingEvent.day !== eventDate) changes.push('dia');
+      if (editingEvent.orquesta !== finalOrquesta) changes.push('orquestas');
+      if ((editingEvent.lugar || '') !== (lugar || '')) changes.push('lugar');
+      if (editingEvent.municipio !== municipio) changes.push('municipio');
+      if (editingEvent.tipo !== finalTipo) changes.push('tipo');
+      if (changes.length > 0) cambios = changes;
+    }
+
     const event = {
-      orquesta: orquestas.map(estandarizarNombre).join(', '),
+      orquesta: finalOrquesta,
       municipio,
       lugar,
       hora,
       day: eventDate,
-      tipo: tipo === 'Otro' ? customTipo : tipo,
+      tipo: finalTipo,
       editing: false,
       cancelado: false,
       FechaAgregado: editingEvent?.FechaAgregado || now,
       FechaEditado: now,
       programa: programa || "",
-      ...(isRestoredEvent ? { reAgregado: true } : {})
+      ...(isRestoredEvent ? { reAgregado: true } : {}),
+      ...(cambios ? { cambios } : {})
     };
 
     try {
