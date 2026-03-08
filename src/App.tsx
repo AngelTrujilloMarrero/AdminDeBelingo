@@ -20,6 +20,7 @@ function App() {
     filteredEvents: [] as Event[],
     editingEvent: null as Event | null,
     allOrchestraNames: [] as string[],
+    allOrchestras: [] as any[],
     isRestoredEvent: false as boolean,
     deletionIdToRemove: null as string | null
   });
@@ -108,7 +109,18 @@ function App() {
 
             // Combine and unique
             const allNames = [...new Set([...liveNames, ...archivedNames])].sort();
-            setAppState(prev => ({ ...prev, allOrchestraNames: allNames }));
+            
+            // Map live and archived data for full objects
+            const mergedMap = new Map<string, any>();
+            archivedOrchs.forEach(o => mergedMap.set(o.name, o));
+            Object.values(liveData).forEach((o: any) => mergedMap.set(o.name, o));
+            const totalOrchestras = Array.from(mergedMap.values());
+
+            setAppState(prev => ({ 
+              ...prev, 
+              allOrchestraNames: allNames,
+              allOrchestras: totalOrchestras 
+            }));
           });
 
           return () => {
@@ -259,6 +271,7 @@ function App() {
                 onFilterChange={handleFilterChange}
                 onClearFilter={clearFilterFlag}
                 allOrchestraNames={appState.allOrchestraNames}
+                allOrchestras={appState.allOrchestras}
               />
             }
           />

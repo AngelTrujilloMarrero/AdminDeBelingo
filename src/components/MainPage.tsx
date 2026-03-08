@@ -25,6 +25,7 @@ interface MainPageProps {
     onFilterChange: (filtered: Event[]) => void;
     onClearFilter: () => void;
     allOrchestraNames: string[];
+    allOrchestras: any[];
 }
 
 export default function MainPage({
@@ -39,7 +40,8 @@ export default function MainPage({
     onCancelEdit,
     onFilterChange,
     onClearFilter,
-    allOrchestraNames
+    allOrchestraNames,
+    allOrchestras
 }: MainPageProps) {
     const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -62,6 +64,7 @@ export default function MainPage({
                     onEventAdded={onEventAdded}
                     onCancelEdit={onCancelEdit}
                     allOrchestraNames={allOrchestraNames}
+                    allOrchestras={allOrchestras}
                 />
             </section>
 

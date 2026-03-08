@@ -19,7 +19,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         facebook: '',
         instagram: '',
         other: '',
-        type: '' as 'orquesta' | 'grupo' | 'solista' | ''
+        type: '' as 'orquesta' | 'grupo' | 'solista' | 'dj' | ''
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -282,7 +282,7 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
                 {/* Type Selection in Form */}
                 <div className="flex flex-wrap gap-4 items-center p-4 bg-muted rounded-xl border border-border">
                     <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-2">Tipo:</span>
-                    {(['orquesta', 'grupo', 'solista'] as const).map((t) => (
+                    {(['orquesta', 'grupo', 'solista', 'dj'] as const).map((t) => (
                         <button
                             key={t}
                             onClick={() => setFormData({ ...formData, type: t })}

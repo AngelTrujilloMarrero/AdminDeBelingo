@@ -33,6 +33,7 @@ interface EventFormProps {
   onEventAdded: () => void;
   onCancelEdit: () => void;
   allOrchestraNames?: string[];
+  allOrchestras?: any[];
   deletionIdToRemove?: string | null;
 }
 
@@ -44,6 +45,7 @@ export default function EventForm({
   onEventAdded,
   onCancelEdit,
   allOrchestraNames = EMPTY_ORCHESTRA_NAMES,
+  allOrchestras = [],
   deletionIdToRemove
 }: EventFormProps) {
   const [formData, setFormData] = useState({
@@ -604,9 +606,28 @@ export default function EventForm({
         const added = newOrqs.filter(o => !oldOrqs.includes(o));
         const removed = oldOrqs.filter(o => !newOrqs.includes(o));
         
-        if (added.length > 0 && removed.length === 0) changes.push('orquesta_add');
-        else if (removed.length > 0 && added.length === 0) changes.push('orquesta_rem');
-        else changes.push('orquestas');
+        if (added.length > 0 && removed.length === 0) {
+          // Si solo hay una formación añadida, intentar ser específico con su tipo
+          if (added.length === 1) {
+            const addedOrq = added[0];
+            const orchestraInfo = allOrchestras.find(o => estandarizarNombre(o.name) === estandarizarNombre(addedOrq));
+            const type = orchestraInfo?.type || 'orquesta'; // por defecto orquesta
+            changes.push(`${type}_add`);
+          } else {
+            changes.push('orquesta_add');
+          }
+        } else if (removed.length > 0 && added.length === 0) {
+          if (removed.length === 1) {
+            const removedOrq = removed[0];
+            const orchestraInfo = allOrchestras.find(o => estandarizarNombre(o.name) === estandarizarNombre(removedOrq));
+            const type = orchestraInfo?.type || 'orquesta';
+            changes.push(`${type}_rem`);
+          } else {
+            changes.push('orquesta_rem');
+          }
+        } else {
+          changes.push('orquestas');
+        }
       }
 
       if ((editingEvent.lugar || '') !== (lugar || '')) changes.push('lugar');
