@@ -30,6 +30,7 @@ interface Visit {
   timestamp: number;
   page: string;
   country: string;
+  countryCode?: string;
   city?: string;
   browser: string;
   os: string;
@@ -287,32 +288,28 @@ export default function Analytics() {
     }
   };
 
-  const getCountryFlag = (country: string) => {
+  const getCountryFlag = (countryCode?: string, countryName?: string) => {
+    if (countryCode && countryCode !== 'UN' && countryCode !== 'Unknown') {
+      // Convertir código ISO (ES, US...) a emoji de bandera
+      const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+      return String.fromCodePoint(...codePoints);
+    }
+    
+    // Fallback para datos antiguos o desconocidos
     const flags: { [key: string]: string } = {
-      'Spain': '🇪🇸',
-      'United States': '🇺🇸',
+      'Spain': '🇪🇸', 'España': '🇪🇸',
+      'United States': '🇺🇸', 'USA': '🇺🇸',
       'United Kingdom': '🇬🇧',
-      'France': '🇫🇷',
-      'Germany': '🇩🇪',
-      'Italy': '🇮🇹',
-      'Portugal': '🇵🇹',
-      'Netherlands': '🇳🇱',
-      'Belgium': '🇧🇪',
-      'Argentina': '🇦🇷',
-      'Mexico': '🇲🇽',
-      'Colombia': '🇨🇴',
-      'Chile': '🇨🇱',
-      'Peru': '🇵🇪',
-      'Brazil': '🇧🇷',
-      'Canada': '🇨🇦',
-      'Australia': '🇦🇺',
-      'Japan': '🇯🇵',
-      'China': '🇨🇳',
-      'India': '🇮🇳',
-      'Unknown': '🌍',
-      'Desconocido': '🌍'
+      'France': '🇫🇷', 'Germany': '🇩🇪',
+      'Italy': '🇮🇹', 'Portugal': '🇵🇹',
+      'Argentina': '🇦🇷', 'Mexico': '🇲🇽',
+      'Colombia': '🇨🇴', 'Chile': '🇨🇱', 'Peru': '🇵🇪',
+      'Brazil': '🇧🇷', 'Unknown': '🌍'
     };
-    return flags[country] || '🌍';
+    return flags[countryName || ''] || '🌍';
   };
 
   const topPages = Object.entries(analytics.pageStats)
@@ -321,7 +318,7 @@ export default function Analytics() {
 
   const topCountries = Object.entries(analytics.countryStats)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 10);
+    .slice(0, 20);
 
   const topBrowsers = Object.entries(analytics.browserStats)
     .sort(([, a], [, b]) => b - a);
@@ -497,7 +494,9 @@ export default function Analytics() {
             {topCountries.map(([country, count], index) => (
               <div key={country} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{getCountryFlag(country)}</span>
+                  <span className="text-lg">
+                    {getCountryFlag(visits.find(v => v.country === country)?.countryCode, country)}
+                  </span>
                   <span className="font-medium text-foreground">{country}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -939,7 +938,7 @@ export default function Analytics() {
                   <td className="p-3 text-sm text-muted-foreground">{formatTimeAgo(visit.timestamp)}</td>
                   <td className="p-3 text-sm">
                     <span className="flex items-center gap-2">
-                      <span>{getCountryFlag(visit.country)}</span>
+                      <span>{getCountryFlag(visit.countryCode, visit.country)}</span>
                       <span className="text-foreground">{visit.country}</span>
                     </span>
                   </td>
