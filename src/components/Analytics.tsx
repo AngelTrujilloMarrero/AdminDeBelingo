@@ -72,10 +72,13 @@ export default function Analytics() {
 
     const fetchVisitCount = async () => {
       try {
-        const snapshot = await get(ref(db, 'visitCount'));
-        if (snapshot.exists()) {
-          setVisitCount(snapshot.val());
-        }
+        const visitCountRef = ref(db, 'visitCount');
+        const unsubscribeVisitCount = onValue(visitCountRef, (snapshot) => {
+          if (snapshot.exists()) {
+            setVisitCount(snapshot.val());
+          }
+        });
+        return () => unsubscribeVisitCount();
       } catch (error) {
         console.error('Error fetching visitCount:', error);
       }
