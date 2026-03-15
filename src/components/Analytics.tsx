@@ -210,7 +210,8 @@ export default function Analytics() {
       'Japan': '🇯🇵',
       'China': '🇨🇳',
       'India': '🇮🇳',
-      'Unknown': '🌍'
+      'Unknown': '🌍',
+      'Desconocido': '🌍'
     };
     return flags[country] || '🌍';
   };
@@ -251,7 +252,7 @@ export default function Analytics() {
               {autoRefresh && (
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-xs text-green-600 dark:text-green-400">LIVE</span>
+                  <span className="text-xs text-green-600 dark:text-green-400">EN VIVO</span>
                 </span>
               )}
             </div>
@@ -270,7 +271,7 @@ export default function Analytics() {
           }`}
         >
           <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
-          {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+          {autoRefresh ? 'Auto-refresco ACTIVADO' : 'Auto-refresco DESACTIVADO'}
         </button>
       </div>
 
@@ -462,7 +463,9 @@ export default function Analytics() {
               <div key={device} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {getDeviceIcon(device)}
-                  <span className="font-medium text-foreground capitalize">{device}</span>
+                  <span className="font-medium text-foreground capitalize">
+                    {device === 'mobile' ? 'Móvil' : device === 'tablet' ? 'Tablet' : 'Escritorio'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
@@ -580,8 +583,7 @@ export default function Analytics() {
                   <div key={device} className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-foreground capitalize flex items-center gap-2">
-                        {device === 'mobile' ? '📱 Móvil' : device === 'tablet' ? '📱 Tablet' : '💻 Desktop'}
-                        {device}
+                        {device === 'mobile' ? '📱 Móvil' : device === 'tablet' ? '📱 Tablet' : '💻 Escritorio'}
                       </span>
                       <span className="text-sm font-bold text-muted-foreground">{percent}%</span>
                     </div>
@@ -631,7 +633,7 @@ export default function Analytics() {
                   <td className="p-3 text-sm">
                     <span className="flex items-center gap-1 text-foreground capitalize">
                       {getDeviceIcon(visit.device)}
-                      {visit.device}
+                      {visit.device === 'mobile' ? 'Móvil' : visit.device === 'tablet' ? 'Tablet' : 'Escritorio'}
                     </span>
                   </td>
                   <td className="p-3 text-sm text-foreground">{visit.browser}</td>
