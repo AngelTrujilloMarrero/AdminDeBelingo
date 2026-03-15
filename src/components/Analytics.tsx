@@ -40,28 +40,62 @@ interface Visit {
   device: string;
   referrer: string;
   duration?: number;
-  // Parámetros técnicos
+  // Pantalla
   screenWidth?: number;
   screenHeight?: number;
   viewportWidth?: number;
   viewportHeight?: number;
   pixelRatio?: number;
+  colorDepth?: number;
+  orientation?: string;
+  availWidth?: number;
+  availHeight?: number;
+  screenOrientation?: string;
+  // Localización
   language?: string;
+  languages?: string[];
+  languageCount?: number;
   timezone?: string;
+  // Conexión
   connection?: string;
+  connectionType?: string;
+  downlink?: number;
+  downlinkMax?: number;
+  rtt?: number;
+  saveData?: boolean;
+  // Hardware
   memory?: number;
   cores?: number;
-  colorDepth?: number;
   touchPoints?: number;
-  orientation?: string;
+  touchSupport?: boolean;
+  // Preferencias UX
   darkTheme?: boolean;
   reducedMotion?: boolean;
-  saveData?: boolean;
-  downlink?: number;
+  reducedTransparency?: boolean;
+  prefersContrast?: string;
+  colorGamut?: string;
+  monochrome?: boolean;
+  invertedColors?: boolean;
+  forcedColors?: boolean;
+  // Privacidad y Entorno
   cookiesEnabled?: boolean;
   doNotTrack?: boolean;
+  pdfViewerEnabled?: boolean;
+  webdriver?: boolean;
+  vendor?: string;
+  platform?: string;
+  isSecureContext?: boolean;
+  online?: boolean;
+  historyLength?: number;
+  clipboardEnabled?: boolean;
+  // Detección
   isBot?: boolean;
+  // Rendimiento
   loadTime?: number;
+  ttfb?: number;
+  firstPaint?: number;
+  domInteractive?: number;
+  // Marketing
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
@@ -80,9 +114,14 @@ interface AnalyticsData {
   languageStats: { [key: string]: number };
   timezoneStats: { [key: string]: number };
   connectionStats: { [key: string]: number };
+  connectionTypeStats: { [key: string]: number };
   resolutionStats: { [key: string]: number };
   userPrefs: {
     darkTheme: { dark: number, light: number };
+    reducedMotion: { yes: number, no: number };
+    reducedTransparency: { yes: number, no: number };
+    prefersContrast: { more: number, less: number, custom: number, none: number };
+    colorGamut: { srgb: number, p3: number, rec2020: number };
     saveData: { active: number, inactive: number };
     downlink: { fast: number, medium: number, slow: number };
   };
@@ -90,9 +129,20 @@ interface AnalyticsData {
     memory: { [key: string]: number };
     cores: { [key: string]: number };
     touch: { [key: string]: number };
+    touchSupport: { yes: number, no: number };
+  };
+  privacyStats: {
+    pdfViewerEnabled: number;
+    webdriver: number;
+    secureContext: number;
+    online: number;
+    clipboard: number;
+    forcedColors: number;
   };
   performanceStats: {
     avgLoadTime: number;
+    avgTTFB: number;
+    avgFirstPaint: number;
     fastLoads: number;
     slowLoads: number;
     totalMeasured: number;
@@ -178,18 +228,34 @@ export default function Analytics() {
     const languageStats: { [key: string]: number } = {};
     const timezoneStats: { [key: string]: number } = {};
     const connectionStats: { [key: string]: number } = {};
+    const connectionTypeStats: { [key: string]: number } = {};
     const resolutionStats: { [key: string]: number } = {};
     const userPrefs = {
       darkTheme: { dark: 0, light: 0 },
+      reducedMotion: { yes: 0, no: 0 },
+      reducedTransparency: { yes: 0, no: 0 },
+      prefersContrast: { more: 0, less: 0, custom: 0, none: 0 },
+      colorGamut: { srgb: 0, p3: 0, rec2020: 0 },
       saveData: { active: 0, inactive: 0 },
       downlink: { fast: 0, medium: 0, slow: 0 }
     };
     const hardwareStats = {
       memory: {} as { [key: string]: number },
       cores: {} as { [key: string]: number },
-      touch: {} as { [key: string]: number }
+      touch: {} as { [key: string]: number },
+      touchSupport: { yes: 0, no: 0 }
+    };
+    const privacyStats = {
+      pdfViewerEnabled: 0,
+      webdriver: 0,
+      secureContext: 0,
+      online: 0,
+      clipboard: 0,
+      forcedColors: 0
     };
     const loadTimes: number[] = [];
+    const ttfbTimes: number[] = [];
+    const firstPaintTimes: number[] = [];
     const perfStats = { fastLoads: 0, slowLoads: 0 };
     let botCount = 0;
     const utmStats: { [key: string]: number } = {};
@@ -216,6 +282,9 @@ export default function Analytics() {
       if (visit.connection) {
         connectionStats[visit.connection] = (connectionStats[visit.connection] || 0) + 1;
       }
+      if (visit.connectionType) {
+        connectionTypeStats[visit.connectionType] = (connectionTypeStats[visit.connectionType] || 0) + 1;
+      }
       if (visit.screenWidth && visit.screenHeight) {
         const res = `${visit.screenWidth}×${visit.screenHeight}`;
         resolutionStats[res] = (resolutionStats[res] || 0) + 1;
@@ -234,10 +303,30 @@ export default function Analytics() {
         const touchLabel = visit.touchPoints > 0 ? 'Táctil' : 'No Táctil';
         hardwareStats.touch[touchLabel] = (hardwareStats.touch[touchLabel] || 0) + 1;
       }
+      if (visit.touchSupport !== undefined) {
+        visit.touchSupport ? hardwareStats.touchSupport.yes++ : hardwareStats.touchSupport.no++;
+      }
 
       // Stats de Preferencias
       if (visit.darkTheme !== undefined) {
         visit.darkTheme ? userPrefs.darkTheme.dark++ : userPrefs.darkTheme.light++;
+      }
+      if (visit.reducedMotion !== undefined) {
+        visit.reducedMotion ? userPrefs.reducedMotion.yes++ : userPrefs.reducedMotion.no++;
+      }
+      if (visit.reducedTransparency !== undefined) {
+        visit.reducedTransparency ? userPrefs.reducedTransparency.yes++ : userPrefs.reducedTransparency.no++;
+      }
+      if (visit.prefersContrast) {
+        if (visit.prefersContrast === 'more') userPrefs.prefersContrast.more++;
+        else if (visit.prefersContrast === 'less') userPrefs.prefersContrast.less++;
+        else if (visit.prefersContrast === 'custom') userPrefs.prefersContrast.custom++;
+        else userPrefs.prefersContrast.none++;
+      }
+      if (visit.colorGamut) {
+        if (visit.colorGamut === 'p3') userPrefs.colorGamut.p3++;
+        else if (visit.colorGamut === 'rec2020') userPrefs.colorGamut.rec2020++;
+        else userPrefs.colorGamut.srgb++;
       }
       if (visit.saveData !== undefined) {
         visit.saveData ? userPrefs.saveData.active++ : userPrefs.saveData.inactive++;
@@ -254,9 +343,23 @@ export default function Analytics() {
         if (visit.loadTime < 2000) perfStats.fastLoads++;
         else perfStats.slowLoads++;
       }
+      if (visit.ttfb && visit.ttfb > 0) {
+        ttfbTimes.push(visit.ttfb);
+      }
+      if (visit.firstPaint && visit.firstPaint > 0) {
+        firstPaintTimes.push(visit.firstPaint);
+      }
 
       // Bot detection
       if (visit.isBot) botCount++;
+
+      // Stats de Privacidad
+      if (visit.pdfViewerEnabled) privacyStats.pdfViewerEnabled++;
+      if (visit.webdriver) privacyStats.webdriver++;
+      if (visit.isSecureContext) privacyStats.secureContext++;
+      if (visit.online) privacyStats.online++;
+      if (visit.clipboardEnabled) privacyStats.clipboard++;
+      if (visit.forcedColors) privacyStats.forcedColors++;
 
       // UTM tracking
       if (visit.utmSource) {
@@ -307,11 +410,15 @@ export default function Analytics() {
       languageStats,
       timezoneStats,
       connectionStats,
+      connectionTypeStats,
       resolutionStats,
       userPrefs,
       hardwareStats,
+      privacyStats,
       performanceStats: {
         avgLoadTime: loadTimes.length > 0 ? Math.round(loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length) : 0,
+        avgTTFB: ttfbTimes.length > 0 ? Math.round(ttfbTimes.reduce((a, b) => a + b, 0) / ttfbTimes.length) : 0,
+        avgFirstPaint: firstPaintTimes.length > 0 ? Math.round(firstPaintTimes.reduce((a, b) => a + b, 0) / firstPaintTimes.length) : 0,
         fastLoads: perfStats.fastLoads,
         slowLoads: perfStats.slowLoads,
         totalMeasured: loadTimes.length
@@ -763,6 +870,76 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Preferencias de Accesibilidad */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Reducción de Movimiento */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Movimiento Reducido</h3>
+          </div>
+          <div className="flex items-center justify-around">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">{analytics.userPrefs.reducedMotion.yes}</p>
+              <p className="text-[10px] uppercase text-muted-foreground font-bold">Activado</p>
+            </div>
+            <div className="w-px h-10 bg-border" />
+            <div className="text-center">
+              <p className="text-2xl font-bold text-orange-500">{analytics.userPrefs.reducedMotion.no}</p>
+              <p className="text-[10px] uppercase text-muted-foreground font-bold">Normal</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Contraste */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Preferencia de Contraste</h3>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Alto</span>
+              <span className="font-bold text-blue-600">{analytics.userPrefs.prefersContrast.more}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Bajo</span>
+              <span className="font-bold text-blue-400">{analytics.userPrefs.prefersContrast.less}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Personalizado</span>
+              <span className="font-bold text-purple-500">{analytics.userPrefs.prefersContrast.custom}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Normal</span>
+              <span className="font-bold text-gray-500">{analytics.userPrefs.prefersContrast.none}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Color Gamut */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Gama de Color</h3>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">sRGB (Estándar)</span>
+              <span className="font-bold text-gray-600">{analytics.userPrefs.colorGamut.srgb}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Display P3</span>
+              <span className="font-bold text-green-600">{analytics.userPrefs.colorGamut.p3}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Rec.2020</span>
+              <span className="font-bold text-blue-600">{analytics.userPrefs.colorGamut.rec2020}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Preferencias y Comportamiento */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico de Modo Oscuro */}
@@ -819,37 +996,49 @@ export default function Analytics() {
             <Timer className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <h3 className="font-bold text-foreground">Rendimiento (Carga)</h3>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800">
-              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Carga Media</p>
-              <div className="flex items-baseline gap-1">
-                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">
-                  {analytics.performanceStats.avgLoadTime > 0 ? (analytics.performanceStats.avgLoadTime / 1000).toFixed(2) : '-'}
-                </p>
-                <span className="text-sm font-bold text-indigo-500">seg</span>
-              </div>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800 text-center">
+              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">TTFB</p>
+              <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">
+                {analytics.performanceStats.avgTTFB > 0 ? analytics.performanceStats.avgTTFB : '-'}
+              </p>
+              <p className="text-[8px] text-indigo-400">ms</p>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">⚡ Rápidas (&lt;2s)</span>
-                <span className="font-bold text-green-600">{analytics.performanceStats.fastLoads}</span>
-              </div>
-              <div className="h-1 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-green-500" 
-                  style={{ width: `${(analytics.performanceStats.fastLoads / (analytics.performanceStats.totalMeasured || 1)) * 100}%` }} 
-                />
-              </div>
-              <div className="flex justify-between items-center text-xs mt-2">
-                <span className="text-muted-foreground">🐢 Lentas (&gt;2s)</span>
-                <span className="font-bold text-orange-500">{analytics.performanceStats.slowLoads}</span>
-              </div>
-              <div className="h-1 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-orange-500" 
-                  style={{ width: `${(analytics.performanceStats.slowLoads / (analytics.performanceStats.totalMeasured || 1)) * 100}%` }} 
-                />
-              </div>
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800 text-center">
+              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">FCP</p>
+              <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">
+                {analytics.performanceStats.avgFirstPaint > 0 ? analytics.performanceStats.avgFirstPaint : '-'}
+              </p>
+              <p className="text-[8px] text-indigo-400">ms</p>
+            </div>
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800 text-center">
+              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Carga</p>
+              <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">
+                {analytics.performanceStats.avgLoadTime > 0 ? (analytics.performanceStats.avgLoadTime / 1000).toFixed(1) : '-'}
+              </p>
+              <p className="text-[8px] text-indigo-400">seg</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">⚡ Rápidas (&lt;2s)</span>
+              <span className="font-bold text-green-600">{analytics.performanceStats.fastLoads}</span>
+            </div>
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-green-500" 
+                style={{ width: `${(analytics.performanceStats.fastLoads / (analytics.performanceStats.totalMeasured || 1)) * 100}%` }} 
+              />
+            </div>
+            <div className="flex justify-between items-center text-xs mt-2">
+              <span className="text-muted-foreground">🐢 Lentas (&gt;2s)</span>
+              <span className="font-bold text-orange-500">{analytics.performanceStats.slowLoads}</span>
+            </div>
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-orange-500" 
+                style={{ width: `${(analytics.performanceStats.slowLoads / (analytics.performanceStats.totalMeasured || 1)) * 100}%` }} 
+              />
             </div>
           </div>
         </div>
@@ -1092,11 +1281,23 @@ export default function Analytics() {
                 .sort(([, a], [, b]) => b - a)
                 .map(([conn, count]) => {
                   const percent = Math.round((count / analytics.totalVisits) * 100);
-                  const color = conn === '4g' ? 'bg-green-500' : conn === '3g' ? 'bg-yellow-500' : conn === '2g' ? 'bg-orange-500' : 'bg-blue-500';
+                  const color = 
+                    conn === 'wifi' ? 'bg-cyan-500' :
+                    conn === '5g' ? 'bg-green-600' :
+                    conn === '4g' ? 'bg-green-500' : 
+                    conn === '3g' ? 'bg-yellow-500' : 
+                    conn === '2g' ? 'bg-orange-500' : 'bg-blue-500';
+                  const label = 
+                    conn === 'wifi' ? 'WiFi' :
+                    conn === '5g' ? '5G' :
+                    conn === '4g' ? '4G' :
+                    conn === '3g' ? '3G' :
+                    conn === '2g' ? '2G' :
+                    conn === 'unknown' ? 'Desconocido' : conn;
                   return (
                     <div key={conn} className="space-y-1">
                       <div className="flex justify-between">
-                        <span className="font-medium text-foreground uppercase text-sm">{conn}</span>
+                        <span className="font-medium text-foreground uppercase text-sm">{label}</span>
                         <span className="text-sm font-bold text-muted-foreground">{percent}%</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden">
