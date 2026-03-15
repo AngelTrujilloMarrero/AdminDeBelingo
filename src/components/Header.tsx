@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { NavLink, useLocation } from 'react-router-dom';
 import { auth, clearLoginTimestamp, getLoginTimestamp } from '../lib/firebase';
-import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X, Database, Moon, Sun } from 'lucide-react';
+import { LogOut, User, Clock, CalendarDays, BarChart3, ListTodo, Menu, X, Database, Moon, Sun, Activity } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
 
 interface HeaderProps {
@@ -111,6 +111,18 @@ export default function Header({ userEmail }: HeaderProps) {
                 <Database className="w-4 h-4" />
                 Migración
               </NavLink>
+              <NavLink
+                to="/analytics"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${isActive
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-white/90 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <Activity className="w-4 h-4" />
+                Analytics
+              </NavLink>
             </nav>
           </div>
 
@@ -190,6 +202,22 @@ export default function Header({ userEmail }: HeaderProps) {
                 <BarChart3 className={`w-5 h-5 ${location.pathname === '/agenda' ? 'text-indigo-600' : 'text-white'}`} />
               </div>
               Estadísticas
+            </NavLink>
+
+            <NavLink
+              to="/analytics"
+              onClick={() => setIsMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${isActive
+                  ? 'bg-white text-indigo-600 shadow-lg translate-x-1'
+                  : 'text-white/90 hover:bg-white/10 hover:translate-x-1'
+                }`
+              }
+            >
+              <div className={`p-2 rounded-lg ${location.pathname === '/analytics' ? 'bg-indigo-100/50' : 'bg-white/5'}`}>
+                <Activity className={`w-5 h-5 ${location.pathname === '/analytics' ? 'text-indigo-600' : 'text-white'}`} />
+              </div>
+              Analytics
             </NavLink>
 
             <div className="pt-4 mt-2 border-t border-white/10">

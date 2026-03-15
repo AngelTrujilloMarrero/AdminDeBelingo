@@ -10,6 +10,7 @@ import SessionTimeout from './components/SessionTimeout';
 import MainPage from './components/MainPage';
 import AgendaPage from './components/AgendaPage';
 import MigrationPage from './components/MigrationPanel';
+import Analytics from './components/Analytics';
 import { hybridOrchestraService } from './services/hybridOrchestraService';
 
 function App() {
@@ -282,6 +283,10 @@ function App() {
           <Route
             path="/migration"
             element={<MigrationPage />}
+          />
+          <Route
+            path="/analytics"
+            element={<Analytics />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
