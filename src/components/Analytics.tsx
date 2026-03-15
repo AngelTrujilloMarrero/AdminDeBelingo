@@ -14,7 +14,10 @@ import {
   RefreshCw,
   ArrowUp,
   ArrowDown,
-  Eye
+  Eye,
+  Languages,
+  Wifi,
+  Maximize2
 } from 'lucide-react';
 
 interface Visit {
@@ -28,6 +31,12 @@ interface Visit {
   device: string;
   referrer: string;
   duration?: number;
+  // Nuevos campos
+  screenWidth?: number;
+  screenHeight?: number;
+  language?: string;
+  timezone?: string;
+  connection?: string;
 }
 
 interface AnalyticsData {
@@ -40,6 +49,10 @@ interface AnalyticsData {
   pageStats: { [key: string]: number };
   countryStats: { [key: string]: number };
   referrerStats: { [key: string]: number };
+  languageStats: { [key: string]: number };
+  timezoneStats: { [key: string]: number };
+  connectionStats: { [key: string]: number };
+  resolutionStats: { [key: string]: number };
   todayVisits: number;
   last24hVisits: number;
   visitsByDay: { [key: string]: number };
@@ -113,6 +126,10 @@ export default function Analytics() {
     const pageStats: { [key: string]: number } = {};
     const countryStats: { [key: string]: number } = {};
     const referrerStats: { [key: string]: number } = {};
+    const languageStats: { [key: string]: number } = {};
+    const timezoneStats: { [key: string]: number } = {};
+    const connectionStats: { [key: string]: number } = {};
+    const resolutionStats: { [key: string]: number } = {};
 
     visits.forEach(visit => {
       browserStats[visit.browser] = (browserStats[visit.browser] || 0) + 1;
@@ -122,6 +139,22 @@ export default function Analytics() {
       countryStats[visit.country] = (countryStats[visit.country] || 0) + 1;
       const ref = visit.referrer || 'direct';
       referrerStats[ref] = (referrerStats[ref] || 0) + 1;
+      if (visit.language) {
+        // Simplificar: tomar solo el idioma base (ej: 'es-ES' → 'es')
+        const lang = visit.language.split('-')[0].toLowerCase();
+        languageStats[lang] = (languageStats[lang] || 0) + 1;
+      }
+      if (visit.timezone) {
+        timezoneStats[visit.timezone] = (timezoneStats[visit.timezone] || 0) + 1;
+      }
+      if (visit.connection) {
+        connectionStats[visit.connection] = (connectionStats[visit.connection] || 0) + 1;
+      }
+      if (visit.screenWidth && visit.screenHeight) {
+        // Agrupar por resolución
+        const res = `${visit.screenWidth}×${visit.screenHeight}`;
+        resolutionStats[res] = (resolutionStats[res] || 0) + 1;
+      }
     });
 
     const todayVisits = visits.filter(v => v.timestamp >= todayStartMs).length;
@@ -156,6 +189,10 @@ export default function Analytics() {
       pageStats,
       countryStats,
       referrerStats,
+      languageStats,
+      timezoneStats,
+      connectionStats,
+      resolutionStats,
       todayVisits,
       last24hVisits,
       visitsByDay,
@@ -600,7 +637,110 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Recent Visits Table */}
+      {/* Nueva fila: Idiomas, Zonas horarias, Resoluciones, Conexión */}
+      {(Object.keys(analytics.languageStats).length > 0 || Object.keys(analytics.resolutionStats).length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Idiomas */}
+          {Object.keys(analytics.languageStats).length > 0 && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center gap-3">
+                <Languages className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-bold text-foreground">Idiomas</h3>
+              </div>
+              <div className="p-5 space-y-3">
+                {Object.entries(analytics.languageStats)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([lang, count]) => (
+                    <div key={lang} className="flex items-center justify-between">
+                      <span className="font-medium text-foreground uppercase text-sm">{lang}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full"
+                            style={{ width: `${(count / analytics.totalVisits) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-bold text-muted-foreground w-8 text-right">{count}</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Zonas Horarias */}
+          {Object.keys(analytics.timezoneStats).length > 0 && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center gap-3">
+                <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-bold text-foreground">Zonas Horarias</h3>
+              </div>
+              <div className="p-5 space-y-3 max-h-60 overflow-y-auto">
+                {Object.entries(analytics.timezoneStats)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 8)
+                  .map(([tz, count]) => (
+                    <div key={tz} className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground text-xs truncate" title={tz}>{tz}</span>
+                      <span className="text-sm font-bold text-muted-foreground shrink-0">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Resoluciones de pantalla */}
+          {Object.keys(analytics.resolutionStats).length > 0 && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center gap-3">
+                <Maximize2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-bold text-foreground">Resoluciones</h3>
+              </div>
+              <div className="p-5 space-y-3 max-h-60 overflow-y-auto">
+                {Object.entries(analytics.resolutionStats)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 8)
+                  .map(([res, count]) => (
+                    <div key={res} className="flex items-center justify-between">
+                      <span className="font-medium text-foreground text-sm font-mono">{res}</span>
+                      <span className="text-sm font-bold text-muted-foreground">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tipo de conexión */}
+          {Object.keys(analytics.connectionStats).length > 0 && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center gap-3">
+                <Wifi className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="font-bold text-foreground">Tipo de Red</h3>
+              </div>
+              <div className="p-5 space-y-3">
+                {Object.entries(analytics.connectionStats)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([conn, count]) => {
+                    const percent = Math.round((count / analytics.totalVisits) * 100);
+                    const color = conn === '4g' ? 'bg-green-500' : conn === '3g' ? 'bg-yellow-500' : conn === '2g' ? 'bg-orange-500' : 'bg-blue-500';
+                    return (
+                      <div key={conn} className="space-y-1">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-foreground uppercase text-sm">{conn}</span>
+                          <span className="text-sm font-bold text-muted-foreground">{percent}%</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border flex items-center gap-3">
           <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -615,6 +755,7 @@ export default function Analytics() {
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Ciudad</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Página</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Dispositivo</th>
+                <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">SO</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Navegador</th>
               </tr>
             </thead>
@@ -636,12 +777,13 @@ export default function Analytics() {
                       {visit.device === 'mobile' ? 'Móvil' : visit.device === 'tablet' ? 'Tablet' : 'Escritorio'}
                     </span>
                   </td>
+                  <td className="p-3 text-sm text-foreground">{visit.os}</td>
                   <td className="p-3 text-sm text-foreground">{visit.browser}</td>
                 </tr>
               ))}
               {recentVisits.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
                     No hay visitas registradas
                   </td>
                 </tr>
