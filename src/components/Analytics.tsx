@@ -17,7 +17,9 @@ import {
   Eye,
   Languages,
   Wifi,
-  Maximize2
+  Maximize2,
+  Cpu,
+  Zap
 } from 'lucide-react';
 
 interface Visit {
@@ -31,12 +33,17 @@ interface Visit {
   device: string;
   referrer: string;
   duration?: number;
-  // Nuevos campos
+  // Parámetros técnicos
   screenWidth?: number;
   screenHeight?: number;
   language?: string;
   timezone?: string;
   connection?: string;
+  memory?: number;
+  cores?: number;
+  colorDepth?: number;
+  touchPoints?: number;
+  orientation?: string;
 }
 
 interface AnalyticsData {
@@ -53,6 +60,11 @@ interface AnalyticsData {
   timezoneStats: { [key: string]: number };
   connectionStats: { [key: string]: number };
   resolutionStats: { [key: string]: number };
+  hardwareStats: {
+    memory: { [key: string]: number };
+    cores: { [key: string]: number };
+    touch: { [key: string]: number };
+  };
   todayVisits: number;
   last24hVisits: number;
   visitsByDay: { [key: string]: number };
@@ -130,6 +142,11 @@ export default function Analytics() {
     const timezoneStats: { [key: string]: number } = {};
     const connectionStats: { [key: string]: number } = {};
     const resolutionStats: { [key: string]: number } = {};
+    const hardwareStats = {
+      memory: {} as { [key: string]: number },
+      cores: {} as { [key: string]: number },
+      touch: {} as { [key: string]: number }
+    };
 
     visits.forEach(visit => {
       browserStats[visit.browser] = (browserStats[visit.browser] || 0) + 1;
@@ -151,9 +168,22 @@ export default function Analytics() {
         connectionStats[visit.connection] = (connectionStats[visit.connection] || 0) + 1;
       }
       if (visit.screenWidth && visit.screenHeight) {
-        // Agrupar por resolución
         const res = `${visit.screenWidth}×${visit.screenHeight}`;
         resolutionStats[res] = (resolutionStats[res] || 0) + 1;
+      }
+      
+      // Stats de Hardware
+      if (visit.memory) {
+        const memLabel = `${visit.memory} GB`;
+        hardwareStats.memory[memLabel] = (hardwareStats.memory[memLabel] || 0) + 1;
+      }
+      if (visit.cores) {
+        const coresLabel = `${visit.cores} Núcleos`;
+        hardwareStats.cores[coresLabel] = (hardwareStats.cores[coresLabel] || 0) + 1;
+      }
+      if (visit.touchPoints !== undefined) {
+        const touchLabel = visit.touchPoints > 0 ? 'Táctil' : 'No Táctil';
+        hardwareStats.touch[touchLabel] = (hardwareStats.touch[touchLabel] || 0) + 1;
       }
     });
 
@@ -193,6 +223,7 @@ export default function Analytics() {
       timezoneStats,
       connectionStats,
       resolutionStats,
+      hardwareStats,
       todayVisits,
       last24hVisits,
       visitsByDay,
@@ -633,6 +664,64 @@ export default function Analytics() {
                   </div>
                 );
               })}
+          </div>
+        </div>
+      </div>
+
+      {/* Hardware y Rendimiento */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-border flex items-center gap-3">
+          <Cpu className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <h3 className="font-bold text-foreground">Perfil de Hardware</h3>
+        </div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Memoria RAM */}
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
+              <Zap className="w-3 h-3" /> Memoria RAM
+            </p>
+            <div className="space-y-3">
+              {Object.entries(analytics.hardwareStats.memory).length > 0 ? (
+                Object.entries(analytics.hardwareStats.memory).sort(([,a], [,b]) => b - a).map(([label, count]) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{count}</span>
+                  </div>
+                ))
+              ) : <p className="text-xs italic text-muted-foreground">Sin datos</p>}
+            </div>
+          </div>
+          {/* CPU */}
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
+              <Cpu className="w-3 h-3" /> Procesador
+            </p>
+            <div className="space-y-3">
+              {Object.entries(analytics.hardwareStats.cores).length > 0 ? (
+                Object.entries(analytics.hardwareStats.cores).sort(([,a], [,b]) => b - a).map(([label, count]) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{count}</span>
+                  </div>
+                ))
+              ) : <p className="text-xs italic text-muted-foreground">Sin datos</p>}
+            </div>
+          </div>
+          {/* Pantalla Táctil */}
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
+              <Smartphone className="w-3 h-3" /> Interfaz
+            </p>
+            <div className="space-y-3">
+              {Object.entries(analytics.hardwareStats.touch).length > 0 ? (
+                Object.entries(analytics.hardwareStats.touch).sort(([,a], [,b]) => b - a).map(([label, count]) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-sm font-bold text-green-600 dark:text-green-400">{count}</span>
+                  </div>
+                ))
+              ) : <p className="text-xs italic text-muted-foreground">Sin datos</p>}
+            </div>
           </div>
         </div>
       </div>
