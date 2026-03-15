@@ -53,7 +53,7 @@ export default function Analytics() {
   const [visitCount, setVisitCount] = useState<number>(0);
 
   useEffect(() => {
-    const visitsRef = query(ref(db, 'analytics/visits'), limitToLast(500));
+    const visitsRef = query(ref(db, 'analytics/visits'), limitToLast(5000));
     
     const unsubscribe = onValue(visitsRef, (snapshot) => {
       const data = snapshot.val();
