@@ -93,7 +93,7 @@ export default function Analytics() {
     
     const interval = setInterval(() => {
       setLastUpdate(new Date());
-    }, 30000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [autoRefresh]);
@@ -239,7 +239,15 @@ export default function Analytics() {
             <Activity className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Analytics en Tiempo Real</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-foreground">Analytics en Tiempo Real</h2>
+              {autoRefresh && (
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs text-green-600 dark:text-green-400">LIVE</span>
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               Última actualización: {lastUpdate.toLocaleTimeString('es-ES')}
             </p>
