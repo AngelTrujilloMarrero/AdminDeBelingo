@@ -39,6 +39,7 @@ interface AnalyticsData {
   osStats: { [key: string]: number };
   pageStats: { [key: string]: number };
   countryStats: { [key: string]: number };
+  referrerStats: { [key: string]: number };
   todayVisits: number;
   last24hVisits: number;
   visitsByDay: { [key: string]: number };
@@ -51,6 +52,7 @@ export default function Analytics() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [visitCount, setVisitCount] = useState<number>(0);
+  const [visibleVisits, setVisibleVisits] = useState(100);
 
   useEffect(() => {
     const visitsRef = query(ref(db, 'analytics/visits'), limitToLast(5000));
@@ -110,6 +112,7 @@ export default function Analytics() {
     const osStats: { [key: string]: number } = {};
     const pageStats: { [key: string]: number } = {};
     const countryStats: { [key: string]: number } = {};
+    const referrerStats: { [key: string]: number } = {};
 
     visits.forEach(visit => {
       browserStats[visit.browser] = (browserStats[visit.browser] || 0) + 1;
@@ -117,6 +120,8 @@ export default function Analytics() {
       osStats[visit.os] = (osStats[visit.os] || 0) + 1;
       pageStats[visit.page] = (pageStats[visit.page] || 0) + 1;
       countryStats[visit.country] = (countryStats[visit.country] || 0) + 1;
+      const ref = visit.referrer || 'direct';
+      referrerStats[ref] = (referrerStats[ref] || 0) + 1;
     });
 
     const todayVisits = visits.filter(v => v.timestamp >= todayStartMs).length;
@@ -150,6 +155,7 @@ export default function Analytics() {
       osStats,
       pageStats,
       countryStats,
+      referrerStats,
       todayVisits,
       last24hVisits,
       visitsByDay,
@@ -220,7 +226,7 @@ export default function Analytics() {
   const topBrowsers = Object.entries(analytics.browserStats)
     .sort(([, a], [, b]) => b - a);
 
-  const recentVisits = visits.slice(0, 20);
+  const recentVisits = visits.slice(0, visibleVisits);
 
   if (loading) {
     return (
@@ -501,6 +507,97 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Additional Stats - Referrers & Detailed Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Top Referrers */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Globe className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Procedencia (Referrers)</h3>
+          </div>
+          <div className="p-5 space-y-3 max-h-80 overflow-y-auto">
+            {Object.entries(analytics.referrerStats)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 10)
+              .map(([referrer, count]) => (
+                <div key={referrer} className="flex items-center justify-between">
+                  <span className="font-medium text-foreground text-sm truncate max-w-[200px]" title={referrer}>
+                    {referrer === 'direct' ? '🟢 Directo' : referrer.length > 30 ? `...${referrer.slice(-30)}` : referrer}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${(count / analytics.totalVisits) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-muted-foreground w-10 text-right">{count}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Top OS */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Monitor className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Sistemas Operativos</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            {Object.entries(analytics.osStats)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 6)
+              .map(([os, count]) => (
+                <div key={os} className="flex items-center justify-between">
+                  <span className="font-medium text-foreground">{os}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-purple-500 rounded-full"
+                        style={{ width: `${(count / analytics.totalVisits) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-muted-foreground w-10 text-right">{count}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Device Breakdown */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Smartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Dispositivos</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            {Object.entries(analytics.deviceStats)
+              .sort(([, a], [, b]) => b - a)
+              .map(([device, count]) => {
+                const percent = Math.round((count / analytics.totalVisits) * 100);
+                return (
+                  <div key={device} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground capitalize flex items-center gap-2">
+                        {device === 'mobile' ? '📱 Móvil' : device === 'tablet' ? '📱 Tablet' : '💻 Desktop'}
+                        {device}
+                      </span>
+                      <span className="text-sm font-bold text-muted-foreground">{percent}%</span>
+                    </div>
+                    <div className="h-3 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${device === 'mobile' ? 'bg-green-500' : device === 'tablet' ? 'bg-orange-500' : 'bg-blue-500'}`}
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      </div>
+
       {/* Recent Visits Table */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border flex items-center gap-3">
@@ -550,6 +647,16 @@ export default function Analytics() {
             </tbody>
           </table>
         </div>
+        {visibleVisits < visits.length && (
+          <div className="p-4 border-t border-border text-center">
+            <button
+              onClick={() => setVisibleVisits(v => v + 100)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+            >
+              Ver más ({visits.length - visibleVisits} restantes)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
