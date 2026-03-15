@@ -916,7 +916,7 @@ export default function Analytics() {
                 <Monitor className="w-5 h-5 text-indigo-600" />
                 <div>
                   <p className="text-sm font-bold text-foreground">Pantallas Retina / HiDPI</p>
-                  <p className="text-[10px] text-muted-foreground">Alta densidad de píxeles (>1x)</p>
+                  <p className="text-[10px] text-muted-foreground">Alta densidad de píxeles (&gt;1x)</p>
                 </div>
               </div>
               <div className="text-right">
