@@ -22,7 +22,10 @@ import {
   Zap,
   Moon,
   Wind,
-  MousePointer2
+  MousePointer2,
+  Timer,
+  Bot,
+  Megaphone
 } from 'lucide-react';
 
 interface Visit {
@@ -40,6 +43,9 @@ interface Visit {
   // Parámetros técnicos
   screenWidth?: number;
   screenHeight?: number;
+  viewportWidth?: number;
+  viewportHeight?: number;
+  pixelRatio?: number;
   language?: string;
   timezone?: string;
   connection?: string;
@@ -52,6 +58,13 @@ interface Visit {
   reducedMotion?: boolean;
   saveData?: boolean;
   downlink?: number;
+  cookiesEnabled?: boolean;
+  doNotTrack?: boolean;
+  isBot?: boolean;
+  loadTime?: number;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
 }
 
 interface AnalyticsData {
@@ -78,6 +91,17 @@ interface AnalyticsData {
     cores: { [key: string]: number };
     touch: { [key: string]: number };
   };
+  performanceStats: {
+    avgLoadTime: number;
+    fastLoads: number;
+    slowLoads: number;
+    totalMeasured: number;
+  };
+  botCount: number;
+  utmStats: { [key: string]: number };
+  retinaCount: number;
+  cookiesDisabled: number;
+  dntEnabled: number;
   todayVisits: number;
   last24hVisits: number;
   visitsByDay: { [key: string]: number };
@@ -165,6 +189,13 @@ export default function Analytics() {
       cores: {} as { [key: string]: number },
       touch: {} as { [key: string]: number }
     };
+    const loadTimes: number[] = [];
+    const perfStats = { fastLoads: 0, slowLoads: 0 };
+    let botCount = 0;
+    const utmStats: { [key: string]: number } = {};
+    let retinaCount = 0;
+    let cookiesDisabled = 0;
+    let dntEnabled = 0;
 
     visits.forEach(visit => {
       browserStats[visit.browser] = (browserStats[visit.browser] || 0) + 1;
@@ -216,6 +247,29 @@ export default function Analytics() {
         else if (visit.downlink >= 1) userPrefs.downlink.medium++;
         else userPrefs.downlink.slow++;
       }
+
+      // Stats de Rendimiento
+      if (visit.loadTime && visit.loadTime > 0) {
+        loadTimes.push(visit.loadTime);
+        if (visit.loadTime < 2000) perfStats.fastLoads++;
+        else perfStats.slowLoads++;
+      }
+
+      // Bot detection
+      if (visit.isBot) botCount++;
+
+      // UTM tracking
+      if (visit.utmSource) {
+        const key = `${visit.utmSource}${visit.utmMedium ? ' / ' + visit.utmMedium : ''}${visit.utmCampaign ? ' / ' + visit.utmCampaign : ''}`;
+        utmStats[key] = (utmStats[key] || 0) + 1;
+      }
+
+      // Retina/HiDPI
+      if (visit.pixelRatio && visit.pixelRatio > 1) retinaCount++;
+
+      // Privacy
+      if (visit.cookiesEnabled === false) cookiesDisabled++;
+      if (visit.doNotTrack === true) dntEnabled++;
     });
 
     const todayVisits = visits.filter(v => v.timestamp >= todayStartMs).length;
@@ -256,6 +310,17 @@ export default function Analytics() {
       resolutionStats,
       userPrefs,
       hardwareStats,
+      performanceStats: {
+        avgLoadTime: loadTimes.length > 0 ? Math.round(loadTimes.reduce((a, b) => a + b, 0) / loadTimes.length) : 0,
+        fastLoads: perfStats.fastLoads,
+        slowLoads: perfStats.slowLoads,
+        totalMeasured: loadTimes.length
+      },
+      botCount,
+      utmStats,
+      retinaCount,
+      cookiesDisabled,
+      dntEnabled,
       todayVisits,
       last24hVisits,
       visitsByDay,
@@ -741,6 +806,139 @@ export default function Analytics() {
                 {analytics.userPrefs.downlink.fast > analytics.userPrefs.downlink.medium ? '⚡ RÁPIDA' : '📉 MEDIA'}
               </p>
               <p className="text-[10px] text-muted-foreground">Medio: {analytics.userPrefs.downlink.fast} v.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Rendimiento, Seguridad y Privacidad */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Rendimiento */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5 overflow-hidden">
+          <div className="flex items-center gap-3 mb-6">
+            <Timer className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Rendimiento (Carga)</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800">
+              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">Carga Media</p>
+              <div className="flex items-baseline gap-1">
+                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">
+                  {analytics.performanceStats.avgLoadTime > 0 ? (analytics.performanceStats.avgLoadTime / 1000).toFixed(2) : '-'}
+                </p>
+                <span className="text-sm font-bold text-indigo-500">seg</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-muted-foreground">⚡ Rápidas (&lt;2s)</span>
+                <span className="font-bold text-green-600">{analytics.performanceStats.fastLoads}</span>
+              </div>
+              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-500" 
+                  style={{ width: `${(analytics.performanceStats.fastLoads / (analytics.performanceStats.totalMeasured || 1)) * 100}%` }} 
+                />
+              </div>
+              <div className="flex justify-between items-center text-xs mt-2">
+                <span className="text-muted-foreground">🐢 Lentas (&gt;2s)</span>
+                <span className="font-bold text-orange-500">{analytics.performanceStats.slowLoads}</span>
+              </div>
+              <div className="h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-orange-500" 
+                  style={{ width: `${(analytics.performanceStats.slowLoads / (analytics.performanceStats.totalMeasured || 1)) * 100}%` }} 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Seguridad y Privacidad */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-6">
+            <Bot className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Seguridad y Privacidad</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-muted/30 rounded-xl border border-border">
+              <Bot className="w-4 h-4 mx-auto mb-1 text-red-500" />
+              <p className="text-lg font-bold text-foreground">{analytics.botCount}</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">Bots</p>
+            </div>
+            <div className="text-center p-3 bg-muted/30 rounded-xl border border-border">
+              <Wind className="w-4 h-4 mx-auto mb-1 text-blue-500" />
+              <p className="text-lg font-bold text-foreground">{analytics.dntEnabled}</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">Do Not Track</p>
+            </div>
+            <div className="text-center p-3 bg-muted/30 rounded-xl border border-border">
+              <RefreshCw className="w-4 h-4 mx-auto mb-1 text-orange-500" />
+              <p className="text-lg font-bold text-foreground">{analytics.cookiesDisabled}</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold">No Cookies</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Marketing y Pantalla Pro */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Campañas UTM */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Megaphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Campañas UTM (Origen)</h3>
+          </div>
+          <div className="p-5 space-y-3 max-h-48 overflow-y-auto">
+            {Object.keys(analytics.utmStats).length > 0 ? (
+              Object.entries(analytics.utmStats)
+                .sort(([, a], [, b]) => b - a)
+                .map(([utm, count]) => (
+                  <div key={utm} className="flex items-center justify-between group">
+                    <span className="text-xs font-medium text-muted-foreground truncate max-w-[280px]" title={utm}>{utm}</span>
+                    <span className="text-sm font-bold text-foreground bg-muted px-2 py-0.5 rounded-md">{count}</span>
+                  </div>
+                ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-8 italic">No se han detectado campañas UTM</p>
+            )}
+          </div>
+        </div>
+
+        {/* Pantallas y Viewport */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-6">
+            <Maximize2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Visualización Avanzada</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+              <div className="flex items-center gap-3">
+                <Monitor className="w-5 h-5 text-indigo-600" />
+                <div>
+                  <p className="text-sm font-bold text-foreground">Pantallas Retina / HiDPI</p>
+                  <p className="text-[10px] text-muted-foreground">Alta densidad de píxeles (>1x)</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">
+                  {Math.round((analytics.retinaCount / (analytics.totalVisits || 1)) * 100)}%
+                </p>
+                <p className="text-[10px] font-bold text-indigo-500 uppercase">{analytics.retinaCount} v.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="p-3 border border-border rounded-xl">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Móvil Horizontal</p>
+                <p className="text-lg font-bold text-foreground">
+                  {analytics.visits.filter(v => v.device === 'mobile' && v.orientation?.includes('landscape')).length}
+                </p>
+              </div>
+              <div className="p-3 border border-border rounded-xl">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Viewport Medio</p>
+                <p className="text-xs font-mono font-bold text-indigo-600">
+                  {Math.round(analytics.visits.reduce((acc, v) => acc + (v.viewportWidth || 0), 0) / (analytics.totalVisits || 1))}px
+                </p>
+              </div>
             </div>
           </div>
         </div>
