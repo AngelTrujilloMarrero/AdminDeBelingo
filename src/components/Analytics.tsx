@@ -19,7 +19,10 @@ import {
   Wifi,
   Maximize2,
   Cpu,
-  Zap
+  Zap,
+  Moon,
+  Wind,
+  MousePointer2
 } from 'lucide-react';
 
 interface Visit {
@@ -44,6 +47,10 @@ interface Visit {
   colorDepth?: number;
   touchPoints?: number;
   orientation?: string;
+  darkTheme?: boolean;
+  reducedMotion?: boolean;
+  saveData?: boolean;
+  downlink?: number;
 }
 
 interface AnalyticsData {
@@ -60,6 +67,11 @@ interface AnalyticsData {
   timezoneStats: { [key: string]: number };
   connectionStats: { [key: string]: number };
   resolutionStats: { [key: string]: number };
+  userPrefs: {
+    darkTheme: { dark: number, light: number };
+    saveData: { active: number, inactive: number };
+    downlink: { fast: number, medium: number, slow: number };
+  };
   hardwareStats: {
     memory: { [key: string]: number };
     cores: { [key: string]: number };
@@ -142,6 +154,11 @@ export default function Analytics() {
     const timezoneStats: { [key: string]: number } = {};
     const connectionStats: { [key: string]: number } = {};
     const resolutionStats: { [key: string]: number } = {};
+    const userPrefs = {
+      darkTheme: { dark: 0, light: 0 },
+      saveData: { active: 0, inactive: 0 },
+      downlink: { fast: 0, medium: 0, slow: 0 }
+    };
     const hardwareStats = {
       memory: {} as { [key: string]: number },
       cores: {} as { [key: string]: number },
@@ -185,6 +202,19 @@ export default function Analytics() {
         const touchLabel = visit.touchPoints > 0 ? 'Táctil' : 'No Táctil';
         hardwareStats.touch[touchLabel] = (hardwareStats.touch[touchLabel] || 0) + 1;
       }
+
+      // Stats de Preferencias
+      if (visit.darkTheme !== undefined) {
+        visit.darkTheme ? userPrefs.darkTheme.dark++ : userPrefs.darkTheme.light++;
+      }
+      if (visit.saveData !== undefined) {
+        visit.saveData ? userPrefs.saveData.active++ : userPrefs.saveData.inactive++;
+      }
+      if (visit.downlink !== undefined) {
+        if (visit.downlink >= 5) userPrefs.downlink.fast++;
+        else if (visit.downlink >= 1) userPrefs.downlink.medium++;
+        else userPrefs.downlink.slow++;
+      }
     });
 
     const todayVisits = visits.filter(v => v.timestamp >= todayStartMs).length;
@@ -223,6 +253,7 @@ export default function Analytics() {
       timezoneStats,
       connectionStats,
       resolutionStats,
+      userPrefs,
       hardwareStats,
       todayVisits,
       last24hVisits,
@@ -664,6 +695,54 @@ export default function Analytics() {
                   </div>
                 );
               })}
+          </div>
+        </div>
+      </div>
+
+      {/* Preferencias y Comportamiento */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gráfico de Modo Oscuro */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-6">
+            <Moon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Preferencia de Tema</h3>
+          </div>
+          <div className="flex items-center justify-around h-32">
+            <div className="text-center group">
+              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🌙</div>
+              <p className="text-2xl font-bold text-indigo-600">{analytics.userPrefs.darkTheme.dark}</p>
+              <p className="text-[10px] uppercase text-muted-foreground font-bold">Oscuro</p>
+            </div>
+            <div className="w-px h-16 bg-border" />
+            <div className="text-center group">
+              <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">☀️</div>
+              <p className="text-2xl font-bold text-orange-500">{analytics.userPrefs.darkTheme.light}</p>
+              <p className="text-[10px] uppercase text-muted-foreground font-bold">Claro</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Ahorro de Datos y Red */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+          <div className="flex items-center gap-3 mb-6">
+            <Wind className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Estado de Conexión</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-muted/30 rounded-xl border border-border">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Ahorro Datos</p>
+              <p className="text-lg font-bold text-foreground">
+                {analytics.userPrefs.saveData.active > 0 ? '🟢 ACTIVO' : '⚪ INACTIVO'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{analytics.userPrefs.saveData.active} usuarios</p>
+            </div>
+            <div className="p-3 bg-muted/30 rounded-xl border border-border">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Velocidad</p>
+              <p className="text-lg font-bold text-foreground">
+                {analytics.userPrefs.downlink.fast > analytics.userPrefs.downlink.medium ? '⚡ RÁPIDA' : '📉 MEDIA'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Medio: {analytics.userPrefs.downlink.fast} v.</p>
+            </div>
           </div>
         </div>
       </div>
