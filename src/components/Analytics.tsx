@@ -638,108 +638,114 @@ export default function Analytics() {
       </div>
 
       {/* Nueva fila: Idiomas, Zonas horarias, Resoluciones, Conexión */}
-      {(Object.keys(analytics.languageStats).length > 0 || Object.keys(analytics.resolutionStats).length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Idiomas */}
-          {Object.keys(analytics.languageStats).length > 0 && (
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-border flex items-center gap-3">
-                <Languages className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-bold text-foreground">Idiomas</h3>
-              </div>
-              <div className="p-5 space-y-3">
-                {Object.entries(analytics.languageStats)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([lang, count]) => (
-                    <div key={lang} className="flex items-center justify-between">
-                      <span className="font-medium text-foreground uppercase text-sm">{lang}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-indigo-500 rounded-full"
-                            style={{ width: `${(count / analytics.totalVisits) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-bold text-muted-foreground w-8 text-right">{count}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Idiomas */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Languages className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Idiomas</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            {Object.keys(analytics.languageStats).length > 0 ? (
+              Object.entries(analytics.languageStats)
+                .sort(([, a], [, b]) => b - a)
+                .map(([lang, count]) => (
+                  <div key={lang} className="flex items-center justify-between">
+                    <span className="font-medium text-foreground uppercase text-sm">{lang}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${(count / analytics.totalVisits) * 100}%` }}
+                        />
                       </div>
+                      <span className="text-sm font-bold text-muted-foreground w-8 text-right">{count}</span>
                     </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Zonas Horarias */}
-          {Object.keys(analytics.timezoneStats).length > 0 && (
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-border flex items-center gap-3">
-                <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-bold text-foreground">Zonas Horarias</h3>
-              </div>
-              <div className="p-5 space-y-3 max-h-60 overflow-y-auto">
-                {Object.entries(analytics.timezoneStats)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 8)
-                  .map(([tz, count]) => (
-                    <div key={tz} className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground text-xs truncate" title={tz}>{tz}</span>
-                      <span className="text-sm font-bold text-muted-foreground shrink-0">{count}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resoluciones de pantalla */}
-          {Object.keys(analytics.resolutionStats).length > 0 && (
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-border flex items-center gap-3">
-                <Maximize2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-bold text-foreground">Resoluciones</h3>
-              </div>
-              <div className="p-5 space-y-3 max-h-60 overflow-y-auto">
-                {Object.entries(analytics.resolutionStats)
-                  .sort(([, a], [, b]) => b - a)
-                  .slice(0, 8)
-                  .map(([res, count]) => (
-                    <div key={res} className="flex items-center justify-between">
-                      <span className="font-medium text-foreground text-sm font-mono">{res}</span>
-                      <span className="text-sm font-bold text-muted-foreground">{count}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tipo de conexión */}
-          {Object.keys(analytics.connectionStats).length > 0 && (
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-border flex items-center gap-3">
-                <Wifi className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="font-bold text-foreground">Tipo de Red</h3>
-              </div>
-              <div className="p-5 space-y-3">
-                {Object.entries(analytics.connectionStats)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([conn, count]) => {
-                    const percent = Math.round((count / analytics.totalVisits) * 100);
-                    const color = conn === '4g' ? 'bg-green-500' : conn === '3g' ? 'bg-yellow-500' : conn === '2g' ? 'bg-orange-500' : 'bg-blue-500';
-                    return (
-                      <div key={conn} className="space-y-1">
-                        <div className="flex justify-between">
-                          <span className="font-medium text-foreground uppercase text-sm">{conn}</span>
-                          <span className="text-sm font-bold text-muted-foreground">{percent}%</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
+                  </div>
+                ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4 italic">Esperando nuevas visitas...</p>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Zonas Horarias */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Zonas Horarias</h3>
+          </div>
+          <div className="p-5 space-y-3 max-h-60 overflow-y-auto">
+            {Object.keys(analytics.timezoneStats).length > 0 ? (
+              Object.entries(analytics.timezoneStats)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 8)
+                .map(([tz, count]) => (
+                  <div key={tz} className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-foreground text-xs truncate" title={tz}>{tz}</span>
+                    <span className="text-sm font-bold text-muted-foreground shrink-0">{count}</span>
+                  </div>
+                ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4 italic">Esperando nuevas visitas...</p>
+            )}
+          </div>
+        </div>
+
+        {/* Resoluciones de pantalla */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Maximize2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Resoluciones</h3>
+          </div>
+          <div className="p-5 space-y-3 max-h-60 overflow-y-auto">
+            {Object.keys(analytics.resolutionStats).length > 0 ? (
+              Object.entries(analytics.resolutionStats)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 8)
+                .map(([res, count]) => (
+                  <div key={res} className="flex items-center justify-between">
+                    <span className="font-medium text-foreground text-sm font-mono">{res}</span>
+                    <span className="text-sm font-bold text-muted-foreground">{count}</span>
+                  </div>
+                ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4 italic">Esperando nuevas visitas...</p>
+            )}
+          </div>
+        </div>
+
+        {/* Tipo de conexión */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <Wifi className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Tipo de Red</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            {Object.keys(analytics.connectionStats).length > 0 ? (
+              Object.entries(analytics.connectionStats)
+                .sort(([, a], [, b]) => b - a)
+                .map(([conn, count]) => {
+                  const percent = Math.round((count / analytics.totalVisits) * 100);
+                  const color = conn === '4g' ? 'bg-green-500' : conn === '3g' ? 'bg-yellow-500' : conn === '2g' ? 'bg-orange-500' : 'bg-blue-500';
+                  return (
+                    <div key={conn} className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-medium text-foreground uppercase text-sm">{conn}</span>
+                        <span className="text-sm font-bold text-muted-foreground">{percent}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} />
+                      </div>
+                    </div>
+                  );
+                })
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4 italic">Esperando nuevas visitas...</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border flex items-center gap-3">
