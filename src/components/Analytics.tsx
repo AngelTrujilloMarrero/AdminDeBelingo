@@ -342,23 +342,26 @@ export default function Analytics() {
             {(() => {
               const days = [];
               const today = new Date();
+              const maxCount = Math.max(...Object.values(analytics.visitsByDay), 1);
+              
               for (let i = 13; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(date.getDate() - i);
                 const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                 const count = analytics.visitsByDay[dateStr] || 0;
-                const maxCount = Math.max(...Object.values(analytics.visitsByDay), 1);
-                const height = count > 0 ? Math.max((count / maxCount) * 100, 10) : 5;
+                const barHeight = count > 0 ? Math.max((count / maxCount) * 100, 10) : 5;
                 const dayName = date.toLocaleDateString('es-ES', { weekday: 'short' });
                 const dayNum = date.getDate();
                 const isToday = i === 0;
                 
                 days.push(
-                  <div key={dateStr} className="flex flex-col items-center flex-1">
-                    <span className="text-[10px] font-medium text-foreground mb-1">{count}</span>
+                  <div key={dateStr} className="flex flex-col items-center flex-1 h-full justify-end">
+                    {count > 0 && (
+                      <span className="text-[10px] font-medium text-foreground mb-1">{count}</span>
+                    )}
                     <div 
                       className={`w-full max-w-[40px] rounded-t-md transition-all hover:opacity-80 cursor-pointer ${isToday ? 'bg-gradient-to-t from-green-600 to-green-400' : 'bg-gradient-to-t from-indigo-600 to-indigo-400'}`}
-                      style={{ height: `${height}%` }}
+                      style={{ height: `${barHeight}%`, minHeight: count > 0 ? '4px' : '2px' }}
                       title={`${count} visitas`}
                     />
                     <span className={`text-[10px] mt-1 ${isToday ? 'font-bold text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>{dayNum}</span>
