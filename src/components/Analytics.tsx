@@ -452,6 +452,18 @@ export default function Analytics() {
     return formatTime(timestamp);
   };
 
+  const formatDuration = (ms?: number) => {
+    if (!ms || ms < 1000) return '-';
+    const seconds = Math.floor(ms / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  };
+
   const getDeviceIcon = (device: string) => {
     switch (device) {
       case 'mobile': return <Smartphone className="w-4 h-4" />;
@@ -1326,6 +1338,7 @@ export default function Analytics() {
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">País</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Ciudad</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Página</th>
+                <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Tiempo</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Dispositivo</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">SO</th>
                 <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase">Navegador</th>
@@ -1344,6 +1357,11 @@ export default function Analytics() {
                   <td className="p-3 text-sm text-foreground">{visit.city || '-'}</td>
                   <td className="p-3 text-sm text-foreground font-mono">{visit.page || '/'}</td>
                   <td className="p-3 text-sm">
+                    <span className={`font-medium ${visit.duration && visit.duration > 60000 ? 'text-green-600 dark:text-green-400' : visit.duration ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'}`}>
+                      {formatDuration(visit.duration)}
+                    </span>
+                  </td>
+                  <td className="p-3 text-sm">
                     <span className="flex items-center gap-1 text-foreground capitalize">
                       {getDeviceIcon(visit.device)}
                       {visit.device === 'mobile' ? 'Móvil' : visit.device === 'tablet' ? 'Tablet' : 'Escritorio'}
@@ -1355,7 +1373,7 @@ export default function Analytics() {
               ))}
               {recentVisits.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
                     No hay visitas registradas
                   </td>
                 </tr>
