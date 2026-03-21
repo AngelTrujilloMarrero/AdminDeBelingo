@@ -53,33 +53,58 @@ export default function FloatingLabelInput({
                         {icon}
                     </div>
                 )}
-                <textarea
-                    ref={textareaRef}
-                    id={id}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder=" "
-                    rows={1}
-                    className={`
-            w-full px-4 ${isDateInput ? 'pt-6 pb-2' : 'pt-5 pb-3'} ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
-            focus:border-indigo-500 focus:outline-none transition-all duration-300
-            bg-background text-foreground peer placeholder-transparent
-            resize-none overflow-hidden min-h-[60px]
-          `}
-                />
-                <label
-                    htmlFor={id}
-                    className={`
-            absolute ${icon ? 'left-11' : 'left-4'} transition-all duration-300 pointer-events-none
-            text-muted-foreground origin-left
-            ${isDateInput
-                            ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90'
-                            : `top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90`
-                        }
-          `}
-                >
-                    {label}
-                </label>
+                {isDateInput ? (
+                    <>
+                        <input
+                            ref={inputRef as React.RefObject<HTMLInputElement>}
+                            type="date"
+                            id={id}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            className={`
+                                w-full px-4 pt-6 pb-2 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
+                                focus:border-indigo-500 focus:outline-none transition-all duration-300
+                                bg-background text-foreground min-h-[60px]
+                            `}
+                        />
+                        <label
+                            htmlFor={id}
+                            className={`
+                                absolute ${icon ? 'left-11' : 'left-4'} top-2 text-xs font-medium
+                                text-blue-800 dark:text-indigo-400 scale-90 transition-all duration-300 pointer-events-none
+                            `}
+                        >
+                            {label}
+                        </label>
+                    </>
+                ) : (
+                    <>
+                        <textarea
+                            ref={textareaRef}
+                            id={id}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            placeholder=" "
+                            rows={1}
+                            className={`
+                                w-full px-4 pt-5 pb-3 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
+                                focus:border-indigo-500 focus:outline-none transition-all duration-300
+                                bg-background text-foreground peer placeholder-transparent
+                                resize-none overflow-hidden min-h-[60px]
+                            `}
+                        />
+                        <label
+                            htmlFor={id}
+                            className={`
+                                absolute ${icon ? 'left-11' : 'left-4'} transition-all duration-300 pointer-events-none
+                                text-muted-foreground origin-left
+                                top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90
+                            `}
+                        >
+                            {label}
+                        </label>
+                    </>
+                )}
             </div>
 
             {/* Suggestions dropdown */}

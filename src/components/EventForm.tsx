@@ -961,41 +961,59 @@ export default function EventForm({
               )}
             </div>
 
-            {/* Hora Custom Dropdown */}
-            <div className="relative" ref={timeDropdownRef}>
-              <div
-                onClick={() => setShowTimeDropdown(!showTimeDropdown)}
-                className="relative cursor-pointer"
-              >
-                <div className={`
-                   w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
-                   transition-all duration-300 bg-background text-foreground
-                   ${showTimeDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
-                 `}>
-                  {formData.hora || <span className="text-transparent">Seleccione la hora</span>}
-                </div>
+            {/* Hora con autocompletado */}
+            <div className="relative">
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.hora}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (/^[0-9:.]*$/.test(val) || val === '') {
+                      setFormData({ ...formData, hora: val });
+                      const filtered = timeOptions.filter(t => t.startsWith(val));
+                      setShowTimeDropdown(filtered.length > 0 && val.length > 0);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (formData.hora) {
+                      const filtered = timeOptions.filter(t => t.startsWith(formData.hora));
+                      setShowTimeDropdown(filtered.length > 0);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowTimeDropdown(false), 200);
+                  }}
+                  placeholder=" "
+                  className={`
+                    w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
+                    transition-all duration-300 bg-background text-foreground
+                    ${showTimeDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
+                  `}
+                />
 
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
                   <Clock className="h-5 w-5" />
                 </div>
 
                 <label className={`
-                   absolute left-11 transition-all duration-300 pointer-events-none
-                   text-muted-foreground origin-left
-                   ${formData.hora
+                  absolute left-11 transition-all duration-300 pointer-events-none
+                  text-muted-foreground origin-left
+                  ${formData.hora
                     ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
                     : 'top-1/2 -translate-y-1/2 text-base'
                   }
-                 `}>
+                `}>
                   Hora de comienzo
                 </label>
               </div>
 
-              {/* Dropdown Menu */}
+              {/* Dropdown de sugerencias de horas */}
               {showTimeDropdown && (
-                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                  <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                    {timeOptions.map((time) => (
+                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                  <div className="p-2 grid grid-cols-2 md:grid-cols-3 gap-1">
+                    {timeOptions.filter(t => t.startsWith(formData.hora)).map((time) => (
                       <button
                         key={time}
                         type="button"
@@ -1004,12 +1022,12 @@ export default function EventForm({
                           setShowTimeDropdown(false);
                         }}
                         className={`
-                           px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200
-                           ${formData.hora === time
+                          px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
+                          ${formData.hora === time
                             ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
                             : 'text-foreground hover:bg-muted hover:text-foreground'
                           }
-                         `}
+                        `}
                       >
                         {time}
                       </button>
