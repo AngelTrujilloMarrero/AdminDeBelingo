@@ -958,11 +958,8 @@ export default function EventForm({
                       <div className="col-span-2 p-4 text-center text-muted-foreground italic">
                         No se encontraron municipios
                       </div>
-              )}
-              {horaInvalida && (
-                <p className="text-red-500 text-xs mt-1 px-1">Formato inválido. Usa HH:MM (ej: 19:30)</p>
-              )}
-            </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1060,6 +1057,9 @@ export default function EventForm({
                     ))}
                   </div>
                 </div>
+              )}
+              {horaInvalida && (
+                <p className="text-red-500 text-xs mt-1 px-1">Formato inválido. Usa HH:MM (ej: 19:30)</p>
               )}
             </div>
           </div>
