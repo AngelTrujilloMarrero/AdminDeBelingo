@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const EMPTY_SUGGESTIONS: string[] = [];
 
@@ -33,26 +33,38 @@ export default function FloatingLabelInput({
 }: FloatingLabelInputProps) {
     const hasValue = value.length > 0;
     const isDateInput = type === 'date';
+    const internalRef = useRef<HTMLTextAreaElement>(null);
+    const textareaRef = (inputRef as unknown as React.RefObject<HTMLTextAreaElement>) || internalRef;
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.max(60, textarea.scrollHeight);
+            textarea.style.height = `${newHeight}px`;
+        }
+    }, [value, textareaRef]);
 
     return (
         <div className={`relative ${className}`}>
             <div className="relative">
                 {icon && (
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground dark:!text-white pointer-events-none">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground dark:!text-white pointer-events-none z-10">
                         {icon}
                     </div>
                 )}
-                <input
-                    ref={inputRef}
+                <textarea
+                    ref={textareaRef}
                     id={id}
-                    type={type}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder=" "
+                    rows={1}
                     className={`
-            w-full px-4 ${isDateInput ? 'pt-6 pb-2' : 'py-4'} ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
+            w-full px-4 ${isDateInput ? 'pt-6 pb-2' : 'pt-5 pb-3'} ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
             focus:border-indigo-500 focus:outline-none transition-all duration-300
             bg-background text-foreground peer placeholder-transparent
+            resize-none overflow-hidden min-h-[60px]
           `}
                 />
                 <label
@@ -62,9 +74,7 @@ export default function FloatingLabelInput({
             text-muted-foreground origin-left
             ${isDateInput
                             ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90'
-                            : `peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base
-                 peer-focus:top-2 peer-focus:text-xs peer-focus:font-medium peer-focus:text-blue-800 peer-focus:dark:text-indigo-400 peer-focus:scale-90
-                 ${hasValue ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90' : 'top-1/2 -translate-y-1/2 text-base'}`
+                            : `top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90`
                         }
           `}
                 >
