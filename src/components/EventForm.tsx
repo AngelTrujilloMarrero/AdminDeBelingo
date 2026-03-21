@@ -83,6 +83,7 @@ export default function EventForm({
   const tipoDropdownRef = useRef<HTMLDivElement>(null);
 
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const [horaInvalida, setHoraInvalida] = useState(false);
   const [showTipoDropdown, setShowTipoDropdown] = useState(false);
   const [showMunicipioDropdown, setShowMunicipioDropdown] = useState(false);
   const [municipioSearch, setMunicipioSearch] = useState('');
@@ -356,6 +357,7 @@ export default function EventForm({
     if (!orquesta) missing.push('Orquesta/Grupo');
     if (!municipio) missing.push('Municipio');
     if (!hora) missing.push('Hora de comienzo');
+    if (hora && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(hora)) missing.push('Hora (formato inválido, use HH:MM)');
     if (!tipo && !customTipo) missing.push('Tipo de evento');
     if (tipo === 'Otro' && !customTipo) missing.push('Especificación del tipo');
 
@@ -697,6 +699,7 @@ export default function EventForm({
     setMissingFields('');
     setDuplicateWarning('');
     setConflictWarnings([]);
+    setHoraInvalida(false);
   };
 
   const handleCancel = () => {
@@ -955,8 +958,11 @@ export default function EventForm({
                       <div className="col-span-2 p-4 text-center text-muted-foreground italic">
                         No se encontraron municipios
                       </div>
-                    )}
-                  </div>
+              )}
+              {horaInvalida && (
+                <p className="text-red-500 text-xs mt-1 px-1">Formato inválido. Usa HH:MM (ej: 19:30)</p>
+              )}
+            </div>
                 </div>
               )}
             </div>
@@ -970,26 +976,46 @@ export default function EventForm({
                   value={formData.hora}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (/^[0-9:.]*$/.test(val) || val === '') {
+                    if (/^[0-9:]*$/.test(val) || val === '') {
                       setFormData({ ...formData, hora: val });
+                      if (val.length >= 5) {
+                        setHoraInvalida(!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val));
+                      } else {
+                        setHoraInvalida(false);
+                      }
                       const filtered = timeOptions.filter(t => t.startsWith(val));
                       setShowTimeDropdown(filtered.length > 0 && val.length > 0);
                     }
                   }}
-                  onFocus={() => {
-                    if (formData.hora) {
-                      const filtered = timeOptions.filter(t => t.startsWith(formData.hora));
-                      setShowTimeDropdown(filtered.length > 0);
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = formData.hora;
+                      const isValidFormat = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val);
+                      if (isValidFormat) {
+                        setShowTimeDropdown(false);
+                        setHoraInvalida(false);
+                      }
                     }
                   }}
+                  onFocus={() => {
+                    setShowTimeDropdown(true);
+                  }}
                   onBlur={() => {
+                    if (formData.hora && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.hora)) {
+                      setHoraInvalida(true);
+                    }
                     setTimeout(() => setShowTimeDropdown(false), 200);
                   }}
                   placeholder=" "
                   className={`
-                    w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
+                    w-full px-4 py-4 pl-11 border-2 rounded-xl 
                     transition-all duration-300 bg-background text-foreground
-                    ${showTimeDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
+                    ${horaInvalida 
+                      ? 'border-red-500 ring-2 ring-red-100 dark:ring-red-800' 
+                      : showTimeDropdown 
+                        ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' 
+                        : 'border-border hover:border-muted-foreground'
+                    }
                   `}
                 />
 
@@ -1011,9 +1037,9 @@ export default function EventForm({
 
               {/* Dropdown de sugerencias de horas */}
               {showTimeDropdown && (
-                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                  <div className="p-2 grid grid-cols-2 md:grid-cols-3 gap-1">
-                    {timeOptions.filter(t => t.startsWith(formData.hora)).map((time) => (
+                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto">
+                  <div className="p-2 grid grid-cols-2 gap-1">
+                    {timeOptions.map((time) => (
                       <button
                         key={time}
                         type="button"
