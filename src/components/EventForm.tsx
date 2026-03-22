@@ -965,7 +965,7 @@ export default function EventForm({
             </div>
 
             {/* Hora con autocompletado */}
-            <div className="relative">
+            <div className="relative" ref={timeDropdownRef}>
               <div className="relative">
                 <input
                   type="text"
