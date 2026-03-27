@@ -25,7 +25,8 @@ import {
   MousePointer2,
   Timer,
   Bot,
-  Megaphone
+  Megaphone,
+  MapPin
 } from 'lucide-react';
 
 interface Visit {
@@ -105,11 +106,13 @@ interface AnalyticsData {
   visits: Visit[];
   totalVisits: number;
   uniqueCountries: string[];
+  uniqueCities: string[];
   browserStats: { [key: string]: number };
   deviceStats: { [key: string]: number };
   osStats: { [key: string]: number };
   pageStats: { [key: string]: number };
   countryStats: { [key: string]: number };
+  cityStats: { [key: string]: number };
   referrerStats: { [key: string]: number };
   languageStats: { [key: string]: number };
   timezoneStats: { [key: string]: number };
@@ -224,6 +227,7 @@ export default function Analytics() {
     const osStats: { [key: string]: number } = {};
     const pageStats: { [key: string]: number } = {};
     const countryStats: { [key: string]: number } = {};
+    const cityStats: { [key: string]: number } = {};
     const referrerStats: { [key: string]: number } = {};
     const languageStats: { [key: string]: number } = {};
     const timezoneStats: { [key: string]: number } = {};
@@ -269,6 +273,9 @@ export default function Analytics() {
       osStats[visit.os] = (osStats[visit.os] || 0) + 1;
       pageStats[visit.page] = (pageStats[visit.page] || 0) + 1;
       countryStats[visit.country] = (countryStats[visit.country] || 0) + 1;
+      if (visit.city) {
+        cityStats[visit.city] = (cityStats[visit.city] || 0) + 1;
+      }
       const ref = visit.referrer || 'direct';
       referrerStats[ref] = (referrerStats[ref] || 0) + 1;
       if (visit.language) {
@@ -378,6 +385,7 @@ export default function Analytics() {
     const todayVisits = visits.filter(v => v.timestamp >= todayStartMs).length;
     const last24hVisits = visits.filter(v => v.timestamp >= last24h).length;
     const uniqueCountries = Object.keys(countryStats);
+    const uniqueCities = Object.keys(cityStats);
 
     // Visits by day (last 14 days)
     const visitsByDay: { [key: string]: number } = {};
@@ -401,7 +409,9 @@ export default function Analytics() {
       visits,
       totalVisits: visits.length,
       uniqueCountries,
+      uniqueCities,
       browserStats,
+      cityStats,
       deviceStats,
       osStats,
       pageStats,
@@ -501,6 +511,10 @@ export default function Analytics() {
     .slice(0, 5);
 
   const topCountries = Object.entries(analytics.countryStats)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 20);
+
+  const topCities = Object.entries(analytics.cityStats)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 20);
 
@@ -696,6 +710,40 @@ export default function Analytics() {
             ))}
             {topCountries.length === 0 && (
               <p className="text-muted-foreground text-center py-4">No hay datos de países</p>
+            )}
+          </div>
+        </div>
+
+        {/* Top Cities */}
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-border flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-foreground">Ciudades</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            {topCities.map(([city, count], index) => (
+              <div key={city} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+                    index < 3 ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {index + 1}
+                  </span>
+                  <span className="font-medium text-foreground">{city}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500 rounded-full"
+                      style={{ width: `${(count / analytics.totalVisits) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-muted-foreground w-12 text-right">{count}</span>
+                </div>
+              </div>
+            ))}
+            {topCities.length === 0 && (
+              <p className="text-muted-foreground text-center py-4">No hay datos de ciudades</p>
             )}
           </div>
         </div>
