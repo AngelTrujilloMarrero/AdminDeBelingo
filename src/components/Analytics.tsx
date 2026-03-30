@@ -172,7 +172,7 @@ export default function Analytics() {
   useEffect(() => {
     const visitsRef = query(ref(db, 'analytics/visits'), limitToLast(5000));
     
-    const unsubscribe = onValue(visitsRef, (snapshot) => {
+    const unsubscribeVisits = onValue(visitsRef, (snapshot) => {
       const data = snapshot.val();
       const visitsArray: Visit[] = [];
       
@@ -187,22 +187,17 @@ export default function Analytics() {
       setLastUpdate(new Date());
     });
 
-    const fetchVisitCount = async () => {
-      try {
-        const visitCountRef = ref(db, 'visitCount');
-        const unsubscribeVisitCount = onValue(visitCountRef, (snapshot) => {
-          if (snapshot.exists()) {
-            setVisitCount(snapshot.val());
-          }
-        });
-        return () => unsubscribeVisitCount();
-      } catch (error) {
-        console.error('Error fetching visitCount:', error);
+    const visitCountRef = ref(db, 'visitCount');
+    const unsubscribeVisitCount = onValue(visitCountRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setVisitCount(snapshot.val());
       }
-    };
-    fetchVisitCount();
+    });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeVisits();
+      unsubscribeVisitCount();
+    };
   }, []);
 
   useEffect(() => {
