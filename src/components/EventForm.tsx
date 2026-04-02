@@ -924,16 +924,14 @@ export default function EventForm({
                   value={formData.hora}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (/^[0-9:]*$/.test(val) || val === '') {
-                      setFormData({ ...formData, hora: val });
-                      if (val.length >= 5) {
-                        setHoraInvalida(!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val));
-                      } else {
-                        setHoraInvalida(false);
-                      }
-                      const filtered = timeOptions.filter(t => t.startsWith(val));
-                      setShowTimeDropdown(filtered.length > 0 && val.length > 0);
+                    setFormData({ ...formData, hora: val });
+                    if (val.length >= 5) {
+                      setHoraInvalida(!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val));
+                    } else {
+                      setHoraInvalida(false);
                     }
+                    const filtered = matchSorter(timeOptions, val);
+                    setShowTimeDropdown(filtered.length > 0 && val.length > 0);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -987,7 +985,10 @@ export default function EventForm({
               {showTimeDropdown && (
                 <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto">
                   <div className="p-2 grid grid-cols-2 gap-1">
-                    {timeOptions.map((time) => (
+                    {(formData.hora.trim()
+                      ? matchSorter(timeOptions, formData.hora.trim())
+                      : timeOptions
+                    ).map((time) => (
                       <button
                         key={time}
                         type="button"

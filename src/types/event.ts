@@ -28,5 +28,5 @@ export const TIPOS_EVENTO = [
   'Baile Normal', 'Romería', 'Baile Magos', 'Tapas y Vinos', 'Paseo Romero',
   'Tapas', 'Romería Chica', 'Carnaval', 'Taifa', 'Infantil', 'Inclusiva',
   'Vinos', 'Aniversario', 'Solidario', 'Romería Barquera', 'Pamela', 'Blanco',
-  'Sombrero', 'Sardinada', 'FIN DE AÑO', 'Otro'
+  'Sombrero', 'Sardinada', 'FIN DE AÑO', 'Cerveza', 'Otro'
 ];
