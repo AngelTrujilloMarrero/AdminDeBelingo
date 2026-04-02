@@ -279,61 +279,58 @@ export default function EventForm({
     const normLugar = normalizeString(item.lugar);
     const normMunicipio = normalizeString(item.municipio);
     const normFull = `${normLugar} ${normMunicipio}`;
+    const qWords = normalizedVal.split(/\s+/).filter(Boolean);
 
-    // Tier 0: Perfect match
+    if (qWords.length === 0) return null;
+
+    // 0. Exact matches are absolute priority
     if (normLugar === normalizedVal) return 0;
     if (normFull === normalizedVal) return 0.1;
 
-    // Tier 1: Starts with query
-    // Penalizamos levemente por longitud para que lo más corto (más exacto) salga primero
-    const lengthPenalty = (text: string) => (text.length - normalizedVal.length) / 1000;
+    // Helper to check word-start matching for each query word
+    const targetWords = normFull.split(/[\s,.-]+/).filter(Boolean);
+    const targetLugarWords = normLugar.split(/[\s,.-]+/).filter(Boolean);
 
-    if (normLugar.startsWith(normalizedVal)) return 1 + lengthPenalty(normLugar);
-    if (normMunicipio.startsWith(normalizedVal)) return 2 + lengthPenalty(normMunicipio);
-    if (normFull.startsWith(normalizedVal)) return 3 + lengthPenalty(normFull);
+    // CRITICAL: ALL query words must match SOME word in the target as a prefix
+    const allWordsMatch = qWords.every(qw => 
+      targetWords.some(tw => tw.startsWith(qw))
+    );
 
-    // Tier 2: Word boundary match (query matches at start of any word)
-    // E.g. "manzanillas" matches "Las Manzanillas"
-    const isWordBoundaryMatch = (text: string, query: string) => 
-      text.includes(` ${query}`) || text.split(/[\s-]+/).some(word => word.startsWith(query));
+    if (!allWordsMatch) return null;
+
+    // If we passed allWordsMatch, this is a strong candidate.
+    // Now we calculate a granular score.
     
-    if (isWordBoundaryMatch(normLugar, normalizedVal)) return 4 + lengthPenalty(normLugar);
-    if (isWordBoundaryMatch(normMunicipio, normalizedVal)) return 5 + lengthPenalty(normMunicipio);
-    if (isWordBoundaryMatch(normFull, normalizedVal)) return 6 + lengthPenalty(normFull);
+    let score = 10; // Base score for a valid match
 
-    // Tier 3: Multi-word unordered (all query words present)
-    const queryWords = normalizedVal.split(/\s+/).filter(Boolean);
-    if (queryWords.length > 1) {
-      const allWordsPresent = queryWords.every(qw => normFull.includes(qw));
-      if (allWordsPresent) {
-        // Bonus if words are in order
-        const inOrder = normFull.includes(queryWords.join(' '));
-        return inOrder ? 10 : 15;
-      }
+    // Bonus for consecutive sequence match (e.g. "san pedro" in "plaza san pedro")
+    if (normFull.includes(normalizedVal)) {
+      score -= 5;
+      // Position of the match
+      const pos = normFull.indexOf(normalizedVal);
+      score += pos / 100;
     }
 
-    // Tier 4: Substring match anywhere
-    if (normLugar.includes(normalizedVal)) {
-      const pos = normLugar.indexOf(normalizedVal);
-      return 20 + pos / 100;
-    }
-    if (normMunicipio.includes(normalizedVal)) {
-      const pos = normMunicipio.indexOf(normalizedVal);
-      return 30 + pos / 100;
+    // Bonus for matching the prefix of the place name (lugar)
+    if (normLugar.startsWith(normalizedVal)) {
+      score -= 3;
     }
 
-    // Tier 5: Fuzzy matching - for single word queries only
-    if (queryWords.length === 1 && normalizedVal.length >= 3) {
-      const allWords = normFull.split(/[\s-]+/);
-      const distances = allWords.map(word => levenshteinDistance(normalizedVal, word));
-      const bestWordDistance = Math.min(...distances);
-      
-      if (bestWordDistance <= 2) {
-        return 40 + bestWordDistance;
-      }
-    }
+    // Bonus for how many words match at the very start of words
+    const startsWordsCount = qWords.filter(qw => 
+      targetWords.some(tw => tw.startsWith(qw))
+    ).length;
+    score -= startsWordsCount;
 
-    return null; // No match
+    // Penalty for extra length (prefer more exact strings)
+    score += (normFull.length - normalizedVal.length) / 50;
+
+    // Final sorting among valid matches:
+    // Tiers are implicitly handled by the base score and bonuses.
+    // A consecutive match starting at the beginning will have score ~2.
+    // A separated match will have score ~10.
+    
+    return score;
   };
 
   const handleLugarInput = (value: string) => {
