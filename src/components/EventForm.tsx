@@ -177,13 +177,14 @@ export default function EventForm({
     const seen = new Set<string>();
 
     lugares.forEach(({ lugar, municipio }) => {
-      // Normalización agresiva: quitar TODO lo que no sea letra o número
-      const clean = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-      const key = `${clean(lugar)}|${clean(municipio)}`;
+      // Normalización estricta: trim y lowercase
+      const cleanLugar = lugar.trim();
+      const cleanMunicipio = municipio.trim();
+      const key = `${cleanLugar.toLowerCase()}|${cleanMunicipio.toLowerCase()}`;
       
       if (!seen.has(key)) {
         seen.add(key);
-        uniquePairs.push({ lugar, municipio });
+        uniquePairs.push({ lugar: cleanLugar, municipio: cleanMunicipio });
       }
     });
 
@@ -281,8 +282,7 @@ export default function EventForm({
 
     if (val && lugarSuggestions.length > 0) {
       const filtered = matchSorter(lugarSuggestions, val, {
-        keys: ['lugar', 'municipio'],
-        baseSort: (a, b) => a.index - b.index // Mantener orden original si el score es igual
+        keys: ['lugar', 'municipio']
       });
       setShowLugarSuggestions(filtered.length > 0);
     } else {
@@ -752,21 +752,11 @@ export default function EventForm({
               const val = formData.lugar.trim();
               if (!val) return lugarSuggestions;
               
-              const filtered = matchSorter(lugarSuggestions, val, {
+              return matchSorter(lugarSuggestions, val, {
                 keys: [
-                  { key: 'lugar', threshold: matchSorter.rankings.STARTS_WITH },
                   { key: 'lugar', threshold: matchSorter.rankings.CONTAINS },
-                  { key: 'municipio', threshold: matchSorter.rankings.CONTAINS }
+                  'municipio'
                 ]
-              });
-
-              // Último filtro de duplicados visuales (mismo lugar + mismo municipio) por si acaso
-              const finalSeen = new Set();
-              return filtered.filter(item => {
-                const k = `${item.lugar.toLowerCase()}|${item.municipio.toLowerCase()}`;
-                if (finalSeen.has(k)) return false;
-                finalSeen.add(k);
-                return true;
               });
             })()}
             showSuggestions={showLugarSuggestions}
