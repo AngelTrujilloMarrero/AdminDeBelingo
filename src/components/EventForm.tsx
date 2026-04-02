@@ -11,6 +11,7 @@ import {
   generateTimeOptions,
   estandarizarNombre
 } from '../lib/utils';
+import { matchSorter } from 'match-sorter';
 import {
   Calendar,
   Music,
@@ -270,69 +271,6 @@ export default function EventForm({
     }
   };
 
-  // Scoring function for lugar autocomplete matches
-  // Lower score = better match. Returns null if no match.
-  const scoreLugarMatch = (
-    normalizedVal: string,
-    item: { lugar: string; municipio: string }
-  ): number | null => {
-    const normLugar = normalizeString(item.lugar);
-    const normMunicipio = normalizeString(item.municipio);
-    const normFull = `${normLugar} ${normMunicipio}`;
-    const qWords = normalizedVal.split(/\s+/).filter(Boolean);
-
-    if (qWords.length === 0) return null;
-
-    // 0. Exact matches are absolute priority
-    if (normLugar === normalizedVal) return 0;
-    if (normFull === normalizedVal) return 0.1;
-
-    // Helper to check word-start matching for each query word
-    const targetWords = normFull.split(/[\s,.-]+/).filter(Boolean);
-    const targetLugarWords = normLugar.split(/[\s,.-]+/).filter(Boolean);
-
-    // CRITICAL: ALL query words must match SOME word in the target as a prefix
-    const allWordsMatch = qWords.every(qw => 
-      targetWords.some(tw => tw.startsWith(qw))
-    );
-
-    if (!allWordsMatch) return null;
-
-    // If we passed allWordsMatch, this is a strong candidate.
-    // Now we calculate a granular score.
-    
-    let score = 10; // Base score for a valid match
-
-    // Bonus for consecutive sequence match (e.g. "san pedro" in "plaza san pedro")
-    if (normFull.includes(normalizedVal)) {
-      score -= 5;
-      // Position of the match
-      const pos = normFull.indexOf(normalizedVal);
-      score += pos / 100;
-    }
-
-    // Bonus for matching the prefix of the place name (lugar)
-    if (normLugar.startsWith(normalizedVal)) {
-      score -= 3;
-    }
-
-    // Bonus for how many words match at the very start of words
-    const startsWordsCount = qWords.filter(qw => 
-      targetWords.some(tw => tw.startsWith(qw))
-    ).length;
-    score -= startsWordsCount;
-
-    // Penalty for extra length (prefer more exact strings)
-    score += (normFull.length - normalizedVal.length) / 50;
-
-    // Final sorting among valid matches:
-    // Tiers are implicitly handled by the base score and bonuses.
-    // A consecutive match starting at the beginning will have score ~2.
-    // A separated match will have score ~10.
-    
-    return score;
-  };
-
   const handleLugarInput = (value: string) => {
     setFormData(prev => {
       const newData = { ...prev, lugar: value };
@@ -342,18 +280,11 @@ export default function EventForm({
     const val = value.trim();
 
     if (val && lugarSuggestions.length > 0) {
-      const normalizedVal = normalizeString(val);
-
-      const scored = lugarSuggestions
-        .map(item => {
-          const score = scoreLugarMatch(normalizedVal, item);
-          if (score === null) return null;
-          return { item, score };
-        })
-        .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
-        .sort((a, b) => a.score - b.score);
-
-      setShowLugarSuggestions(scored.length > 0);
+      const filtered = matchSorter(lugarSuggestions, val, {
+        keys: ['lugar', 'municipio'],
+        baseSort: (a, b) => a.index - b.index // Mantener orden original si el score es igual
+      });
+      setShowLugarSuggestions(filtered.length > 0);
     } else {
       setShowLugarSuggestions(false);
     }
@@ -820,18 +751,16 @@ export default function EventForm({
             suggestions={(() => {
               const val = formData.lugar.trim();
               if (!val) return lugarSuggestions;
-
-              const normalizedVal = normalizeString(val);
-
-              return lugarSuggestions
-                .map(item => {
-                  const score = scoreLugarMatch(normalizedVal, item);
-                  if (score === null) return null;
-                  return { item, score };
-                })
-                .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
-                .sort((a, b) => a.score - b.score)
-                .map(s => s.item);
+              
+              // Usar match-sorter para priorizar por campo:
+              // 1. Coincidencias en 'lugar' son prioritarias
+              // 2. Coincidencias en 'municipio' son secundarias
+              return matchSorter(lugarSuggestions, val, {
+                keys: [
+                  { key: 'lugar', threshold: matchSorter.rankings.CONTAINS },
+                  'municipio'
+                ]
+              });
             })()}
             showSuggestions={showLugarSuggestions}
             onSuggestionClick={selectLugar}
