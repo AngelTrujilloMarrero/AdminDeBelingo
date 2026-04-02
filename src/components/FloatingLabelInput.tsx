@@ -112,7 +112,7 @@ export default function FloatingLabelInput({
                 <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
                     {suggestions.map((suggestion) => (
                         <button
-                            key={typeof suggestion === 'object' ? (suggestion as any).id || suggestion.lugar || JSON.stringify(suggestion) : suggestion}
+                            key={typeof suggestion === 'object' ? (suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : suggestion.name) || JSON.stringify(suggestion) : suggestion}
                             type="button"
                             onClick={() => onSuggestionClick?.(suggestion)}
                             className="w-full px-4 py-3 text-left hover:bg-muted/50 border-b last:border-b-0 

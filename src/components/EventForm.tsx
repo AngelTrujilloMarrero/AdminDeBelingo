@@ -177,14 +177,13 @@ export default function EventForm({
     const seen = new Set<string>();
 
     lugares.forEach(({ lugar, municipio }) => {
-      // Normalización estricta: trim y lowercase
-      const cleanLugar = lugar.trim();
-      const cleanMunicipio = municipio.trim();
-      const key = `${cleanLugar.toLowerCase()}|${cleanMunicipio.toLowerCase()}`;
+      // Normalización muy estricta: quitar acentos, espacios extra, y todo lo no alfanumérico
+      const normalize = (s: string) => normalizeString(s.trim()).replace(/[^a-z0-9]/g, '');
+      const key = `${normalize(lugar)}|${normalize(municipio)}`;
       
       if (!seen.has(key)) {
         seen.add(key);
-        uniquePairs.push({ lugar: cleanLugar, municipio: cleanMunicipio });
+        uniquePairs.push({ lugar: lugar.trim(), municipio: municipio.trim() });
       }
     });
 
@@ -754,8 +753,8 @@ export default function EventForm({
               
               return matchSorter(lugarSuggestions, val, {
                 keys: [
-                  { key: 'lugar', threshold: matchSorter.rankings.CONTAINS },
-                  'municipio'
+                  { key: 'lugar', threshold: matchSorter.rankings.WORD_STARTS_WITH },
+                  { key: 'municipio', threshold: matchSorter.rankings.WORD_STARTS_WITH }
                 ]
               });
             })()}
