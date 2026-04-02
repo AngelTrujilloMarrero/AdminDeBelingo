@@ -282,22 +282,15 @@ export default function EventForm({
     if (normMunicipio.startsWith(normalizedVal)) return 2;
     if (normFull.startsWith(normalizedVal)) return 3;
 
-    // Tier 2: Any word in lugar/municipio starts with query
-    // This handles "Las Manzanillas" matching "Manzanillas"
-    const lugarWords = normLugar.split(/\s+/);
-    const municipioWords = normMunicipio.split(/\s+/);
+    // Tier 2: Word boundary match (query matches from the start of any word inside the string)
+    // This allows "manzanillas bla" to match "las manzanillas blancas"
+    const isWordBoundaryMatch = (text: string, query: string) => text.includes(` ${query}`);
+    
+    if (isWordBoundaryMatch(normLugar, normalizedVal)) return 4;
+    if (isWordBoundaryMatch(normMunicipio, normalizedVal)) return 5;
+    if (isWordBoundaryMatch(normFull, normalizedVal)) return 6;
 
-    const lugarWordMatch = lugarWords.some(word => word.startsWith(normalizedVal));
-    const municipioWordMatch = municipioWords.some(word => word.startsWith(normalizedVal));
-
-    if (lugarWordMatch) return 4;
-    if (municipioWordMatch) return 5;
-
-    // Tier 3: Query starts with a word in lugar (partial input for long names)
-    const lugarStartsWithQuery = lugarWords.some(word => normalizedVal.startsWith(word) && word.length >= 3);
-    if (lugarStartsWithQuery) return 6;
-
-    // Tier 4: Substring match anywhere
+    // Tier 3: Substring match anywhere
     if (normLugar.includes(normalizedVal)) {
       // Position-based scoring: earlier match = better score
       const pos = normLugar.indexOf(normalizedVal);
@@ -311,14 +304,24 @@ export default function EventForm({
       return 30;
     }
 
-    // Tier 5: Fuzzy matching - any word in lugar is close to query
-    const bestWordDistance = Math.min(
-      ...lugarWords.map(word => levenshteinDistance(normalizedVal, word)),
-      ...municipioWords.map(word => levenshteinDistance(normalizedVal, word))
-    );
-    // Allow up to 2 character differences for fuzzy matches
-    if (bestWordDistance <= 2 && normalizedVal.length >= 3) {
-      return 40 + bestWordDistance;
+    // Tier 4: All query words match anywhere in the string (unordered / separated)
+    // E.g. "manzanillas arona" -> "las manzanillas" (lugar) + "arona" (municipio)
+    const queryWords = normalizedVal.split(/\s+/).filter(Boolean);
+    if (queryWords.length > 1) {
+      const allWordsPresent = queryWords.every(qw => normFull.includes(qw));
+      if (allWordsPresent) return 35;
+    }
+
+    // Tier 5: Fuzzy matching - for single word queries only
+    if (queryWords.length === 1 && normalizedVal.length >= 3) {
+      const allWords = normFull.split(/\s+/);
+      const bestWordDistance = Math.min(
+        ...allWords.map(word => levenshteinDistance(normalizedVal, word))
+      );
+      // Allow up to 2 character differences for fuzzy matches
+      if (bestWordDistance <= 2) {
+        return 40 + bestWordDistance;
+      }
     }
 
     return null; // No match
