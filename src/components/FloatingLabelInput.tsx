@@ -109,7 +109,7 @@ export default function FloatingLabelInput({
 
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-[100] w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
                     {suggestions.map((suggestion) => (
                         <button
                             key={typeof suggestion === 'object' ? (suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : suggestion.name) || JSON.stringify(suggestion) : suggestion}

@@ -809,7 +809,7 @@ export default function EventForm({
 
             {/* Dropdown de sugerencias de programas */}
             {showProgramaSuggestions && programaSuggestions.length > 0 && (
-              <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+              <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
                 <div className="p-2 space-y-1">
                   {programaSuggestions.map((programa) => (
                     <button
@@ -881,7 +881,7 @@ export default function EventForm({
 
               {/* Dropdown Menu */}
               {showMunicipioDropdown && (
-                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
                   <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
                     {MUNICIPIOS
                       .filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase()))
@@ -986,7 +986,7 @@ export default function EventForm({
 
               {/* Dropdown de sugerencias de horas */}
               {showTimeDropdown && (
-                <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto">
+                <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto">
                   <div className="p-2 grid grid-cols-2 gap-1">
                     {(formData.hora.trim()
                       ? matchSorter(timeOptions, formData.hora.trim())
@@ -1052,7 +1052,7 @@ export default function EventForm({
 
             {/* Dropdown Menu */}
             {showTipoDropdown && (
-              <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
+              <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
                 <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
                   {TIPOS_EVENTO.map((tipo) => (
                     <button
