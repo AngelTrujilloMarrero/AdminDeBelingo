@@ -1007,6 +1007,19 @@ export default function EventForm({
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
                   <Clock className="h-5 w-5" />
                 </div>
+                {formData.hora && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, hora: '' });
+                      setShowTimeDropdown(false);
+                      setHoraInvalida(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
 
                 <label className={`
                   absolute left-11 transition-all duration-300 pointer-events-none
