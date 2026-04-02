@@ -257,6 +257,10 @@ export default function EventForm({
 
   const handleOrquestaInput = (value: string) => {
     setFormData({ ...formData, orquesta: value });
+    setShowLugarSuggestions(false);
+    setShowProgramaSuggestions(false);
+    setShowMunicipioDropdown(false);
+    setShowTimeDropdown(false);
     const parts = value.split(',');
     const lastPart = parts[parts.length - 1].trim();
 
@@ -276,6 +280,10 @@ export default function EventForm({
       const newData = { ...prev, lugar: value };
       return newData;
     });
+    setShowOrquestaSuggestions(false);
+    setShowProgramaSuggestions(false);
+    setShowMunicipioDropdown(false);
+    setShowTimeDropdown(false);
 
     const val = value.trim();
 
@@ -291,6 +299,10 @@ export default function EventForm({
 
   const handleProgramaInput = (value: string) => {
     setFormData({ ...formData, programa: value });
+    setShowOrquestaSuggestions(false);
+    setShowLugarSuggestions(false);
+    setShowMunicipioDropdown(false);
+    setShowTimeDropdown(false);
     const val = value.trim();
 
     if (val) {
@@ -779,6 +791,10 @@ export default function EventForm({
                   if (formData.programa.trim()) {
                     setShowProgramaSuggestions(true);
                   }
+                  setShowOrquestaSuggestions(false);
+                  setShowLugarSuggestions(false);
+                  setShowMunicipioDropdown(false);
+                  setShowTimeDropdown(false);
                 }}
                 onBlur={() => {
                   setTimeout(() => setShowProgramaSuggestions(false), 200);
@@ -841,9 +857,17 @@ export default function EventForm({
                   onChange={(e) => {
                     setMunicipioSearch(e.target.value);
                     setShowMunicipioDropdown(true);
+                    setShowOrquestaSuggestions(false);
+                    setShowLugarSuggestions(false);
+                    setShowProgramaSuggestions(false);
+                    setShowTimeDropdown(false);
                   }}
                   onFocus={() => {
                     setShowMunicipioDropdown(true);
+                    setShowOrquestaSuggestions(false);
+                    setShowLugarSuggestions(false);
+                    setShowProgramaSuggestions(false);
+                    setShowTimeDropdown(false);
                   }}
                   placeholder=" "
                   className={`
@@ -948,6 +972,10 @@ export default function EventForm({
                   }}
                   onFocus={() => {
                     setShowTimeDropdown(true);
+                    setShowOrquestaSuggestions(false);
+                    setShowLugarSuggestions(false);
+                    setShowProgramaSuggestions(false);
+                    setShowMunicipioDropdown(false);
                   }}
                   onBlur={() => {
                     if (formData.hora && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.hora)) {
@@ -1023,7 +1051,14 @@ export default function EventForm({
           {/* Tipo Custom Dropdown */}
           <div className="relative" ref={tipoDropdownRef}>
             <div
-              onClick={() => setShowTipoDropdown(!showTipoDropdown)}
+              onClick={() => {
+                setShowTipoDropdown(!showTipoDropdown);
+                setShowOrquestaSuggestions(false);
+                setShowLugarSuggestions(false);
+                setShowProgramaSuggestions(false);
+                setShowMunicipioDropdown(false);
+                setShowTimeDropdown(false);
+              }}
               className="relative cursor-pointer"
             >
               <div className={`
