@@ -267,6 +267,63 @@ export default function EventForm({
     }
   };
 
+  // Scoring function for lugar autocomplete matches
+  // Lower score = better match. Returns null if no match.
+  const scoreLugarMatch = (
+    normalizedVal: string,
+    item: { lugar: string; municipio: string }
+  ): number | null => {
+    const normLugar = normalizeString(item.lugar);
+    const normMunicipio = normalizeString(item.municipio);
+    const normFull = `${normLugar} ${normMunicipio}`;
+
+    // Tier 1: Full string starts with query (best match)
+    if (normLugar.startsWith(normalizedVal)) return 1;
+    if (normMunicipio.startsWith(normalizedVal)) return 2;
+    if (normFull.startsWith(normalizedVal)) return 3;
+
+    // Tier 2: Any word in lugar/municipio starts with query
+    // This handles "Las Manzanillas" matching "Manzanillas"
+    const lugarWords = normLugar.split(/\s+/);
+    const municipioWords = normMunicipio.split(/\s+/);
+
+    const lugarWordMatch = lugarWords.some(word => word.startsWith(normalizedVal));
+    const municipioWordMatch = municipioWords.some(word => word.startsWith(normalizedVal));
+
+    if (lugarWordMatch) return 4;
+    if (municipioWordMatch) return 5;
+
+    // Tier 3: Query starts with a word in lugar (partial input for long names)
+    const lugarStartsWithQuery = lugarWords.some(word => normalizedVal.startsWith(word) && word.length >= 3);
+    if (lugarStartsWithQuery) return 6;
+
+    // Tier 4: Substring match anywhere
+    if (normLugar.includes(normalizedVal)) {
+      // Position-based scoring: earlier match = better score
+      const pos = normLugar.indexOf(normalizedVal);
+      return 10 + pos;
+    }
+    if (normMunicipio.includes(normalizedVal)) {
+      const pos = normMunicipio.indexOf(normalizedVal);
+      return 20 + pos;
+    }
+    if (normFull.includes(normalizedVal)) {
+      return 30;
+    }
+
+    // Tier 5: Fuzzy matching - any word in lugar is close to query
+    const bestWordDistance = Math.min(
+      ...lugarWords.map(word => levenshteinDistance(normalizedVal, word)),
+      ...municipioWords.map(word => levenshteinDistance(normalizedVal, word))
+    );
+    // Allow up to 2 character differences for fuzzy matches
+    if (bestWordDistance <= 2 && normalizedVal.length >= 3) {
+      return 40 + bestWordDistance;
+    }
+
+    return null; // No match
+  };
+
   const handleLugarInput = (value: string) => {
     setFormData(prev => {
       const newData = { ...prev, lugar: value };
@@ -280,28 +337,8 @@ export default function EventForm({
 
       const scored = lugarSuggestions
         .map(item => {
-          const normLugar = normalizeString(item.lugar);
-          const normMunicipio = normalizeString(item.municipio);
-          const normFull = `${normLugar} ${normMunicipio}`;
-
-          let score = 100;
-
-          if (normLugar.startsWith(normalizedVal)) {
-            score = 1;
-          } else if (normMunicipio.startsWith(normalizedVal)) {
-            score = 2;
-          } else if (normFull.startsWith(normalizedVal)) {
-            score = 3;
-          } else if (normLugar.includes(normalizedVal)) {
-            score = 10 + levenshteinDistance(normalizedVal, normLugar);
-          } else if (normMunicipio.includes(normalizedVal)) {
-            score = 20 + levenshteinDistance(normalizedVal, normMunicipio);
-          } else if (normFull.includes(normalizedVal)) {
-            score = 30 + levenshteinDistance(normalizedVal, normFull);
-          } else {
-            return null;
-          }
-
+          const score = scoreLugarMatch(normalizedVal, item);
+          if (score === null) return null;
           return { item, score };
         })
         .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
@@ -779,28 +816,8 @@ export default function EventForm({
 
               return lugarSuggestions
                 .map(item => {
-                  const normLugar = normalizeString(item.lugar);
-                  const normMunicipio = normalizeString(item.municipio);
-                  const normFull = `${normLugar} ${normMunicipio}`;
-
-                  let score = 100;
-
-                  if (normLugar.startsWith(normalizedVal)) {
-                    score = 1;
-                  } else if (normMunicipio.startsWith(normalizedVal)) {
-                    score = 2;
-                  } else if (normFull.startsWith(normalizedVal)) {
-                    score = 3;
-                  } else if (normLugar.includes(normalizedVal)) {
-                    score = 10 + levenshteinDistance(normalizedVal, normLugar);
-                  } else if (normMunicipio.includes(normalizedVal)) {
-                    score = 20 + levenshteinDistance(normalizedVal, normMunicipio);
-                  } else if (normFull.includes(normalizedVal)) {
-                    score = 30 + levenshteinDistance(normalizedVal, normFull);
-                  } else {
-                    return null;
-                  }
-
+                  const score = scoreLugarMatch(normalizedVal, item);
+                  if (score === null) return null;
                   return { item, score };
                 })
                 .filter((s): s is { item: { lugar: string; municipio: string }; score: number } => s !== null)
