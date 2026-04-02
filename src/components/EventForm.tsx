@@ -288,8 +288,13 @@ export default function EventForm({
     const val = value.trim();
 
     if (val && lugarSuggestions.length > 0) {
-      const filtered = matchSorter(lugarSuggestions, val, {
-        keys: ['lugar', 'municipio']
+      const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
+      const normalizedVal = normalizeText(val);
+      const filtered = matchSorter(lugarSuggestions, normalizedVal, {
+        keys: [
+          (item) => normalizeText(item.lugar),
+          (item) => normalizeText(item.municipio)
+        ]
       });
       setShowLugarSuggestions(filtered.length > 0);
     } else {
@@ -763,10 +768,13 @@ export default function EventForm({
               const val = formData.lugar.trim();
               if (!val) return lugarSuggestions;
               
-              return matchSorter(lugarSuggestions, val, {
+              const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
+              const normalizedVal = normalizeText(val);
+              
+              return matchSorter(lugarSuggestions, normalizedVal, {
                 keys: [
-                  { key: 'lugar', threshold: matchSorter.rankings.WORD_STARTS_WITH },
-                  { key: 'municipio', threshold: matchSorter.rankings.WORD_STARTS_WITH }
+                  (item) => normalizeText(item.lugar),
+                  (item) => normalizeText(item.municipio)
                 ]
               });
             })()}

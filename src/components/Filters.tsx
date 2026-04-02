@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '../types/event';
 import { normalizeString } from '../lib/utils';
+import { matchSorter } from 'match-sorter';
 import {
   Filter,
   Search,
@@ -98,11 +99,8 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
       return;
     }
 
-    const normalizedValue = normalizeString(value);
-    const filteredSuggestions = suggestions.filter(suggestion =>
-      normalizeString(suggestion).includes(normalizedValue)
-    );
-    setShowSuggestions(filteredSuggestions.length > 0 && normalizeString(filteredSuggestions[0]) !== normalizedValue);
+    const results = matchSorter(suggestions, value);
+    setShowSuggestions(results.length > 0);
   };
 
   const selectSuggestion = (suggestion: string) => {
@@ -160,10 +158,11 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
     }
 
     if (filterSelect && searchInput) {
-      const normalizedSearch = normalizeString(searchInput);
+      const allValues = events.map(e => (e as any)[filterSelect]).filter(Boolean);
+      const results = matchSorter(allValues, searchInput);
       const filtered = events.filter(event => {
         const fieldValue = (event as any)[filterSelect];
-        return fieldValue && normalizeString(fieldValue).includes(normalizedSearch);
+        return fieldValue && results.includes(fieldValue);
       });
       onFilterChange(filtered);
     }
@@ -246,29 +245,23 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
 
                {/* Sugerencias de autocompletado */}
                {showSuggestions && suggestions.length > 0 && (
-                 <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                   <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
-                     {suggestions
-                       .filter(suggestion => {
-                         const normalizedSuggestion = normalizeString(suggestion);
-                         const normalizedSearch = normalizeString(searchInput);
-                         return normalizedSuggestion.includes(normalizedSearch) &&
-                           normalizedSuggestion !== normalizedSearch;
-                       })
+                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
+                      {matchSorter(suggestions, searchInput)
                         .slice(0, 10)
                         .map((suggestion) => (
-                          <button
-                            key={suggestion}
-                           type="button"
-                           onClick={() => selectSuggestion(suggestion)}
-                           className="w-full px-4 py-2 text-left hover:bg-muted border rounded-lg
-                                    border-transparent hover:border-border transition-all duration-200 text-foreground"
-                         >
-                           {suggestion}
-                         </button>
-                       ))}
-                   </div>
-                 </div>
+                           <button
+                             key={suggestion}
+                            type="button"
+                            onClick={() => selectSuggestion(suggestion)}
+                            className="w-full px-4 py-2 text-left hover:bg-muted border rounded-lg
+                                     border-transparent hover:border-border transition-all duration-200 text-foreground"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
                )}
             </div>
           )}
