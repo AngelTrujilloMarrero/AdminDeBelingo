@@ -923,7 +923,10 @@ export default function EventForm({
                   inputMode="numeric"
                   value={formData.hora}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    let val = e.target.value.replace(/[^\d]/g, '');
+                    if (val.length >= 2) {
+                      val = val.slice(0, 2) + ':' + val.slice(2, 4);
+                    }
                     setFormData({ ...formData, hora: val });
                     if (val.length >= 5) {
                       setHoraInvalida(!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val));
