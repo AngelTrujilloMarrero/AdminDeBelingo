@@ -177,8 +177,8 @@ export default function EventForm({
     const seen = new Set<string>();
 
     lugares.forEach(({ lugar, municipio }) => {
-      // Normalización más estricta para el set de vistos: quitar espacios extra y caracteres especiales
-      const clean = (s: string) => s.toLowerCase().trim().replace(/[\s-]/g, '');
+      // Normalización agresiva: quitar TODO lo que no sea letra o número
+      const clean = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
       const key = `${clean(lugar)}|${clean(municipio)}`;
       
       if (!seen.has(key)) {
@@ -752,14 +752,21 @@ export default function EventForm({
               const val = formData.lugar.trim();
               if (!val) return lugarSuggestions;
               
-              // Usar match-sorter para priorizar por campo:
-              // 1. Coincidencias en 'lugar' son prioritarias
-              // 2. Coincidencias en 'municipio' son secundarias
-              return matchSorter(lugarSuggestions, val, {
+              const filtered = matchSorter(lugarSuggestions, val, {
                 keys: [
+                  { key: 'lugar', threshold: matchSorter.rankings.STARTS_WITH },
                   { key: 'lugar', threshold: matchSorter.rankings.CONTAINS },
-                  'municipio'
+                  { key: 'municipio', threshold: matchSorter.rankings.CONTAINS }
                 ]
+              });
+
+              // Último filtro de duplicados visuales (mismo lugar + mismo municipio) por si acaso
+              const finalSeen = new Set();
+              return filtered.filter(item => {
+                const k = `${item.lugar.toLowerCase()}|${item.municipio.toLowerCase()}`;
+                if (finalSeen.has(k)) return false;
+                finalSeen.add(k);
+                return true;
               });
             })()}
             showSuggestions={showLugarSuggestions}
