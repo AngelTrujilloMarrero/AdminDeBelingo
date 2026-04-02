@@ -99,7 +99,14 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
       return;
     }
 
-    const results = matchSorter(suggestions, value);
+    const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
+    const normalizedValue = normalizeText(value);
+
+    const results = matchSorter(suggestions, normalizedValue, {
+      keys: [
+        (item) => normalizeText(item),
+      ]
+    });
     setShowSuggestions(results.length > 0);
   };
 
@@ -158,8 +165,13 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
     }
 
     if (filterSelect && searchInput) {
+      const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
+      const normalizedSearch = normalizeText(searchInput);
+      
       const allValues = events.map(e => (e as any)[filterSelect]).filter(Boolean);
-      const results = matchSorter(allValues, searchInput);
+      const results = matchSorter(allValues, normalizedSearch, {
+        keys: [(item) => normalizeText(item)]
+      });
       const filtered = events.filter(event => {
         const fieldValue = (event as any)[filterSelect];
         return fieldValue && results.includes(fieldValue);
@@ -243,13 +255,18 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
                            bg-background text-foreground placeholder-muted-foreground"
               />
 
-               {/* Sugerencias de autocompletado */}
-               {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                    <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
-                      {matchSorter(suggestions, searchInput)
-                        .slice(0, 10)
-                        .map((suggestion) => (
+                {/* Sugerencias de autocompletado */}
+                {showSuggestions && suggestions.length > 0 && (
+                   <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                     <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
+                       {(function() {
+                         const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
+                         return matchSorter(suggestions, normalizeText(searchInput), {
+                           keys: [(item) => normalizeText(item)]
+                         });
+                       })()
+                         .slice(0, 10)
+                         .map((suggestion) => (
                            <button
                              key={suggestion}
                             type="button"
