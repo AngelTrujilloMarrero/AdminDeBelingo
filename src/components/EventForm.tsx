@@ -476,10 +476,7 @@ export default function EventForm({
             onBlur={() => setTimeout(() => setShowProgramaSuggestions(false), 200)}
             showSuggestions={showProgramaSuggestions}
             onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
-            suggestions={[
-              ...(historicalEvent?.programa ? [{ name: historicalEvent.programa, isHistorical: true, extraInfo: historicalEvent.orquesta }] : []),
-              ...uniqueProgramas.map(p => ({ name: p }))
-            ].slice(0, 10)}
+            suggestions={uniqueProgramas.map(p => ({ name: p })).slice(0, 10)}
             onSuggestionClick={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(false); }}
             inputRef={programaInputRef}
           />
