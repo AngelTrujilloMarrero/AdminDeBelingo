@@ -17,6 +17,9 @@ interface FloatingLabelInputProps {
     onFocus?: (e: React.FocusEvent) => void;
     onBlur?: (e: React.FocusEvent) => void;
     inputRef?: React.RefObject<HTMLInputElement>;
+    gridCols?: 1 | 2 | 3;
+    suggestionDirection?: 'up' | 'down';
+    suggestionLayout?: 'absolute' | 'relative';
 }
 
 export default function FloatingLabelInput({
@@ -33,7 +36,10 @@ export default function FloatingLabelInput({
     showSuggestions = false,
     onFocus,
     onBlur,
-    inputRef
+    inputRef,
+    gridCols = 1,
+    suggestionDirection = 'down',
+    suggestionLayout = 'absolute'
 }: FloatingLabelInputProps) {
     const hasValue = value.length > 0;
     const isDateInput = type === 'date';
@@ -120,20 +126,32 @@ export default function FloatingLabelInput({
 
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto" style={{ zIndex: 100 }}>
-                    {suggestions.map((suggestion, idx) => (
-                        <button
-                            key={typeof suggestion === 'object' ? ((suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : (suggestion as any).name) || idx) : `${suggestion}-${idx}`}
-                            type="button"
-                            onClick={() => onSuggestionClick?.(typeof suggestion === 'object' && 'name' in (suggestion as any) ? (suggestion as any).name : suggestion)}
-                            className="w-full px-4 py-3 text-left hover:bg-muted/50 border-b last:border-b-0 
-                         border-border transition-colors duration-200 text-popover-foreground relative overflow-hidden"
-                        >
-                            {typeof suggestion === 'object' && 'lugar' in (suggestion as any) ? (
-                                <div>
-                                    <span className="font-medium">{(suggestion as any).lugar}</span>
-                                    <span className="text-muted-foreground ml-2">({(suggestion as any).municipio})</span>
-                                </div>
+                <div 
+                    className={`${suggestionLayout} w-full z-[100] bg-popover border border-border rounded-xl shadow-xl max-h-[600px] overflow-y-auto 
+                                ${suggestionDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} 
+                                ${gridCols > 1 ? 'grid gap-px p-px' : 'flex flex-col p-2 gap-2'}`} 
+                    style={{ gridTemplateColumns: gridCols > 1 ? `repeat(${gridCols}, minmax(0, 1fr))` : undefined }}
+                >
+                    {suggestions.map((suggestion, idx) => {
+                        const isHistorical = typeof suggestion === 'object' && 'isHistorical' in (suggestion as any) && (suggestion as any).isHistorical;
+                        return (
+                            <button
+                                key={typeof suggestion === 'object' ? ((suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : (suggestion as any).name) || idx) : `${suggestion}-${idx}`}
+                                type="button"
+                                onClick={() => onSuggestionClick?.(typeof suggestion === 'object' && 'name' in (suggestion as any) ? (suggestion as any).name : suggestion)}
+                                className={`px-4 py-3 text-left hover:bg-muted/80 transition-all duration-300 text-popover-foreground relative overflow-hidden flex flex-col justify-center rounded-xl border border-border/50 my-0.5 first:mt-0 last:mb-0
+                             ${gridCols > 1 && !isHistorical ? 'items-center text-center' : 'items-start text-left'}
+                             ${isHistorical ? (gridCols === 3 ? 'col-span-3 w-full bg-amber-500/10 border-amber-500/30' : gridCols === 2 ? 'col-span-2 w-full bg-amber-500/10 border-amber-500/30' : '') : 'bg-muted/30 shadow-sm hover:shadow-md'} 
+                             ${gridCols > 1 && !isHistorical ? 'border-r [&:nth-child(3n)]:border-r-0' : ''}`}
+                            >
+                             <div className={`flex flex-col ${isHistorical ? 'w-full' : ''}`}>
+                             {typeof suggestion === 'object' && 'lugar' in (suggestion as any) ? (
+                                 <div className="flex flex-row items-center justify-between w-full h-full">
+                                     <span className="font-bold text-indigo-900 dark:text-white text-[15px]">{(suggestion as any).lugar}</span>
+                                     <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-indigo-300 bg-black/5 dark:bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wider ml-3 shrink-0">
+                                         {(suggestion as any).municipio}
+                                     </span>
+                                 </div>
                             ) : typeof suggestion === 'object' && 'name' in (suggestion as any) ? (
                                 <div className="space-y-1">
                                     <div className="flex justify-between items-center">
@@ -155,10 +173,14 @@ export default function FloatingLabelInput({
                                     )}
                                 </div>
                             ) : (
-                                suggestion as string
+                                 <span className="text-lg font-bold tracking-tight py-1">
+                                     {suggestion as string}
+                                 </span>
                             )}
+                             </div>
                         </button>
-                    ))}
+                      );
+                    })}
                 </div>
             )}
         </div>

@@ -33,8 +33,7 @@ export function generateTimeOptions(): string[] {
       times.push(time);
     }
   }
-  times.push('23:59');
-  return times;
+  return ['23:59', ...times.reverse()];
 }
 
 export function estandarizarNombre(str: string): string {

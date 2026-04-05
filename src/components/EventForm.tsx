@@ -356,8 +356,8 @@ export default function EventForm({
 
   return (
     <div className="max-w-4xl mx-auto p-6" id="form-container">
-      <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+      <div className="bg-card rounded-2xl shadow-xl border border-border overflow-visible">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
             {editingEvent ? <><Eye className="h-6 w-6" /><span>Editar Evento</span></> : <><Save className="h-6 w-6" /><span>Nuevo Evento</span></>}
           </h2>
@@ -377,7 +377,7 @@ export default function EventForm({
               const parts = formData.orquesta.split(',');
               const lastPart = parts[parts.length - 1].trim();
               return normalizeString(orq).startsWith(normalizeString(lastPart));
-            })}
+            }).slice(0, 30)}
             onSuggestionClick={selectOrquesta}
             onFocus={() => { setShowLugarSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); setShowOrquestaSuggestions(true); }}
             inputRef={orquestaInputRef}
@@ -388,7 +388,7 @@ export default function EventForm({
             onChange={handleLugarInput} showSuggestions={showLugarSuggestions}
             suggestions={(() => {
               const val = formData.lugar.trim();
-              if (!val) return lugarSuggestions;
+              if (!val) return lugarSuggestions.slice(0, 30);
               const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
               const normalizedVal = normalizeText(val);
               return matchSorter(lugarSuggestions, normalizedVal, {
@@ -413,7 +413,7 @@ export default function EventForm({
                  icon={<MapPin className="h-5 w-5" />}
                />
                {showMunicipioDropdown && (
-                 <div className="absolute w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto" style={{ zIndex: 100 }}>
+                 <div className="absolute w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto" style={{ zIndex: 100 }}>
                    <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
                      {MUNICIPIOS.filter(m => normalizeString(m).includes(normalizeString(municipioSearch))).map(m => (
                        <button key={m} className={`w-full text-left px-4 py-2 rounded-lg hover:bg-muted ${formData.municipio === m ? 'bg-indigo-50 text-indigo-600' : ''}`} onClick={() => { setFormData({...formData, municipio: m}); setMunicipioSearch(m); setShowMunicipioDropdown(false); }}>{m}</button>
@@ -428,20 +428,49 @@ export default function EventForm({
                 id="hora" label="Hora" value={formData.hora} icon={<Clock className="h-5 w-5" />}
                 onChange={v => { setFormData({...formData, hora: v}); setShowTimeDropdown(true); }}
                 onFocus={() => { setShowTimeDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTipoDropdown(false); }}
+                showSuggestions={showTimeDropdown}
+                gridCols={3}
+                suggestions={(() => {
+                  const val = formData.hora.trim();
+                  let results: any[] = [];
+                  
+                  // Si hay evento histórico, ponerlo al principio
+                  if (historicalEvent?.hora) {
+                    results.push({
+                      name: historicalEvent.hora,
+                      isHistorical: true,
+                      extraInfo: historicalEvent.orquesta
+                    });
+                  }
+
+                  if (!val) {
+                    // Si no hay búsqueda, mostrar todas las opciones de 15 min (evitando duplicar el histórico)
+                    const otherOptions = timeOptions
+                      .filter(t => t !== historicalEvent?.hora)
+                      .map(t => ({ name: t }));
+                    return [...results, ...otherOptions];
+                  }
+
+                  // Lógica de aproximación/filtro
+                  const searchVal = val.replace(/:/g, '');
+                  const filtered = timeOptions.filter(t => {
+                    const tClean = t.replace(/:/g, '');
+                    return tClean.includes(searchVal) || t.includes(val);
+                  });
+
+                  // Usar matchSorter para mayor flexibilidad y orden de relevancia
+                  const sorted = matchSorter(timeOptions, val);
+                  
+                  // Combinar y quitar duplicados (incluyendo el histórico que ya está en results)
+                  const combined = [...new Set([...filtered, ...sorted])];
+                  const otherResults = combined
+                    .filter(t => t !== historicalEvent?.hora)
+                    .map(t => ({ name: t }));
+
+                  return [...results, ...otherResults];
+                })()}
+                onSuggestionClick={v => { setFormData({...formData, hora: v}); setShowTimeDropdown(false); }}
               />
-              {showTimeDropdown && (
-                <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
-                  {[...(historicalEvent?.hora ? [historicalEvent.hora] : []), ...timeOptions].slice(0, 20).map((t, idx) => (
-                    <button key={`${t}-${idx}`} className={`text-left px-4 py-2 rounded-lg hover:bg-muted relative ${historicalEvent?.hora === t ? 'border-l-4 border-amber-500' : ''}`} onClick={() => { setFormData({...formData, hora: t}); setShowTimeDropdown(false); }}>
-                      {t} {historicalEvent?.hora === t && (
-                        <span className="absolute right-1 top-1 text-[8px] text-amber-600 font-bold">
-                          Histórico <span className="font-normal opacity-80 text-[7px]">({historicalEvent.orquesta})</span>
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -449,21 +478,36 @@ export default function EventForm({
             <FloatingLabelInput
               id="tipo" label="Tipo de evento" value={tipoSearch || formData.tipo} icon={<Tag className="h-5 w-5" />}
               onChange={v => { setTipoSearch(v); setShowTipoDropdown(true); }}
-              onFocus={() => { setShowTipoDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); }}
+              onFocus={() => { setShowTipoDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowProgramaSuggestions(false); }}
+              showSuggestions={showTipoDropdown}
+              gridCols={3}
+              suggestions={(() => {
+                const val = tipoSearch.trim();
+                let results: any[] = [];
+                if (historicalEvent?.tipo) {
+                  results.push({
+                    name: historicalEvent.tipo,
+                    isHistorical: true,
+                    extraInfo: historicalEvent.orquesta
+                  });
+                }
+
+                const otherOptions = TIPOS_EVENTO.filter(t => t !== historicalEvent?.tipo);
+                
+                if (!val) {
+                  return [...results, ...otherOptions.map(t => ({ name: t }))];
+                }
+
+                const filtered = matchSorter(otherOptions, val);
+                return [...results, ...filtered.map(t => ({ name: t }))];
+              })()}
+              onSuggestionClick={v => { 
+                setFormData({...formData, tipo: v === 'Otro' ? 'Otro' : v}); 
+                setTipoSearch(v); 
+                setShowCustomTipo(v === 'Otro'); 
+                setShowTipoDropdown(false); 
+              }}
             />
-            {showTipoDropdown && (
-              <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
-                {[...(historicalEvent?.tipo ? [historicalEvent.tipo] : []), ...TIPOS_EVENTO.filter(t => t !== historicalEvent?.tipo)].map((t, idx) => (
-                  <button key={`${t}-${idx}`} className={`text-left px-4 py-2 rounded-lg hover:bg-muted relative ${historicalEvent?.tipo === t ? 'border-l-4 border-amber-500' : ''}`} onClick={() => { setFormData({...formData, tipo: t}); setTipoSearch(t); setShowCustomTipo(t === 'Otro'); setShowTipoDropdown(false); }}>
-                    {t} {historicalEvent?.tipo === t && (
-                      <span className="absolute right-1 top-1 text-[8px] text-amber-600 font-bold">
-                        Histórico <span className="font-normal opacity-80 text-[7px]">({historicalEvent.orquesta})</span>
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {showCustomTipo && (
@@ -475,8 +519,10 @@ export default function EventForm({
             onChange={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(true); }}
             onBlur={() => setTimeout(() => setShowProgramaSuggestions(false), 200)}
             showSuggestions={showProgramaSuggestions}
+            suggestionDirection="down"
+            suggestionLayout="relative"
             onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
-            suggestions={uniqueProgramas.map(p => ({ name: p })).slice(0, 10)}
+            suggestions={uniqueProgramas.map(p => ({ name: p })).slice(0, 30)}
             onSuggestionClick={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(false); }}
             inputRef={programaInputRef}
           />
