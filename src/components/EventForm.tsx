@@ -66,6 +66,7 @@ export default function EventForm({
   const [conflictWarnings, setConflictWarnings] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [buttonSuccess, setButtonSuccess] = useState(false);
 
   // Autocompletado
   const [orquestaSuggestions, setOrquestaSuggestions] = useState<string[]>([]);
@@ -88,36 +89,213 @@ export default function EventForm({
   const [showMunicipioDropdown, setShowMunicipioDropdown] = useState(false);
   const [municipioSearch, setMunicipioSearch] = useState('');
   const [tipoSearch, setTipoSearch] = useState('');
-  const [historicalEvent, setHistoricalEvent] = useState<Event | null>(null);
+  const [historicalEvents, setHistoricalEvents] = useState<Array<{ event: Event; score: number; reasons: string[] }>>([]);
+  const [currentOrquestaInput, setCurrentOrquestaInput] = useState('');
 
   const municipioDropdownRef = useRef<HTMLDivElement>(null);
   const municipioInputRef = useRef<HTMLInputElement>(null);
 
   const timeOptions = generateTimeOptions();
 
-  // Efecto para buscar coincidencias históricas (continuidad)
+  // Efecto para buscar coincidencias históricas con puntuación
   useEffect(() => {
-    const { eventDate, lugar, municipio } = formData;
+    const { eventDate, lugar, municipio, orquesta } = formData;
+    
+    // === EXCEPCIONES DE FECHAS ESPECÍFICAS ===
+    // Estas fechas siempre tienen el mismo tipo de evento, independientemente del día de la semana
+    // Se evalúan PRIMERO
+    const EXCEPCIONES_FECHAS = [
+      { mes: 7, dia: 15, municipio: 'Tejina', tipo: 'Pamela' },     // 15 de Agosto - Pamela en Tejina
+      { mes: 9, dia: 24, municipio: 'Buenavista', tipo: 'Baile Normal' }, // 24 de Octubre - Baile en Buenavista
+    ];
+
+    if (eventDate) {
+      const dateObj = new Date(eventDate);
+      if (!isNaN(dateObj.getTime())) {
+        const currentMonth = dateObj.getMonth();
+        const currentDay = dateObj.getDate();
+        
+        // 1º PRIMERO: Verificar excepciones
+        const exc = EXCEPCIONES_FECHAS.find(exc => 
+          currentMonth === exc.mes && 
+          currentDay === exc.dia &&
+          (normalizeString(municipio || '').includes(normalizeString(exc.municipio)) ||
+           normalizeString(lugar || '').includes(normalizeString(exc.municipio)))
+        );
+
+        if (exc) {
+          // Buscar evento histórico para obtener la hora de ese día
+          const histEventsForDate = events.filter(e => {
+            if (!e.lugar || !e.municipio) return false;
+            const eDate = new Date(e.day);
+            return eDate.getMonth() === currentMonth && 
+                   eDate.getDate() === currentDay &&
+                   (normalizeString(e.lugar!).includes(normalizeString(lugar || '')) || 
+                    normalizeString(e.municipio!).includes(normalizeString(municipio || '')));
+          });
+          
+          const histEvent = histEventsForDate[0];
+          
+          setHistoricalEvents([{
+            event: {
+              id: 'exception',
+              orquesta: histEvent?.orquesta || '',
+              municipio: municipio,
+              lugar: lugar || '',
+              hora: histEvent?.hora || '',
+              day: eventDate,
+              tipo: exc.tipo,
+              editing: false,
+              cancelado: false,
+              FechaAgregado: '',
+              FechaEditado: ''
+            },
+            score: 10,
+            reasons: ['FechaEsp']
+          }]);
+          return;
+        }
+
+        // 2º SEGUNDO: Buscar evento histórico para esa fecha
+        const matchingHistoricalEvents = events.filter(e => {
+          if (!e.lugar || !e.municipio) return false;
+          const eDate = new Date(e.day);
+          return eDate.getMonth() === currentMonth && 
+                 eDate.getDate() === currentDay &&
+                 (normalizeString(e.lugar!).includes(normalizeString(lugar || '')) || 
+                  normalizeString(e.municipio!).includes(normalizeString(municipio || '')));
+        });
+
+        if (matchingHistoricalEvents.length > 0) {
+          const histEvent = matchingHistoricalEvents[0];
+          setHistoricalEvents([{
+            event: {
+              id: histEvent.id,
+              orquesta: histEvent.orquesta,
+              municipio: municipio || histEvent.municipio,
+              lugar: lugar || histEvent.lugar,
+              hora: histEvent.hora,
+              day: eventDate,
+              tipo: histEvent.tipo,
+              editing: false,
+              cancelado: false,
+              FechaAgregado: '',
+              FechaEditado: ''
+            },
+            score: 5,
+            reasons: ['Hist']
+          }]);
+          return;
+        }
+      }
+    }
+    // ===========================================
+
+    // Resto de la lógica solo si hay lugar y municipio
     if (eventDate && lugar && municipio) {
       const dateObj = new Date(eventDate);
       if (!isNaN(dateObj.getTime())) {
         const currentMonth = dateObj.getMonth();
         const currentDay = dateObj.getDate();
-
-        const match = events.find(e => {
+        const currentDayOfWeek = dateObj.getDay();
+        const currentYear = dateObj.getFullYear();
+        
+        const matchingEvents = events.filter(e => {
           if (!e.lugar || !e.municipio) return false;
           const eDate = new Date(e.day);
           return eDate.getMonth() === currentMonth && 
-                 Math.abs(eDate.getDate() - currentDay) <= 5 && 
+                 Math.abs(eDate.getDate() - currentDay) <= 10 && 
                  normalizeString(e.lugar!) === normalizeString(lugar) && 
                  normalizeString(e.municipio!) === normalizeString(municipio);
         });
-        setHistoricalEvent(match || null);
+
+        // Calcular puntuación para cada evento
+        const scoredEvents = matchingEvents.map(e => {
+          const eDate = new Date(e.day);
+          const eDayOfWeek = eDate.getDay();
+          const eYear = eDate.getFullYear();
+          let score = 0;
+          const reasons: string[] = [];
+
+          // Criterio 1: Día de semana (+3) - más importante
+          if (eDayOfWeek === currentDayOfWeek) {
+            score += 3;
+            reasons.push('Día');
+          }
+
+          // Criterio 2: Misma orquesta (+2)
+          const currentOrqs = orquesta.toLowerCase().split(',').map(o => o.trim()).filter(Boolean);
+          const eventOrqs = e.orquesta.toLowerCase().split(',').map(o => o.trim()).filter(Boolean);
+          const hasMatchingOrq = currentOrqs.some(co => eventOrqs.some(eo => co === eo || eo.includes(co) || co.includes(eo)));
+          if (currentOrqs.length > 0 && hasMatchingOrq) {
+            score += 2;
+            reasons.push('Orq');
+          }
+
+          // Criterio 3: Estructura histórica - eventos consecutivos (+1)
+          const consecutiveEvents = matchingEvents.filter(me => {
+            const meDate = new Date(me.day);
+            return Math.abs(meDate.getDate() - eDate.getDate()) <= 3;
+          });
+          if (consecutiveEvents.length >= 2) {
+            score += 1;
+            reasons.push('Estruct');
+          }
+
+          // Criterio 4: Frecuencia del día de semana (+1)
+          const dayFrequency = matchingEvents.filter(me => {
+            const meDate = new Date(me.day);
+            return meDate.getDay() === currentDayOfWeek;
+          }).length;
+          if (dayFrequency > 1) {
+            score += 1;
+            reasons.push('Frec');
+          }
+
+          // Criterio 5: Patrón de entrada basado en secuencia de creación (+1 a +3)
+          const locationKey = `${normalizeString(lugar)}|${normalizeString(municipio)}`;
+          const currentOrqInput = formData.orquesta.trim().toLowerCase();
+          
+          // Buscar eventos del mismo lugar en los eventos actuales (este año)
+          const sameLocationEvents = events.filter(ev => {
+            if (!ev.lugar || !ev.municipio) return false;
+            return normalizeString(ev.lugar!) === normalizeString(lugar) && 
+                   normalizeString(ev.municipio!) === normalizeString(municipio);
+          }).sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
+
+          if (sameLocationEvents.length > 0) {
+            const lastEvent = sameLocationEvents[sameLocationEvents.length - 1];
+            const lastEventDate = new Date(lastEvent.day);
+            const currentEventDate = new Date(eventDate);
+            const daysDiff = Math.abs(currentEventDate.getTime() - lastEventDate.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (daysDiff <= 3) {
+              score += 2;
+              reasons.push('Seq');
+            } else if (daysDiff <= 7) {
+              score += 1;
+              reasons.push('Seq-');
+            }
+          }
+
+          // Añadir bonus por año más reciente
+          const yearDiff = currentYear - eYear;
+          if (yearDiff <= 1) {
+            score += 1;
+            reasons.push('Año');
+          }
+
+          return { event: e, score, reasons };
+        });
+
+        // Ordenar por puntuación descendente
+        scoredEvents.sort((a, b) => b.score - a.score);
+        setHistoricalEvents(scoredEvents);
       }
     } else {
-      setHistoricalEvent(null);
+      setHistoricalEvents([]);
     }
-  }, [formData.eventDate, formData.lugar, formData.municipio, events]);
+  }, [formData.eventDate, formData.lugar, formData.municipio, formData.orquesta, events]);
 
   const uniqueProgramas = [...new Set(
     events
@@ -328,7 +506,11 @@ export default function EventForm({
       clearForm();
       onEventAdded();
       setSuccessMessage('Evento guardado con éxito');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setButtonSuccess(true);
+      setTimeout(() => {
+        setSuccessMessage('');
+        setButtonSuccess(false);
+      }, 3000);
     } catch (error) {
       alert('Error al guardar el evento');
     } finally {
@@ -343,7 +525,7 @@ export default function EventForm({
     });
     setMunicipioSearch('');
     setShowCustomTipo(false);
-    setHistoricalEvent(null);
+    setHistoricalEvents([]);
     setMissingFields('');
     setDuplicateWarning('');
     setConflictWarnings([]);
@@ -437,19 +619,22 @@ export default function EventForm({
                   const val = formData.hora.trim();
                   let results: any[] = [];
                   
-                  // Si hay evento histórico, ponerlo al principio
-                  if (historicalEvent?.hora) {
+                  // Mostrar SOLO el evento histórico con mayor puntuación
+                  if (historicalEvents.length > 0) {
+                    const bestMatch = historicalEvents[0]; // Ya viene ordenado por score descendente
+                    const stars = '⭐'.repeat(Math.min(bestMatch.score, 5));
                     results.push({
-                      name: historicalEvent.hora,
+                      name: bestMatch.event.hora,
                       isHistorical: true,
-                      extraInfo: historicalEvent.orquesta
+                      extraInfo: `${bestMatch.event.orquesta} ${stars} ${bestMatch.reasons.join(',')}`
                     });
                   }
 
                   if (!val) {
                     // Si no hay búsqueda, mostrar todas las opciones de 15 min (evitando duplicar el histórico)
+                    const existingHours = historicalEvents.length > 0 ? [historicalEvents[0].event.hora] : [];
                     const otherOptions = timeOptions
-                      .filter(t => t !== historicalEvent?.hora)
+                      .filter(t => !existingHours.includes(t))
                       .map(t => ({ name: t }));
                     return [...results, ...otherOptions];
                   }
@@ -466,8 +651,9 @@ export default function EventForm({
                   
                   // Combinar y quitar duplicados (incluyendo el histórico que ya está en results)
                   const combined = [...new Set([...filtered, ...sorted])];
+                  const existingHours = historicalEvents.length > 0 ? [historicalEvents[0].event.hora] : [];
                   const otherResults = combined
-                    .filter(t => t !== historicalEvent?.hora)
+                    .filter(t => !existingHours.includes(t))
                     .map(t => ({ name: t }));
 
                   return [...results, ...otherResults];
@@ -482,25 +668,30 @@ export default function EventForm({
               id="tipo" label="Tipo de evento" value={tipoSearch || formData.tipo} icon={<Tag className="h-5 w-5" />}
               onChange={v => { setTipoSearch(v); setShowTipoDropdown(true); }}
               onFocus={() => { setShowTipoDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowProgramaSuggestions(false); }}
-              showSuggestions={showTipoDropdown}
-              readOnly={true}
-              gridCols={3}
-              suggestions={(() => {
-                let results: any[] = [];
-                if (historicalEvent?.tipo) {
-                  results.push({
-                    name: historicalEvent.tipo,
-                    isHistorical: true,
-                    extraInfo: historicalEvent.orquesta
-                  });
-                }
+                showSuggestions={showTipoDropdown}
+                readOnly={true}
+                gridCols={3}
+                suggestions={(() => {
+                  let results: any[] = [];
+                  
+                  // Mostrar SOLO el evento histórico con mayor puntuación
+                  if (historicalEvents.length > 0) {
+                    const bestMatch = historicalEvents[0];
+                    const stars = '⭐'.repeat(Math.min(bestMatch.score, 5));
+                    results.push({
+                      name: bestMatch.event.tipo,
+                      isHistorical: true,
+                      extraInfo: `${bestMatch.event.orquesta} ${stars} ${bestMatch.reasons.join(',')}`
+                    });
+                  }
 
-                const otherOptions = TIPOS_EVENTO.filter(t => t !== historicalEvent?.tipo).map(t => ({ name: t }));
-                
-                // Si es un campo de solo lectura (tipo select), siempre mostramos todo
-                return [...results, ...otherOptions];
-              })()}
-              onSuggestionClick={v => { 
+                  const existingTipos = historicalEvents.length > 0 ? [historicalEvents[0].event.tipo] : [];
+                  const otherOptions = TIPOS_EVENTO.filter(t => !existingTipos.includes(t)).map(t => ({ name: t }));
+                  
+                  // Si es un campo de solo lectura (tipo select), siempre mostramos todo
+                  return [...results, ...otherOptions];
+                })()}
+                onSuggestionClick={v => {
                 setFormData({...formData, tipo: v === 'Otro' ? 'Otro' : v}); 
                 setTipoSearch(v); 
                 setShowCustomTipo(v === 'Otro'); 
@@ -528,10 +719,20 @@ export default function EventForm({
 
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
               <button
-                onClick={validateAndSave} disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all"
+                onClick={validateAndSave} disabled={isLoading || buttonSuccess}
+                className={`w-full flex items-center justify-center space-x-2 font-bold py-4 px-6 rounded-xl transition-all ${
+                  buttonSuccess 
+                    ? 'bg-green-500 text-white animate-pulse' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
               >
-                {isLoading ? <span>Guardando...</span> : <><Save className="h-5 w-5" /><span>{editingEvent ? 'Actualizar Evento' : 'Crear Evento'}</span></>}
+                {isLoading ? (
+                  <span>Guardando...</span>
+                ) : buttonSuccess ? (
+                  <><CheckCircle className="h-5 w-5" /><span>¡Creado!</span></>
+                ) : (
+                  <><Save className="h-5 w-5" /><span>{editingEvent ? 'Actualizar Evento' : 'Crear Evento'}</span></>
+                )}
               </button>
               <button
                 onClick={handleCancel}
