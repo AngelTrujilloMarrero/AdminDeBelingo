@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-const EMPTY_SUGGESTIONS: string[] = [];
+const EMPTY_SUGGESTIONS: any[] = [];
 
 interface FloatingLabelInputProps {
     id: string;
@@ -11,9 +11,10 @@ interface FloatingLabelInputProps {
     icon?: React.ReactNode;
     className?: string;
     placeholder?: string;
-    suggestions?: string[] | Array<{ lugar: string; municipio: string }> | Array<{ name: string; hasData: boolean }>;
+    suggestions?: string[] | Array<{ lugar: string; municipio: string }> | Array<{ name: string; hasData?: boolean; isHistorical?: boolean; extraInfo?: string }>;
     onSuggestionClick?: (value: any) => void;
     showSuggestions?: boolean;
+    onFocus?: (e: React.FocusEvent) => void;
     inputRef?: React.RefObject<HTMLInputElement>;
 }
 
@@ -29,6 +30,7 @@ export default function FloatingLabelInput({
     suggestions = EMPTY_SUGGESTIONS,
     onSuggestionClick,
     showSuggestions = false,
+    onFocus,
     inputRef
 }: FloatingLabelInputProps) {
     const hasValue = value.length > 0;
@@ -61,6 +63,7 @@ export default function FloatingLabelInput({
                             id={id}
                             value={value}
                             onChange={(e) => onChange(e.target.value)}
+                            onFocus={onFocus}
                             className={`
                                 w-full px-4 pt-6 pb-2 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
                                 focus:border-indigo-500 focus:outline-none transition-all duration-300
@@ -84,6 +87,7 @@ export default function FloatingLabelInput({
                             id={id}
                             value={value}
                             onChange={(e) => onChange(e.target.value)}
+                            onFocus={onFocus}
                             placeholder=" "
                             rows={1}
                             className={`
@@ -98,7 +102,10 @@ export default function FloatingLabelInput({
                             className={`
                                 absolute ${icon ? 'left-11' : 'left-4'} transition-all duration-300 pointer-events-none
                                 text-muted-foreground origin-left
-                                top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90
+                                ${hasValue
+                                    ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90'
+                                    : 'top-1/2 -translate-y-1/2 text-base'
+                                }
                             `}
                         >
                             {label}
@@ -109,28 +116,38 @@ export default function FloatingLabelInput({
 
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-[100] w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                    {suggestions.map((suggestion) => (
+                <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {suggestions.map((suggestion, idx) => (
                         <button
-                            key={typeof suggestion === 'object' ? (suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : suggestion.name) || JSON.stringify(suggestion) : suggestion}
+                            key={typeof suggestion === 'object' ? ((suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : (suggestion as any).name) || idx) : `${suggestion}-${idx}`}
                             type="button"
-                            onClick={() => onSuggestionClick?.(suggestion)}
+                            onClick={() => onSuggestionClick?.(typeof suggestion === 'object' && 'name' in (suggestion as any) ? (suggestion as any).name : suggestion)}
                             className="w-full px-4 py-3 text-left hover:bg-muted/50 border-b last:border-b-0 
-                         border-border transition-colors duration-200 text-popover-foreground"
+                         border-border transition-colors duration-200 text-popover-foreground relative overflow-hidden"
                         >
-                            {typeof suggestion === 'object' && 'lugar' in suggestion ? (
+                            {typeof suggestion === 'object' && 'lugar' in (suggestion as any) ? (
                                 <div>
-                                    <span className="font-medium">{suggestion.lugar}</span>
-                                    <span className="text-muted-foreground ml-2">({suggestion.municipio})</span>
+                                    <span className="font-medium">{(suggestion as any).lugar}</span>
+                                    <span className="text-muted-foreground ml-2">({(suggestion as any).municipio})</span>
                                 </div>
-                            ) : typeof suggestion === 'object' && 'name' in suggestion ? (
-                                <div className="flex justify-between items-center">
-                                    <span>{suggestion.name}</span>
-                                    {suggestion.hasData && (
-                                        <span className="text-green-600 dark:text-green-400 text-xs px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-full border border-green-100 dark:border-green-800 flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                                            Datos
+                            ) : typeof suggestion === 'object' && 'name' in (suggestion as any) ? (
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                        <span className={(suggestion as any).isHistorical ? 'pl-2 border-l-2 border-amber-500 font-medium' : 'font-medium'}>
+                                            {(suggestion as any).name}
                                         </span>
+                                        <div className="flex gap-1">
+                                            {(suggestion as any).isHistorical && (
+                                                <span className="text-amber-600 dark:text-amber-400 text-[10px] uppercase font-bold px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 rounded-full border border-amber-100 dark:border-amber-800">
+                                                    Histórico
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {(suggestion as any).extraInfo && (
+                                        <div className="text-[10px] text-muted-foreground italic pl-3">
+                                            ({(suggestion as any).extraInfo})
+                                        </div>
                                     )}
                                 </div>
                             ) : (

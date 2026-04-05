@@ -12,6 +12,7 @@ export interface Event {
   FechaEditado: string;
   isArchived?: boolean;
   programa?: string;
+  customTipo?: string;
   cambios?: string[];
 }
 

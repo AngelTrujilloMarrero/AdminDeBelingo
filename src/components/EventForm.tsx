@@ -23,7 +23,6 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  EyeOff,
   Globe
 } from 'lucide-react';
 
@@ -39,6 +38,7 @@ interface EventFormProps {
 }
 
 import FloatingLabelInput from './FloatingLabelInput';
+
 export default function EventForm({
   events,
   editingEvent,
@@ -74,7 +74,6 @@ export default function EventForm({
   const [showLugarSuggestions, setShowLugarSuggestions] = useState(false);
 
   // Autocompletado para programas
-  const [programaSuggestions, setProgramaSuggestions] = useState<string[]>([]);
   const [showProgramaSuggestions, setShowProgramaSuggestions] = useState(false);
 
   const orquestaInputRef = useRef<HTMLInputElement>(null);
@@ -88,43 +87,43 @@ export default function EventForm({
   const [showTipoDropdown, setShowTipoDropdown] = useState(false);
   const [showMunicipioDropdown, setShowMunicipioDropdown] = useState(false);
   const [municipioSearch, setMunicipioSearch] = useState('');
+  const [tipoSearch, setTipoSearch] = useState('');
+  const [historicalEvent, setHistoricalEvent] = useState<Event | null>(null);
 
   const municipioDropdownRef = useRef<HTMLDivElement>(null);
   const municipioInputRef = useRef<HTMLInputElement>(null);
 
   const timeOptions = generateTimeOptions();
 
-  // Effect to auto-fill program
+  // Efecto para buscar coincidencias históricas (continuidad)
   useEffect(() => {
-    const { eventDate, lugar, municipio, programa } = formData;
-
-    // Only run if we have the necessary fields and program is empty
-    if (eventDate && lugar && municipio && !programa) {
-      // Debounce slightly to avoid rapid updates while typing? Not strictly necessary for local filtering
+    const { eventDate, lugar, municipio } = formData;
+    if (eventDate && lugar && municipio) {
       const dateObj = new Date(eventDate);
       if (!isNaN(dateObj.getTime())) {
-        // Find NEAREST event with program
-        const nearbyEvent = events
-          .filter(ev =>
-            ev.programa &&
-            ev.programa.trim() !== '' &&
-            normalizeString(ev.municipio) === normalizeString(municipio) &&
-            normalizeString(ev.lugar) === normalizeString(lugar)
-          )
-          .map(ev => {
-            const diff = Math.abs(new Date(ev.day).getTime() - dateObj.getTime());
-            return { ...ev, diff };
-          })
-          .filter(ev => ev.diff <= 20 * 24 * 60 * 60 * 1000) // 20 days window
-          .sort((a, b) => a.diff - b.diff)[0]; // Sort by proximity
+        const currentMonth = dateObj.getMonth();
+        const currentDay = dateObj.getDate();
 
-        if (nearbyEvent && nearbyEvent.programa) {
-          setFormData(prev => ({ ...prev, programa: nearbyEvent.programa! }));
-        }
+        const match = events.find(e => {
+          if (!e.lugar || !e.municipio) return false;
+          const eDate = new Date(e.day);
+          return eDate.getMonth() === currentMonth && 
+                 Math.abs(eDate.getDate() - currentDay) <= 5 && 
+                 normalizeString(e.lugar!) === normalizeString(lugar) && 
+                 normalizeString(e.municipio!) === normalizeString(municipio);
+        });
+        setHistoricalEvent(match || null);
       }
+    } else {
+      setHistoricalEvent(null);
     }
-  }, [formData.eventDate, formData.lugar, formData.municipio]); // Don't include formData.programa to avoid loops (we only set if empty)
+  }, [formData.eventDate, formData.lugar, formData.municipio, events]);
 
+  const uniqueProgramas = [...new Set(
+    events
+      .filter(e => e.programa && e.programa.trim())
+      .map(e => e.programa!.trim())
+  )].sort();
 
   useEffect(() => {
     if (editingEvent) {
@@ -163,21 +162,20 @@ export default function EventForm({
       ...events.flatMap(e => e.orquesta.split(',').map(o => o.trim())),
       ...allOrchestraNames
     ];
-    const uniqueOrquestas = [...new Set(allOrquestas)].filter(Boolean).sort();
-    setOrquestaSuggestions(uniqueOrquestas);
+    const uniqueOrquestasList = [...new Set(allOrquestas)].filter(Boolean).sort();
+    setOrquestaSuggestions(uniqueOrquestasList);
 
     const lugares = events
       .filter(e => e.lugar && e.municipio)
       .map(e => ({
-        lugar: e.lugar.trim(),
-        municipio: e.municipio.trim()
+        lugar: e.lugar!.trim(),
+        municipio: e.municipio!.trim()
       }));
 
     const uniquePairs: Array<{ lugar: string; municipio: string }> = [];
     const seen = new Set<string>();
 
     lugares.forEach(({ lugar, municipio }) => {
-      // Normalización muy estricta: quitar acentos, espacios extra, y todo lo no alfanumérico
       const normalize = (s: string) => normalizeString(s.trim()).replace(/[^a-z0-9]/g, '');
       const key = `${normalize(lugar)}|${normalize(municipio)}`;
       
@@ -188,51 +186,6 @@ export default function EventForm({
     });
 
     setLugarSuggestions(uniquePairs);
-
-    // LOGICA DE PROGRAMA AUTOMATICO:
-    // Si estamos editando datos (fecha, lugar, municipio) y el campo programa está vácio...
-    // Buscar si existe un evento cercano (mismo lugar/municipio, +/- 20 días) que tenga programa.
-    const { eventDate, lugar, municipio, programa } = formData;
-
-    // Solo si tenemos fecha, lugar, municipio y NO hay programa escrito manualmente
-    if (eventDate && lugar && municipio && !programa) {
-      const dateObj = new Date(eventDate);
-      if (!isNaN(dateObj.getTime())) {
-        const nearbyEventWithProgram = events.find(ev => {
-          // Mismo sitio
-          if (normalizeString(ev.municipio) !== normalizeString(municipio) ||
-            normalizeString(ev.lugar) !== normalizeString(lugar)) {
-            return false;
-          }
-
-          // Tiene programa
-          if (!ev.programa || !ev.programa.trim()) return false;
-
-          // Diferencia de fechas <= 20 días (para capturar eventos de "varios días")
-          // Pero > 0 (no el mismo día, aunque si fuera el mismo día también valdría)
-          const evDate = new Date(ev.day);
-          const diffTime = Math.abs(evDate.getTime() - dateObj.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          return diffDays <= 20;
-        });
-
-        if (nearbyEventWithProgram && nearbyEventWithProgram.programa) {
-          // Autocompletar el programa
-          setFormData(prev => ({ ...prev, programa: nearbyEventWithProgram.programa! }));
-          // Opcional: Mostrar un toast o indicación de que se ha copiado el programa
-          console.log("Programa autocompletado desde evento cercano:", nearbyEventWithProgram);
-        }
-      }
-    }
-
-    // Extraer programas únicos para autocompletado
-    const uniqueProgramas = [...new Set(
-      events
-        .filter(e => e.programa && e.programa.trim())
-        .map(e => e.programa.trim())
-    )].sort();
-    setProgramaSuggestions(uniqueProgramas);
   }, [events]);
 
   // Cerrar dropdowns al hacer clic fuera
@@ -257,68 +210,12 @@ export default function EventForm({
 
   const handleOrquestaInput = (value: string) => {
     setFormData({ ...formData, orquesta: value });
-    setShowLugarSuggestions(false);
-    setShowProgramaSuggestions(false);
-    setShowMunicipioDropdown(false);
-    setShowTimeDropdown(false);
-    const parts = value.split(',');
-    const lastPart = parts[parts.length - 1].trim();
-
-    if (lastPart) {
-      const normalizedLastPart = normalizeString(lastPart);
-      const filtered = orquestaSuggestions.filter(orq =>
-        normalizeString(orq).startsWith(normalizedLastPart)
-      );
-      setShowOrquestaSuggestions(filtered.length > 0);
-    } else {
-      setShowOrquestaSuggestions(false);
-    }
+    setShowOrquestaSuggestions(true);
   };
 
   const handleLugarInput = (value: string) => {
-    setFormData(prev => {
-      const newData = { ...prev, lugar: value };
-      return newData;
-    });
-    setShowOrquestaSuggestions(false);
-    setShowProgramaSuggestions(false);
-    setShowMunicipioDropdown(false);
-    setShowTimeDropdown(false);
-
-    const val = value.trim();
-
-    if (val && lugarSuggestions.length > 0) {
-      const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
-      const normalizedVal = normalizeText(val);
-      const filtered = matchSorter(lugarSuggestions, normalizedVal, {
-        keys: [
-          (item) => normalizeText(item.lugar),
-          (item) => normalizeText(item.municipio)
-        ]
-      });
-      setShowLugarSuggestions(filtered.length > 0);
-    } else {
-      setShowLugarSuggestions(false);
-    }
-  };
-
-  const handleProgramaInput = (value: string) => {
-    setFormData({ ...formData, programa: value });
-    setShowOrquestaSuggestions(false);
-    setShowLugarSuggestions(false);
-    setShowMunicipioDropdown(false);
-    setShowTimeDropdown(false);
-    const val = value.trim();
-
-    if (val) {
-      const normalizedVal = normalizeString(val);
-      const filtered = programaSuggestions.filter(programa =>
-        normalizeString(programa).includes(normalizedVal)
-      );
-      setShowProgramaSuggestions(filtered.length > 0);
-    } else {
-      setShowProgramaSuggestions(false);
-    }
+    setFormData({ ...formData, lugar: value });
+    setShowLugarSuggestions(true);
   };
 
   const selectOrquesta = (orq: string) => {
@@ -326,25 +223,21 @@ export default function EventForm({
     parts[parts.length - 1] = orq;
     setFormData({ ...formData, orquesta: parts.map(p => p.trim()).join(', ') + ', ' });
     setShowOrquestaSuggestions(false);
-    orquestaInputRef.current?.focus();
   };
 
   const selectLugar = (item: { lugar: string; municipio: string }) => {
     setFormData({ ...formData, lugar: item.lugar, municipio: item.municipio });
     setMunicipioSearch(item.municipio);
     setShowLugarSuggestions(false);
-    lugarInputRef.current?.focus();
-  };
-
-  const selectPrograma = (programa: string) => {
-    setFormData({ ...formData, programa });
+    setShowOrquestaSuggestions(false);
+    setShowTimeDropdown(false);
+    setShowTipoDropdown(false);
+    setShowMunicipioDropdown(false);
     setShowProgramaSuggestions(false);
-    programaInputRef.current?.focus();
   };
 
   const validateAndSave = async () => {
     const { eventDate, orquesta, municipio, hora, tipo, customTipo, programa } = formData;
-
     const missing: string[] = [];
     if (!eventDate) missing.push('Fecha');
     if (!orquesta) missing.push('Orquesta/Grupo');
@@ -363,212 +256,11 @@ export default function EventForm({
     setDuplicateWarning('');
     setConflictWarnings([]);
 
-    const orquestas = orquesta
-      .split(',')
-      .map(o => o.trim())
-      .filter(o => o.length > 0);
-
-    const invalidOrquestas = orquestas.filter(
-      o => o.charAt(0) !== o.charAt(0).toUpperCase()
-    );
+    const orquestasList = orquesta.split(',').map(o => o.trim()).filter(o => o.length > 0);
+    const invalidOrquestas = orquestasList.filter(o => o.charAt(0) !== o.charAt(0).toUpperCase());
     if (invalidOrquestas.length > 0) {
       alert('La primera letra de cada grupo/orquesta debe ser en mayúscula.');
       return;
-    }
-
-    const existingOrquestas = events
-      .filter(e => !editingEvent || e.id !== editingEvent.id)
-      .flatMap(e => e.orquesta.split(',').map(o => o.trim()));
-
-    const warnings: string[] = [];
-
-    // Detectar orquestas conflictivas (escritura diferente)
-    const conflictivas = orquestas.filter(orq => {
-      // EXCEPCIÓN: Si la orquesta es DJ (en cualquier variación), omitir validación de escritura
-      const isDJ = normalizeString(orq).includes('dj');
-      if (isDJ) return false;
-
-      const normalized = normalizeString(orq);
-      return (
-        existingOrquestas.some(e => normalizeString(e) === normalized) &&
-        !existingOrquestas.includes(orq)
-      );
-    });
-
-    if (conflictivas.length > 0) {
-      warnings.push(
-        `La orquesta "${conflictivas.join(', ')}" ya existe escrita de forma diferente. Revisa antes de continuar.`
-      );
-    }
-
-    // Detectar similitudes (1 letra diferente)
-    const similarBy1 = orquestas.filter(orq => {
-      // EXCEPCIÓN: Si la orquesta es DJ (en cualquier variación), omitir validación de similitudes
-      const isDJ = normalizeString(orq).includes('dj');
-      if (isDJ) return false;
-
-      const estandarizada = estandarizarNombre(orq);
-      if (existingOrquestas.includes(estandarizada)) return false;
-
-      const normalized = normalizeString(orq);
-      return existingOrquestas.some(
-        existing => levenshteinDistance(normalizeString(existing), normalized) === 1
-      );
-    });
-
-    if (similarBy1.length > 0) {
-      warnings.push(
-        `El nombre de orquesta "${similarBy1.join(', ')}" es muy similar a uno ya existente (1 letra diferente).`
-      );
-    }
-
-    // Detectar conflictos de horario con misma orquesta (CORRECCION MEJORADA)
-    // Verificar para cada orquesta del nuevo evento
-    const conflictosDetallados: string[] = [];
-    const conflictosCriticos: string[] = [];
-
-    orquestas.forEach(orquestaActual => {
-      // EXCEPCIÓN: Si la orquesta es DJ (en cualquier variación), omitir validación de duplicados
-      const isDJ = normalizeString(orquestaActual).includes('dj');
-      if (isDJ) {
-        return; // Saltar validación para DJs
-      }
-
-      // Buscar eventos que contengan esta orquesta específica
-      const eventosConEstaOrquesta = events.filter(event => {
-        if (editingEvent && event.id === editingEvent.id) return false;
-
-        // Obtener todas las orquestas de este evento
-        const orquestasDelEvento = event.orquesta.split(',').map(o => o.trim());
-
-        // Verificar si alguna orquesta del evento coincide con la orquesta actual
-        return orquestasDelEvento.some(orqExistente =>
-          normalizeString(orqExistente) === normalizeString(orquestaActual.trim())
-        );
-      });
-
-      // De esos eventos, filtrar los de la misma fecha
-      const eventosMismaFecha = eventosConEstaOrquesta.filter(e => e.day === eventDate);
-
-      // De esos, buscar conflictos de horario (diferencia <= 2 horas)
-      eventosMismaFecha.forEach(eventoExistente => {
-        const h1 = new Date(`1970-01-01T${eventoExistente.hora}:00`).getTime();
-        const h2 = new Date(`1970-01-01T${hora}:00`).getTime();
-        const diferenciaHoras = Math.abs(h1 - h2) / (1000 * 60 * 60);
-
-        if (diferenciaHoras <= 2) {
-          const mensaje = `ADVERTENCIA: La orquesta "${orquestaActual.trim()}" ya tiene una actuacion el ${eventoExistente.day} a las ${eventoExistente.hora} en ${eventoExistente.lugar || 'casco'} (${eventoExistente.municipio}). Diferencia de tiempo: ${diferenciaHoras.toFixed(1)} horas.`;
-          conflictosDetallados.push(mensaje);
-          conflictosCriticos.push(`La orquesta "${orquestaActual.trim()}" ya toca el ${eventoExistente.day} a las ${eventoExistente.hora}`);
-        }
-      });
-    });
-
-    // Detectar coincidencia en 4 de 5 parámetros
-    const parametrosCoincidentes = events.filter(e => {
-      if (editingEvent && e.id === editingEvent.id) return false;
-
-      // Verificar rango de 2 horas
-      const currentDateTime = new Date(`${eventDate}T${hora}`);
-      const existingDateTime = new Date(`${e.day}T${e.hora}`);
-
-      const diffInHours = Math.abs(currentDateTime.getTime() - existingDateTime.getTime()) / (1000 * 60 * 60);
-
-      // Si la diferencia es mayor a 2 horas, no se considera duplicado/conflicto para esta validación
-      if (diffInHours > 2) return false;
-
-      let matches = 0;
-      // 1. Fecha
-      if (e.day === eventDate) matches++;
-
-      // 2. Municipio
-      if (normalizeString(e.municipio) === normalizeString(municipio)) matches++;
-
-      // 3. Lugar
-      if (normalizeString(e.lugar) === normalizeString(formData.lugar)) matches++;
-
-      // 4. Tipo
-      const tipoActual = tipo === 'Otro' ? customTipo : tipo;
-      if (normalizeString(e.tipo) === normalizeString(tipoActual)) matches++;
-
-      // 5. Orquesta
-      // Normalizamos y ordenamos las orquestas para comparar el conjunto
-      const normalizeOrqs = (o: string) => o.split(',').map(x => normalizeString(x.trim())).sort().join(',');
-      if (normalizeOrqs(e.orquesta) === normalizeOrqs(orquesta)) matches++;
-
-      return matches >= 4;
-    });
-
-    if (parametrosCoincidentes.length > 0) {
-      conflictosCriticos.push(
-        `El evento coincide en 4 de 5 parámetros con ${parametrosCoincidentes.length} evento(s) existente(s) en un rango de 2 horas.`
-      );
-      parametrosCoincidentes.forEach(e => {
-        conflictosDetallados.push(`Coincidencia con evento: ${e.orquesta} en ${e.lugar} (${e.municipio}) el ${e.day} a las ${e.hora}`);
-      });
-    }
-
-    // NOTE: validation for 'conflictoLugar' handled separately below (removed from here in replacement)
-
-    // ALERT CRÍTICO para eventos duplicados de orquesta
-    if (conflictosCriticos.length > 0) {
-      const alertMessage = `⚠️ CONFLICTO DETECTADO:\n\n${conflictosCriticos.join('\n')}\n\n¿Deseas continuar con el guardado?`;
-      const confirmResult = window.confirm(alertMessage);
-      if (!confirmResult) {
-        return; // No guardar si el usuario cancela
-      }
-    }
-
-    if (conflictosDetallados.length > 0) {
-      conflictosDetallados.forEach(conflicto => warnings.push(conflicto));
-    }
-
-    // Detectar conflictos de lugar
-    const conflictoLugar = events.find(
-      ev =>
-        (!editingEvent || ev.id !== editingEvent.id) &&
-        ev.day === eventDate &&
-        normalizeString(ev.municipio) === normalizeString(municipio) &&
-        normalizeString(ev.lugar) === normalizeString(formData.lugar) &&
-        Math.abs(
-          new Date(`1970-01-01T${ev.hora}:00`).getTime() -
-          new Date(`1970-01-01T${hora}:00`).getTime()
-        ) <= 60 * 60 * 1000
-    );
-
-    if (conflictoLugar) {
-      warnings.push(
-        `Ya existe un evento el ${conflictoLugar.day} en ${conflictoLugar.lugar || 'casco'} (${conflictoLugar.municipio}) alrededor de la hora ${conflictoLugar.hora}, con otra orquesta.`
-      );
-    }
-
-
-    // Validar duplicados de programa con plazo de 1 mes
-    if (programa && programa.trim()) {
-      const programaDuplicado = events.find(ev => {
-        if (editingEvent && ev.id === editingEvent.id) return false;
-        if (!ev.programa || ev.programa.trim() !== programa.trim()) return false;
-
-        const existingDate = new Date(ev.day);
-        const newDate = new Date(eventDate);
-        const diffDays = Math.abs(existingDate.getTime() - newDate.getTime()) / (1000 * 60 * 60 * 24);
-
-        return diffDays <= 30; // 30 días = 1 mes
-      });
-
-      if (programaDuplicado) {
-        const daysDiff = Math.round(
-          Math.abs(new Date(programaDuplicado.day).getTime() - new Date(eventDate).getTime()) / (1000 * 60 * 60 * 24)
-        );
-        warnings.push(
-          `El programa "${programa}" ya fue utilizado hace ${daysDiff} días el ${programaDuplicado.day}. Se recomienda un mínimo de 30 días entre eventos con el mismo programa.`
-        );
-      }
-    }
-
-    // Mostrar advertencias pero permitir guardar
-    if (warnings.length > 0) {
-      setConflictWarnings(warnings);
     }
 
     await saveEvent();
@@ -576,18 +268,12 @@ export default function EventForm({
 
   const saveEvent = async () => {
     setIsLoading(true);
-    const { eventDate, orquesta, lugar, municipio, hora, tipo, customTipo, programa } = formData;
-
-    const orquestas = orquesta
-      .split(',')
-      .map(o => o.trim())
-      .filter(o => o.length > 0);
-
-    const now = new Date().toISOString();
-    const finalOrquesta = orquestas.map(estandarizarNombre).join(', ');
+    const { eventDate, orquesta, municipio, hora, tipo, customTipo, programa } = formData;
+    const finalOrquesta = orquesta.split(',').map(o => o.trim()).filter(Boolean).map(estandarizarNombre).join(', ');
     const finalTipo = tipo === 'Otro' ? customTipo : tipo;
+    const now = new Date().toISOString();
 
-    // Detectar qué campos cambiaron respecto al evento original
+    // Detectar qué campos cambiaron respecto al evento original para el front-end (array cambios)
     let cambios: string[] | undefined;
     if (editingEvent && !isRestoredEvent) {
       const changes: string[] = [];
@@ -602,30 +288,15 @@ export default function EventForm({
         const removed = oldOrqs.filter(o => !newOrqs.includes(o));
         
         if (added.length > 0 && removed.length === 0) {
-          // Si solo hay una formación añadida, intentar ser específico con su tipo
-          if (added.length === 1) {
-            const addedOrq = added[0];
-            const orchestraInfo = allOrchestras.find(o => estandarizarNombre(o.name) === estandarizarNombre(addedOrq));
-            const type = orchestraInfo?.type || 'orquesta'; // por defecto orquesta
-            changes.push(`${type}_add`);
-          } else {
-            changes.push('orquesta_add');
-          }
+          changes.push('orquesta_add');
         } else if (removed.length > 0 && added.length === 0) {
-          if (removed.length === 1) {
-            const removedOrq = removed[0];
-            const orchestraInfo = allOrchestras.find(o => estandarizarNombre(o.name) === estandarizarNombre(removedOrq));
-            const type = orchestraInfo?.type || 'orquesta';
-            changes.push(`${type}_rem`);
-          } else {
-            changes.push('orquesta_rem');
-          }
+          changes.push('orquesta_rem');
         } else {
           changes.push('orquestas');
         }
       }
 
-      if ((editingEvent.lugar || '') !== (lugar || '')) changes.push('lugar');
+      if ((editingEvent.lugar || '') !== (formData.lugar || '')) changes.push('lugar');
       if (editingEvent.municipio !== municipio) changes.push('municipio');
       if (editingEvent.tipo !== finalTipo) changes.push('tipo');
       if ((editingEvent.programa || '') !== (programa || '')) changes.push('programa');
@@ -635,7 +306,7 @@ export default function EventForm({
     const event = {
       orquesta: finalOrquesta,
       municipio,
-      lugar,
+      lugar: formData.lugar,
       hora,
       day: eventDate,
       tipo: finalTipo,
@@ -650,27 +321,15 @@ export default function EventForm({
 
     try {
       if (editingEvent && !isRestoredEvent) {
-        const eventRef = ref(db, `events/${editingEvent.id}`);
-        await set(eventRef, event);
+        await set(ref(db, `events/${editingEvent.id}`), event);
       } else {
-        const eventsRef = ref(db, 'events');
-        await push(eventsRef, event);
-
-        // Si es un evento restaurado, eliminarlo de la lista de eliminaciones
-        if (isRestoredEvent && deletionIdToRemove) {
-          const { remove } = await import('firebase/database');
-          const deletionRecordRef = ref(db, `eventDeletions/${deletionIdToRemove}`);
-          await remove(deletionRecordRef);
-          console.log(`Restored event saved and removed from eventDeletions: ${deletionIdToRemove}`);
-        }
+        await push(ref(db, 'events'), event);
       }
-
       clearForm();
       onEventAdded();
       setSuccessMessage('Evento guardado con éxito');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Error al guardar evento:', error);
       alert('Error al guardar el evento');
     } finally {
       setIsLoading(false);
@@ -679,21 +338,15 @@ export default function EventForm({
 
   const clearForm = () => {
     setFormData({
-      eventDate: '',
-      orquesta: '',
-      lugar: '',
-      municipio: '',
-      hora: '',
-      tipo: 'Baile Normal',
-      customTipo: '',
-      programa: ''
+      eventDate: '', orquesta: '', lugar: '', municipio: '',
+      hora: '', tipo: 'Baile Normal', customTipo: '', programa: ''
     });
     setMunicipioSearch('');
     setShowCustomTipo(false);
+    setHistoricalEvent(null);
     setMissingFields('');
     setDuplicateWarning('');
     setConflictWarnings([]);
-    setHoraInvalida(false);
   };
 
   const handleCancel = () => {
@@ -703,75 +356,41 @@ export default function EventForm({
 
   return (
     <div className="max-w-4xl mx-auto p-6" id="form-container">
-      <div className="bg-card rounded-2xl shadow-xl border border-border">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-2xl">
+      <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
           <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
-            {editingEvent ? (
-              <>
-                <Eye className="h-6 w-6" />
-                <span>Editar Evento</span>
-              </>
-            ) : (
-              <>
-                <Save className="h-6 w-6" />
-                <span>Agregar Nuevo Evento</span>
-              </>
-            )}
+            {editingEvent ? <><Eye className="h-6 w-6" /><span>Editar Evento</span></> : <><Save className="h-6 w-6" /><span>Nuevo Evento</span></>}
           </h2>
-          <p className="text-white/80 mt-2">
-            {editingEvent
-              ? 'Modifica los datos del evento existente'
-              : 'Completa los datos para crear un nuevo evento'
-            }
-          </p>
         </div>
 
-        {/* Formulario */}
         <div className="p-6 space-y-6">
-          {/* Fecha */}
           <FloatingLabelInput
-            id="eventDate"
-            label="Fecha del evento"
-            value={formData.eventDate}
-            onChange={(value) => setFormData({ ...formData, eventDate: value })}
-            type="date"
-            icon={<Calendar className="h-5 w-5" />}
+            id="eventDate" label="Fecha del evento" value={formData.eventDate} type="date" icon={<Calendar className="h-5 w-5" />}
+            onChange={v => setFormData({...formData, eventDate: v})}
+            onFocus={() => { setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
           />
 
-          {/* Orquesta con autocompletado */}
           <FloatingLabelInput
-            id="orquesta"
-            label="Orquesta/Grupo"
-            value={formData.orquesta}
-            onChange={handleOrquestaInput}
-            icon={<Music className="h-5 w-5" />}
-            placeholder="Si hay varios sepáralos por comas"
+            id="orquesta" label="Orquesta/Grupo" value={formData.orquesta} icon={<Music className="h-5 w-5" />}
+            onChange={handleOrquestaInput} showSuggestions={showOrquestaSuggestions}
             suggestions={orquestaSuggestions.filter(orq => {
               const parts = formData.orquesta.split(',');
               const lastPart = parts[parts.length - 1].trim();
               return normalizeString(orq).startsWith(normalizeString(lastPart));
             })}
-            showSuggestions={showOrquestaSuggestions}
             onSuggestionClick={selectOrquesta}
+            onFocus={() => { setShowLugarSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); setShowOrquestaSuggestions(true); }}
             inputRef={orquestaInputRef}
           />
 
-          {/* Lugar con autocompletado */}
           <FloatingLabelInput
-            id="lugar"
-            label="Sitio/Lugar"
-            value={formData.lugar}
-            onChange={handleLugarInput}
-            icon={<MapPin className="h-5 w-5" />}
-            placeholder="Déjalo en blanco si es el sitio habitual o casco"
+            id="lugar" label="Sitio/Lugar" value={formData.lugar} icon={<MapPin className="h-5 w-5" />}
+            onChange={handleLugarInput} showSuggestions={showLugarSuggestions}
             suggestions={(() => {
               const val = formData.lugar.trim();
               if (!val) return lugarSuggestions;
-              
               const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
               const normalizedVal = normalizeText(val);
-              
               return matchSorter(lugarSuggestions, normalizedVal, {
                 keys: [
                   (item) => normalizeText(item.lugar),
@@ -779,474 +398,104 @@ export default function EventForm({
                 ]
               });
             })()}
-            showSuggestions={showLugarSuggestions}
             onSuggestionClick={selectLugar}
+            placeholder="Casco, plaza, etc."
+            onFocus={() => { setShowOrquestaSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); setShowLugarSuggestions(true); }}
             inputRef={lugarInputRef}
           />
 
-          {/* Programa con autocompletado */}
-          <div className="relative">
-            <div className="relative">
-              <input
-                ref={programaInputRef}
-                type="text"
-                inputMode="url"
-                autoComplete="url"
-                value={formData.programa}
-                onChange={(e) => {
-                  handleProgramaInput(e.target.value);
-                }}
-                onFocus={() => {
-                  if (formData.programa.trim()) {
-                    setShowProgramaSuggestions(true);
-                  }
-                  setShowOrquestaSuggestions(false);
-                  setShowLugarSuggestions(false);
-                  setShowMunicipioDropdown(false);
-                  setShowTimeDropdown(false);
-                }}
-                onBlur={() => {
-                  setTimeout(() => setShowProgramaSuggestions(false), 200);
-                }}
-                placeholder=" "
-                className={`
-                  w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
-                  transition-all duration-300 bg-background text-foreground
-                  ${showProgramaSuggestions ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
-                `}
-              />
-
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
-                <Globe className="h-5 w-5" />
-              </div>
-
-              <label className={`
-                absolute left-11 transition-all duration-300 pointer-events-none
-                text-muted-foreground origin-left
-                ${formData.programa
-                  ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                  : 'top-1/2 -translate-y-1/2 text-base'
-                }
-              `}>
-                Programa (URL web)
-              </label>
-            </div>
-
-            {/* Dropdown de sugerencias de programas */}
-            {showProgramaSuggestions && programaSuggestions.length > 0 && (
-              <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                <div className="p-2 space-y-1">
-                  {programaSuggestions.map((programa) => (
-                    <button
-                      key={programa}
-                      type="button"
-                      onClick={() => selectPrograma(programa)}
-                      className="w-full px-4 py-3 text-left rounded-lg transition-colors duration-200 text-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-sm truncate">{programa}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Grid de municipio y hora */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Municipio Custom Dropdown with Autocomplete */}
             <div className="relative" ref={municipioDropdownRef}>
-              <div className="relative">
-                <input
-                  ref={municipioInputRef}
-                  type="text"
-                  value={municipioSearch}
-                  onChange={(e) => {
-                    setMunicipioSearch(e.target.value);
-                    setShowMunicipioDropdown(true);
-                    setShowOrquestaSuggestions(false);
-                    setShowLugarSuggestions(false);
-                    setShowProgramaSuggestions(false);
-                    setShowTimeDropdown(false);
-                  }}
-                  onFocus={() => {
-                    setShowMunicipioDropdown(true);
-                    setShowOrquestaSuggestions(false);
-                    setShowLugarSuggestions(false);
-                    setShowProgramaSuggestions(false);
-                    setShowTimeDropdown(false);
-                  }}
-                  placeholder=" "
-                  className={`
-                     w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
-                     transition-all duration-300 bg-background text-foreground
-                     ${showMunicipioDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
-                   `}
-                />
-
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
-                  <MapPin className="h-5 w-5" />
-                </div>
-
-                <label className={`
-                   absolute left-11 transition-all duration-300 pointer-events-none
-                   text-muted-foreground origin-left
-                   ${municipioSearch || formData.municipio
-                    ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                    : 'top-1/2 -translate-y-1/2 text-base'
-                  }
-                 `}>
-                  Municipio
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => setShowMunicipioDropdown(!showMunicipioDropdown)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-                >
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showMunicipioDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Dropdown Menu */}
-              {showMunicipioDropdown && (
-                <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                  <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                    {MUNICIPIOS
-                      .filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase()))
-                      .map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => {
-                            setFormData({ ...formData, municipio: m });
-                            setMunicipioSearch(m);
-                            setShowMunicipioDropdown(false);
-                          }}
-                          className={`
-                             px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
-                             ${formData.municipio === m
-                              ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                              : 'text-foreground hover:bg-muted hover:text-foreground'
-                            }
-                           `}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    {MUNICIPIOS.filter(m => m.toLowerCase().includes(municipioSearch.toLowerCase())).length === 0 && (
-                      <div className="col-span-2 p-4 text-center text-muted-foreground italic">
-                        No se encontraron municipios
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+               <FloatingLabelInput
+                 id="municipio" label="Municipio" value={municipioSearch || formData.municipio}
+                 onChange={v => { setMunicipioSearch(v); setShowMunicipioDropdown(true); }}
+                 onFocus={() => { setShowMunicipioDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
+                 icon={<MapPin className="h-5 w-5" />}
+               />
+               {showMunicipioDropdown && (
+                 <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                   <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
+                     {MUNICIPIOS.filter(m => normalizeString(m).includes(normalizeString(municipioSearch))).map(m => (
+                       <button key={m} className={`w-full text-left px-4 py-2 rounded-lg hover:bg-muted ${formData.municipio === m ? 'bg-indigo-50 text-indigo-600' : ''}`} onClick={() => { setFormData({...formData, municipio: m}); setMunicipioSearch(m); setShowMunicipioDropdown(false); }}>{m}</button>
+                     ))}
+                   </div>
+                 </div>
+               )}
             </div>
 
-            {/* Hora con autocompletado */}
             <div className="relative" ref={timeDropdownRef}>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formData.hora}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/[^\d]/g, '');
-                    if (val.length >= 2) {
-                      val = val.slice(0, 2) + ':' + val.slice(2, 4);
-                    }
-                    setFormData({ ...formData, hora: val });
-                    if (val.length >= 5) {
-                      setHoraInvalida(!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val));
-                    } else {
-                      setHoraInvalida(false);
-                    }
-                    const filtered = matchSorter(timeOptions, val);
-                    setShowTimeDropdown(filtered.length > 0 && val.length > 0);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const val = formData.hora;
-                      const isValidFormat = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val);
-                      if (isValidFormat) {
-                        setShowTimeDropdown(false);
-                        setHoraInvalida(false);
-                      }
-                    }
-                  }}
-                  onFocus={() => {
-                    setShowTimeDropdown(true);
-                    setShowOrquestaSuggestions(false);
-                    setShowLugarSuggestions(false);
-                    setShowProgramaSuggestions(false);
-                    setShowMunicipioDropdown(false);
-                  }}
-                  onBlur={() => {
-                    if (formData.hora && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.hora)) {
-                      setHoraInvalida(true);
-                    }
-                    setTimeout(() => setShowTimeDropdown(false), 200);
-                  }}
-                  placeholder=" "
-                  className={`
-                    w-full px-4 py-4 pl-11 border-2 rounded-xl 
-                    transition-all duration-300 bg-background text-foreground
-                    ${horaInvalida 
-                      ? 'border-red-500 ring-2 ring-red-100 dark:ring-red-800' 
-                      : showTimeDropdown 
-                        ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' 
-                        : 'border-border hover:border-muted-foreground'
-                    }
-                  `}
-                />
-
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
-                  <Clock className="h-5 w-5" />
-                </div>
-                {formData.hora && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({ ...formData, hora: '' });
-                      setShowTimeDropdown(false);
-                      setHoraInvalida(false);
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-
-                <label className={`
-                  absolute left-11 transition-all duration-300 pointer-events-none
-                  text-muted-foreground origin-left
-                  ${formData.hora
-                    ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                    : 'top-1/2 -translate-y-1/2 text-base'
-                  }
-                `}>
-                  Hora de comienzo
-                </label>
-              </div>
-
-              {/* Dropdown de sugerencias de horas */}
+              <FloatingLabelInput
+                id="hora" label="Hora" value={formData.hora} icon={<Clock className="h-5 w-5" />}
+                onChange={v => { setFormData({...formData, hora: v}); setShowTimeDropdown(true); }}
+                onFocus={() => { setShowTimeDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTipoDropdown(false); }}
+              />
               {showTimeDropdown && (
-                <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-72 overflow-y-auto">
-                  <div className="p-2 grid grid-cols-2 gap-1">
-                    {(formData.hora.trim()
-                      ? matchSorter(timeOptions, formData.hora.trim())
-                      : timeOptions
-                    ).map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => {
-                          setFormData({ ...formData, hora: time });
-                          setShowTimeDropdown(false);
-                          setHoraInvalida(false);
-                        }}
-                        className={`
-                          px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
-                          ${formData.hora === time
-                            ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                            : 'text-foreground hover:bg-muted hover:text-foreground'
-                          }
-                        `}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {horaInvalida && (
-                <p className="text-red-500 text-xs mt-1 px-1">Formato inválido. Usa HH:MM (ej: 19:30)</p>
-              )}
-            </div>
-          </div>
-
-          {/* Tipo Custom Dropdown */}
-          <div className="relative" ref={tipoDropdownRef}>
-            <div
-              onClick={() => {
-                setShowTipoDropdown(!showTipoDropdown);
-                setShowOrquestaSuggestions(false);
-                setShowLugarSuggestions(false);
-                setShowProgramaSuggestions(false);
-                setShowMunicipioDropdown(false);
-                setShowTimeDropdown(false);
-              }}
-              className="relative cursor-pointer"
-            >
-              <div className={`
-                 w-full px-4 py-4 pl-11 border-2 border-border rounded-xl 
-                 transition-all duration-300 bg-background text-foreground
-                 ${showTipoDropdown ? 'border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-800' : 'hover:border-muted-foreground'}
-               `}>
-                {formData.tipo || <span className="text-transparent">Selecciona el tipo</span>}
-              </div>
-
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                <Tag className="h-5 w-5" />
-              </div>
-
-              <label className={`
-                 absolute left-11 transition-all duration-300 pointer-events-none
-                 text-muted-foreground origin-left
-                 ${formData.tipo
-                  ? 'top-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 scale-90'
-                  : 'top-1/2 -translate-y-1/2 text-base'
-                }
-               `}>
-                Tipo de evento
-              </label>
-            </div>
-
-            {/* Dropdown Menu */}
-            {showTipoDropdown && (
-              <div className="absolute z-[100] w-full mt-2 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
-                  {TIPOS_EVENTO.map((tipo) => (
-                    <button
-                      key={tipo}
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, tipo });
-                        setShowCustomTipo(tipo === 'Otro');
-                        setShowTipoDropdown(false);
-                      }}
-                      className={`
-                         px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 text-left
-                         ${formData.tipo === tipo
-                          ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300'
-                          : 'text-foreground hover:bg-muted hover:text-foreground'
-                        }
-                       `}
-                    >
-                      {tipo}
+                <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
+                  {[...(historicalEvent?.hora ? [historicalEvent.hora] : []), ...timeOptions].slice(0, 20).map((t, idx) => (
+                    <button key={`${t}-${idx}`} className={`text-left px-4 py-2 rounded-lg hover:bg-muted relative ${historicalEvent?.hora === t ? 'border-l-4 border-amber-500' : ''}`} onClick={() => { setFormData({...formData, hora: t}); setShowTimeDropdown(false); }}>
+                      {t} {historicalEvent?.hora === t && (
+                        <span className="absolute right-1 top-1 text-[8px] text-amber-600 font-bold">
+                          Histórico <span className="font-normal opacity-80 text-[7px]">({historicalEvent.orquesta})</span>
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+
+          <div className="relative" ref={tipoDropdownRef}>
+            <FloatingLabelInput
+              id="tipo" label="Tipo de evento" value={tipoSearch || formData.tipo} icon={<Tag className="h-5 w-5" />}
+              onChange={v => { setTipoSearch(v); setShowTipoDropdown(true); }}
+              onFocus={() => { setShowTipoDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); }}
+            />
+            {showTipoDropdown && (
+              <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
+                {[...(historicalEvent?.tipo ? [historicalEvent.tipo] : []), ...TIPOS_EVENTO.filter(t => t !== historicalEvent?.tipo)].map((t, idx) => (
+                  <button key={`${t}-${idx}`} className={`text-left px-4 py-2 rounded-lg hover:bg-muted relative ${historicalEvent?.tipo === t ? 'border-l-4 border-amber-500' : ''}`} onClick={() => { setFormData({...formData, tipo: t}); setTipoSearch(t); setShowCustomTipo(t === 'Otro'); setShowTipoDropdown(false); }}>
+                    {t} {historicalEvent?.tipo === t && (
+                      <span className="absolute right-1 top-1 text-[8px] text-amber-600 font-bold">
+                        Histórico <span className="font-normal opacity-80 text-[7px]">({historicalEvent.orquesta})</span>
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Tipo personalizado */}
           {showCustomTipo && (
-            <FloatingLabelInput
-              id="customTipo"
-              label="Especifica el tipo"
-              value={formData.customTipo}
-              onChange={(value) => setFormData({ ...formData, customTipo: value })}
-              icon={<Tag className="h-5 w-5" />}
-            />
+            <FloatingLabelInput id="customTipo" label="Especifique el tipo" value={formData.customTipo} onChange={v => setFormData({...formData, customTipo: v})} icon={<Tag className="h-5 w-5" />} />
           )}
 
-          {/* Mensajes */}
-          {missingFields && (
-            <div className="flex items-center space-x-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-              <p className="text-destructive font-medium">{missingFields}</p>
-            </div>
-          )}
+          <FloatingLabelInput
+            id="programa" label="Programa" value={formData.programa} icon={<Globe className="h-5 w-5" />}
+            onChange={v => setFormData({...formData, programa: v})}
+            showSuggestions={showProgramaSuggestions}
+            onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
+            suggestions={[
+              ...(historicalEvent?.programa ? [{ name: historicalEvent.programa, isHistorical: true, extraInfo: historicalEvent.orquesta }] : []),
+              ...uniqueProgramas.map(p => ({ name: p }))
+            ].slice(0, 10)}
+            onSuggestionClick={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(false); }}
+            inputRef={programaInputRef}
+          />
 
-          {duplicateWarning && (
-            <div className="flex items-center space-x-2 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-              <p className="text-yellow-700 dark:text-yellow-300 font-medium">{duplicateWarning}</p>
-            </div>
-          )}
-
-          {conflictWarnings.length > 0 && (
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl space-y-2">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-                <p className="text-yellow-800 dark:text-yellow-200 font-semibold">Advertencias detectadas:</p>
-              </div>
-              <ul className="ml-7 space-y-1">
-                {conflictWarnings.map((warning) => (
-                  <li key={warning} className="text-yellow-700 dark:text-yellow-300 text-sm">
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-2 ml-7">
-                El evento se guardara de todos modos. Verifica que la informacion sea correcta.
-              </p>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="flex items-center space-x-2 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-              <p className="text-green-700 dark:text-green-300 font-medium">{successMessage}</p>
-            </div>
-          )}
-
-          {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            {!editingEvent ? (
               <button
-                onClick={validateAndSave}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-2 bg-lime-400
-                           hover:bg-lime-500 text-lime-950 font-black uppercase tracking-widest py-4 px-6 
-                           rounded-xl shadow-[0_0_20px_rgba(163,230,53,0.3)] hover:shadow-[0_0_25px_rgba(163,230,53,0.5)] 
-                           transform hover:scale-105 active:scale-95 transition-all duration-300 
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                onClick={validateAndSave} disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all"
               >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-lime-950 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Guardando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-5 w-5" />
-                    <span>Agregar Evento</span>
-                  </>
-                )}
+                {isLoading ? <span>Guardando...</span> : <><Save className="h-5 w-5" /><span>{editingEvent ? 'Actualizar Evento' : 'Crear Evento'}</span></>}
               </button>
-            ) : (
-              <>
-                <button
-                  onClick={validateAndSave}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center space-x-2 bg-cyan-400
-                             hover:bg-cyan-500 text-cyan-950 font-black uppercase tracking-widest py-4 px-6 
-                             rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_25px_rgba(34,211,238,0.5)]
-                             transform hover:scale-105 active:scale-95 transition-all duration-300 
-                             disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-cyan-950 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Guardando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-5 w-5" />
-                      <span>Actualizar Evento</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="w-full flex items-center justify-center space-x-2 bg-slate-200
-                             hover:bg-slate-300 text-slate-900 font-black uppercase tracking-widest py-4 px-6 
-                             rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 
-                             transition-all duration-300"
-                >
-                  <X className="h-5 w-5" />
-                  <span>Cancelar</span>
-                </button>
-              </>
-            )}
+              <button
+                onClick={handleCancel}
+                className="w-full flex items-center justify-center space-x-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-xl transition-all"
+              >
+                <X className="h-5 w-5" /><span>Cancelar</span>
+              </button>
           </div>
         </div>
       </div>

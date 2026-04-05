@@ -257,7 +257,7 @@ export default function Filters({ events, onFilterChange, onClearFilter }: Filte
 
                 {/* Sugerencias de autocompletado */}
                 {showSuggestions && suggestions.length > 0 && (
-                   <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                   <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
                      <div className="p-1 grid grid-cols-1 md:grid-cols-2 gap-1">
                        {(function() {
                          const normalizeText = (str: string) => str.toLowerCase().replace(/^(el|la|los|las|un|una|unos|unas)\s+/i, '').replace(/\s+/g, ' ').trim();
