@@ -472,7 +472,8 @@ export default function EventForm({
 
           <FloatingLabelInput
             id="programa" label="Programa" value={formData.programa} icon={<Globe className="h-5 w-5" />}
-            onChange={v => setFormData({...formData, programa: v})}
+            onChange={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(true); }}
+            onBlur={() => setTimeout(() => setShowProgramaSuggestions(false), 200)}
             showSuggestions={showProgramaSuggestions}
             onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
             suggestions={[

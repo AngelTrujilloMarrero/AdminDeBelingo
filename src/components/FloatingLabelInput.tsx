@@ -15,6 +15,7 @@ interface FloatingLabelInputProps {
     onSuggestionClick?: (value: any) => void;
     showSuggestions?: boolean;
     onFocus?: (e: React.FocusEvent) => void;
+    onBlur?: (e: React.FocusEvent) => void;
     inputRef?: React.RefObject<HTMLInputElement>;
 }
 
@@ -31,6 +32,7 @@ export default function FloatingLabelInput({
     onSuggestionClick,
     showSuggestions = false,
     onFocus,
+    onBlur,
     inputRef
 }: FloatingLabelInputProps) {
     const hasValue = value.length > 0;
@@ -64,6 +66,7 @@ export default function FloatingLabelInput({
                             value={value}
                             onChange={(e) => onChange(e.target.value)}
                             onFocus={onFocus}
+                            onBlur={onBlur}
                             className={`
                                 w-full px-4 pt-6 pb-2 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
                                 focus:border-indigo-500 focus:outline-none transition-all duration-300
@@ -88,6 +91,7 @@ export default function FloatingLabelInput({
                             value={value}
                             onChange={(e) => onChange(e.target.value)}
                             onFocus={onFocus}
+                            onBlur={onBlur}
                             placeholder=" "
                             rows={1}
                             className={`
