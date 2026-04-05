@@ -16,6 +16,7 @@ interface FloatingLabelInputProps {
     showSuggestions?: boolean;
     onFocus?: (e: React.FocusEvent) => void;
     onBlur?: (e: React.FocusEvent) => void;
+    onClick?: (e: React.MouseEvent) => void;
     inputRef?: React.RefObject<HTMLInputElement>;
     gridCols?: 1 | 2 | 3;
     suggestionDirection?: 'up' | 'down';
@@ -38,6 +39,7 @@ export default function FloatingLabelInput({
     showSuggestions = false,
     onFocus,
     onBlur,
+    onClick,
     inputRef,
     gridCols = 1,
     suggestionDirection = 'down',
@@ -102,7 +104,10 @@ export default function FloatingLabelInput({
                             onChange={(e) => !readOnly && onChange(e.target.value)}
                             onFocus={onFocus}
                             onBlur={onBlur}
-                            onClick={(e) => readOnly && onFocus?.(e as any)}
+                            onClick={(e) => {
+                                if (onClick) onClick(e);
+                                if (readOnly && onFocus) onFocus(e as any);
+                            }}
                             readOnly={readOnly}
                             placeholder=" "
                             rows={1}
@@ -193,8 +198,8 @@ export default function FloatingLabelInput({
                                  </span>
                             )}
                              </div>
-                        </button>
-                      );
+                            </button>
+                        );
                     })}
                 </div>
             )}

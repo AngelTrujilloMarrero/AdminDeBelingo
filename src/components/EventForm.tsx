@@ -87,6 +87,7 @@ export default function EventForm({
   const [horaInvalida, setHoraInvalida] = useState(false);
   const [showTipoDropdown, setShowTipoDropdown] = useState(false);
   const [showMunicipioDropdown, setShowMunicipioDropdown] = useState(false);
+  const [isTypingTime, setIsTypingTime] = useState(false);
   const [municipioSearch, setMunicipioSearch] = useState('');
   const [tipoSearch, setTipoSearch] = useState('');
   const [historicalEvents, setHistoricalEvents] = useState<Array<{ event: Event; score: number; reasons: string[] }>>([]);
@@ -156,8 +157,8 @@ export default function EventForm({
           return;
         }
 
-        // 2º SEGUNDO: Buscar evento histórico para esa fecha
-        const matchingHistoricalEvents = events.filter(e => {
+        // 2º SEGUNDO: Buscar evento histórico para esa fecha (solo si coincide día de semana)
+        const allMatchingHistoricalEvents = events.filter(e => {
           if (!e.lugar || !e.municipio) return false;
           const eDate = new Date(e.day);
           return eDate.getMonth() === currentMonth && 
@@ -166,8 +167,14 @@ export default function EventForm({
                   normalizeString(e.municipio!).includes(normalizeString(municipio || '')));
         });
 
-        if (matchingHistoricalEvents.length > 0) {
-          const histEvent = matchingHistoricalEvents[0];
+        // Solo mostrar si coincide el día de semana
+        const matchingWithDayOfWeek = allMatchingHistoricalEvents.filter(e => {
+          const eDate = new Date(e.day);
+          return eDate.getDay() === dateObj.getDay();
+        });
+
+        if (matchingWithDayOfWeek.length > 0) {
+          const histEvent = matchingWithDayOfWeek[0];
           setHistoricalEvents([{
             event: {
               id: histEvent.id,
@@ -183,16 +190,18 @@ export default function EventForm({
               FechaEditado: ''
             },
             score: 5,
-            reasons: ['Hist']
+            reasons: ['Hist+Día']
           }]);
           return;
         }
+        
+        // Si no coincide día de semana, NO mostrar nada y pasar al paso 3
       }
     }
     // ===========================================
 
-    // Resto de la lógica solo si hay lugar y municipio
-    if (eventDate && lugar && municipio) {
+    // Resto de la lógica solo si hay lugar O municipio
+    if (eventDate && (lugar || municipio)) {
       const dateObj = new Date(eventDate);
       if (!isNaN(dateObj.getTime())) {
         const currentMonth = dateObj.getMonth();
@@ -201,12 +210,13 @@ export default function EventForm({
         const currentYear = dateObj.getFullYear();
         
         const matchingEvents = events.filter(e => {
-          if (!e.lugar || !e.municipio) return false;
+          if (!e.lugar && !e.municipio) return false;
           const eDate = new Date(e.day);
+          const matchesLugar = lugar && e.lugar && normalizeString(e.lugar!).includes(normalizeString(lugar));
+          const matchesMunicipio = municipio && e.municipio && normalizeString(e.municipio!).includes(normalizeString(municipio));
           return eDate.getMonth() === currentMonth && 
                  Math.abs(eDate.getDate() - currentDay) <= 10 && 
-                 normalizeString(e.lugar!) === normalizeString(lugar) && 
-                 normalizeString(e.municipio!) === normalizeString(municipio);
+                 (matchesLugar || matchesMunicipio);
         });
 
         // Calcular puntuación para cada evento
@@ -217,9 +227,12 @@ export default function EventForm({
           let score = 0;
           const reasons: string[] = [];
 
-          // Criterio 1: Día de semana (+3) - más importante
+          // Calcular distancia del día (proinidad al día del mes)
+          const dayDistance = Math.abs(eDate.getDate() - currentDay);
+
+          // Criterio 1: Día de semana (+6) - más importante
           if (eDayOfWeek === currentDayOfWeek) {
-            score += 3;
+            score += 6;
             reasons.push('Día');
           }
 
@@ -258,9 +271,9 @@ export default function EventForm({
           
           // Buscar eventos del mismo lugar en los eventos actuales (este año)
           const sameLocationEvents = events.filter(ev => {
-            if (!ev.lugar || !ev.municipio) return false;
-            return normalizeString(ev.lugar!) === normalizeString(lugar) && 
-                   normalizeString(ev.municipio!) === normalizeString(municipio);
+            if (!ev.lugar && !ev.municipio) return false;
+            return (lugar && ev.lugar && normalizeString(ev.lugar!).includes(normalizeString(lugar))) || 
+                   (municipio && ev.municipio && normalizeString(ev.municipio!).includes(normalizeString(municipio)));
           }).sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
 
           if (sameLocationEvents.length > 0) {
@@ -285,11 +298,31 @@ export default function EventForm({
             reasons.push('Año');
           }
 
-          return { event: e, score, reasons };
+          return { event: e, score, reasons, dayDistance };
         });
 
-        // Ordenar por puntuación descendente
-        scoredEvents.sort((a, b) => b.score - a.score);
+        // Ordenar: primero por distancia del día (solo para eventos del mismo día de semana), luego por puntuación
+        scoredEvents.sort((a, b) => {
+          const aSameDay = a.event.day ? new Date(a.event.day).getDay() : -1;
+          const bSameDay = b.event.day ? new Date(b.event.day).getDay() : -1;
+          const currentDayOfWeek = new Date(eventDate).getDay();
+          
+          const aMatchesDay = new Date(a.event.day).getDay() === currentDayOfWeek;
+          const bMatchesDay = new Date(b.event.day).getDay() === currentDayOfWeek;
+          
+          // Si ambos coinciden en día de semana, ordenar por proximidad del día
+          if (aMatchesDay && bMatchesDay) {
+            const dayDiff = a.dayDistance - b.dayDistance;
+            if (dayDiff !== 0) return dayDiff;
+          }
+          // Si solo uno coincide, ese primero
+          if (aMatchesDay && !bMatchesDay) return -1;
+          if (!aMatchesDay && bMatchesDay) return 1;
+          
+          // Ordenar por puntuación
+          return b.score - a.score;
+        });
+        
         setHistoricalEvents(scoredEvents);
       }
     } else {
@@ -366,6 +399,8 @@ export default function EventForm({
     setLugarSuggestions(uniquePairs);
   }, [events]);
 
+  const lugarContainerRef = useRef<HTMLDivElement>(null);
+
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -377,6 +412,9 @@ export default function EventForm({
       }
       if (municipioDropdownRef.current && !municipioDropdownRef.current.contains(event.target as Node)) {
         setShowMunicipioDropdown(false);
+      }
+      if (lugarContainerRef.current && !lugarContainerRef.current.contains(event.target as Node)) {
+        setShowLugarSuggestions(false);
       }
     };
 
@@ -404,14 +442,20 @@ export default function EventForm({
   };
 
   const selectLugar = (item: { lugar: string; municipio: string }) => {
-    setFormData({ ...formData, lugar: item.lugar, municipio: item.municipio });
-    setMunicipioSearch(item.municipio);
+    const newMunicipio = item.municipio.trim();
+    const newLugar = item.lugar.trim();
+    
+    // Cerrar dropdown de lugar primero
     setShowLugarSuggestions(false);
     setShowOrquestaSuggestions(false);
     setShowTimeDropdown(false);
     setShowTipoDropdown(false);
     setShowMunicipioDropdown(false);
     setShowProgramaSuggestions(false);
+    
+    // Actualizar estado
+    setFormData(prev => ({ ...prev, lugar: newLugar, municipio: newMunicipio }));
+    setMunicipioSearch(newMunicipio);
   };
 
   const validateAndSave = async () => {
@@ -564,9 +608,11 @@ export default function EventForm({
             }).slice(0, 30)}
             onSuggestionClick={selectOrquesta}
             onFocus={() => { setShowLugarSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); setShowOrquestaSuggestions(true); }}
+            onClick={() => setShowOrquestaSuggestions(true)}
             inputRef={orquestaInputRef}
           />
 
+          <div ref={lugarContainerRef}>
           <FloatingLabelInput
             id="lugar" label="Sitio/Lugar" value={formData.lugar} icon={<MapPin className="h-5 w-5" />}
             onChange={handleLugarInput} showSuggestions={showLugarSuggestions}
@@ -585,8 +631,10 @@ export default function EventForm({
             onSuggestionClick={selectLugar}
             placeholder="Casco, plaza, etc."
             onFocus={() => { setShowOrquestaSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); setShowLugarSuggestions(true); }}
+            onClick={() => setShowLugarSuggestions(true)}
             inputRef={lugarInputRef}
           />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative" ref={municipioDropdownRef}>
@@ -594,7 +642,9 @@ export default function EventForm({
                  id="municipio" label="Municipio" value={municipioSearch || formData.municipio}
                  onChange={v => { setMunicipioSearch(v); setShowMunicipioDropdown(true); }}
                  onFocus={() => { setShowMunicipioDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
+                 onClick={() => setShowMunicipioDropdown(true)}
                  icon={<MapPin className="h-5 w-5" />}
+                 inputRef={municipioInputRef}
                />
                {showMunicipioDropdown && (
                  <div className="absolute w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto" style={{ zIndex: 100 }}>
@@ -610,8 +660,9 @@ export default function EventForm({
             <div className="relative" ref={timeDropdownRef}>
               <FloatingLabelInput
                 id="hora" label="Hora" value={formData.hora} icon={<Clock className="h-5 w-5" />}
-                onChange={v => { setFormData({...formData, hora: v}); setShowTimeDropdown(true); }}
-                onFocus={() => { setShowTimeDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTipoDropdown(false); }}
+                onChange={v => { setFormData({...formData, hora: v}); setShowTimeDropdown(true); setIsTypingTime(true); }}
+                onFocus={() => { setShowTimeDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTipoDropdown(false); setIsTypingTime(false); }}
+                onClick={() => { setShowTimeDropdown(true); setIsTypingTime(false); }}
                 showSuggestions={showTimeDropdown}
                 gridCols={3}
                 gridColsMobile={3}
@@ -630,35 +681,51 @@ export default function EventForm({
                     });
                   }
 
-                  if (!val) {
-                    // Si no hay búsqueda, mostrar todas las opciones de 15 min (evitando duplicar el histórico)
-                    const existingHours = historicalEvents.length > 0 ? [historicalEvents[0].event.hora] : [];
+                  const existingHours = historicalEvents.length > 0 ? [historicalEvents[0].event.hora] : [];
+
+                  if (!val || !isTypingTime) {
+                    // Si no hay búsqueda o se abrió por click/focus, mostrar todas las opciones
                     const otherOptions = timeOptions
                       .filter(t => !existingHours.includes(t))
                       .map(t => ({ name: t }));
                     return [...results, ...otherOptions];
                   }
 
-                  // Lógica de aproximación/filtro
+                  // Lógica de filtro (solo si el usuario está escribiendo)
                   const searchVal = val.replace(/:/g, '');
                   const filtered = timeOptions.filter(t => {
                     const tClean = t.replace(/:/g, '');
                     return tClean.includes(searchVal) || t.includes(val);
                   });
 
-                  // Usar matchSorter para mayor flexibilidad y orden de relevancia
                   const sorted = matchSorter(timeOptions, val);
-                  
-                  // Combinar y quitar duplicados (incluyendo el histórico que ya está en results)
                   const combined = [...new Set([...filtered, ...sorted])];
-                  const existingHours = historicalEvents.length > 0 ? [historicalEvents[0].event.hora] : [];
+                  
                   const otherResults = combined
                     .filter(t => !existingHours.includes(t))
                     .map(t => ({ name: t }));
 
                   return [...results, ...otherResults];
                 })()}
-                onSuggestionClick={v => { setFormData({...formData, hora: v}); setShowTimeDropdown(false); }}
+                onSuggestionClick={v => {
+                  const val = String(v).trim();
+                  const bestHist = historicalEvents.length > 0 ? historicalEvents[0] : null;
+                  const isHist = bestHist && val === String(bestHist.event.hora).trim();
+                  
+                  setFormData(prev => ({
+                    ...prev,
+                    hora: val,
+                    ...(isHist ? { tipo: bestHist!.event.tipo } : {})
+                  }));
+                  
+                  if (isHist) {
+                    setTipoSearch(bestHist!.event.tipo);
+                    setShowCustomTipo(bestHist!.event.tipo === 'Otro');
+                  }
+                  
+                  setIsTypingTime(false);
+                  setShowTimeDropdown(false);
+                }}
               />
             </div>
           </div>
@@ -668,6 +735,7 @@ export default function EventForm({
               id="tipo" label="Tipo de evento" value={tipoSearch || formData.tipo} icon={<Tag className="h-5 w-5" />}
               onChange={v => { setTipoSearch(v); setShowTipoDropdown(true); }}
               onFocus={() => { setShowTipoDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowProgramaSuggestions(false); }}
+                onClick={() => setShowTipoDropdown(true)}
                 showSuggestions={showTipoDropdown}
                 readOnly={true}
                 gridCols={3}
@@ -692,11 +760,21 @@ export default function EventForm({
                   return [...results, ...otherOptions];
                 })()}
                 onSuggestionClick={v => {
-                setFormData({...formData, tipo: v === 'Otro' ? 'Otro' : v}); 
-                setTipoSearch(v); 
-                setShowCustomTipo(v === 'Otro'); 
-                setShowTipoDropdown(false); 
-              }}
+                  const val = String(v).trim();
+                  const bestHist = historicalEvents.length > 0 ? historicalEvents[0] : null;
+                  const isHist = bestHist && val === String(bestHist.event.tipo).trim();
+                  
+                  const finalTipo = val === 'Otro' ? 'Otro' : val;
+                  setFormData(prev => ({
+                    ...prev,
+                    tipo: finalTipo,
+                    ...(isHist ? { hora: bestHist!.event.hora } : {})
+                  }));
+                  
+                  setTipoSearch(finalTipo);
+                  setShowCustomTipo(finalTipo === 'Otro');
+                  setShowTipoDropdown(false);
+                }}
             />
           </div>
 
