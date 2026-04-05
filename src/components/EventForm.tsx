@@ -628,6 +628,7 @@ export default function EventForm({
       if ((editingEvent.lugar || '') !== (lugar || '')) changes.push('lugar');
       if (editingEvent.municipio !== municipio) changes.push('municipio');
       if (editingEvent.tipo !== finalTipo) changes.push('tipo');
+      if ((editingEvent.programa || '') !== (programa || '')) changes.push('programa');
       if (changes.length > 0) cambios = changes;
     }
 
