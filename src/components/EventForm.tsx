@@ -351,7 +351,9 @@ export default function EventForm({
 
   const handleCancel = () => {
     clearForm();
-    onCancelEdit();
+    if (editingEvent) {
+      onCancelEdit();
+    }
   };
 
   return (
@@ -430,6 +432,7 @@ export default function EventForm({
                 onFocus={() => { setShowTimeDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTipoDropdown(false); }}
                 showSuggestions={showTimeDropdown}
                 gridCols={3}
+                gridColsMobile={3}
                 suggestions={(() => {
                   const val = formData.hora.trim();
                   let results: any[] = [];
@@ -480,9 +483,9 @@ export default function EventForm({
               onChange={v => { setTipoSearch(v); setShowTipoDropdown(true); }}
               onFocus={() => { setShowTipoDropdown(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowProgramaSuggestions(false); }}
               showSuggestions={showTipoDropdown}
+              readOnly={true}
               gridCols={3}
               suggestions={(() => {
-                const val = tipoSearch.trim();
                 let results: any[] = [];
                 if (historicalEvent?.tipo) {
                   results.push({
@@ -492,14 +495,10 @@ export default function EventForm({
                   });
                 }
 
-                const otherOptions = TIPOS_EVENTO.filter(t => t !== historicalEvent?.tipo);
+                const otherOptions = TIPOS_EVENTO.filter(t => t !== historicalEvent?.tipo).map(t => ({ name: t }));
                 
-                if (!val) {
-                  return [...results, ...otherOptions.map(t => ({ name: t }))];
-                }
-
-                const filtered = matchSorter(otherOptions, val);
-                return [...results, ...filtered.map(t => ({ name: t }))];
+                // Si es un campo de solo lectura (tipo select), siempre mostramos todo
+                return [...results, ...otherOptions];
               })()}
               onSuggestionClick={v => { 
                 setFormData({...formData, tipo: v === 'Otro' ? 'Otro' : v}); 
@@ -538,7 +537,7 @@ export default function EventForm({
                 onClick={handleCancel}
                 className="w-full flex items-center justify-center space-x-2 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-xl transition-all"
               >
-                <X className="h-5 w-5" /><span>Cancelar</span>
+                <X className="h-5 w-5" /><span>{editingEvent ? 'Cancelar' : 'Limpiar'}</span>
               </button>
           </div>
         </div>

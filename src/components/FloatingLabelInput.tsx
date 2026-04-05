@@ -20,6 +20,8 @@ interface FloatingLabelInputProps {
     gridCols?: 1 | 2 | 3;
     suggestionDirection?: 'up' | 'down';
     suggestionLayout?: 'absolute' | 'relative';
+    readOnly?: boolean;
+    gridColsMobile?: 1 | 2 | 3;
 }
 
 export default function FloatingLabelInput({
@@ -39,7 +41,9 @@ export default function FloatingLabelInput({
     inputRef,
     gridCols = 1,
     suggestionDirection = 'down',
-    suggestionLayout = 'absolute'
+    suggestionLayout = 'absolute',
+    readOnly = false,
+    gridColsMobile
 }: FloatingLabelInputProps) {
     const hasValue = value.length > 0;
     const isDateInput = type === 'date';
@@ -74,15 +78,15 @@ export default function FloatingLabelInput({
                             onFocus={onFocus}
                             onBlur={onBlur}
                             className={`
-                                w-full px-4 pt-6 pb-2 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
+                                w-full px-4 pt-7 pb-2 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
                                 focus:border-indigo-500 focus:outline-none transition-all duration-300
-                                bg-background text-foreground min-h-[60px]
+                                bg-background text-foreground min-h-[70px]
                             `}
                         />
                         <label
                             htmlFor={id}
                             className={`
-                                absolute ${icon ? 'left-11' : 'left-4'} top-2 text-xs font-medium
+                                absolute ${icon ? 'left-11' : 'left-4'} top-3 text-xs font-medium
                                 text-blue-800 dark:text-indigo-400 scale-90 transition-all duration-300 pointer-events-none
                             `}
                         >
@@ -95,25 +99,35 @@ export default function FloatingLabelInput({
                             ref={textareaRef}
                             id={id}
                             value={value}
-                            onChange={(e) => onChange(e.target.value)}
+                            onChange={(e) => !readOnly && onChange(e.target.value)}
                             onFocus={onFocus}
                             onBlur={onBlur}
+                            onClick={(e) => readOnly && onFocus?.(e as any)}
+                            readOnly={readOnly}
                             placeholder=" "
                             rows={1}
                             className={`
-                                w-full px-4 pt-5 pb-3 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
+                                w-full px-4 pt-7 pb-3 ${icon ? 'pl-11' : 'pl-4'} border-2 border-input rounded-xl
                                 focus:border-indigo-500 focus:outline-none transition-all duration-300
                                 bg-background text-foreground peer placeholder-transparent
-                                resize-none overflow-hidden min-h-[60px]
+                                resize-none overflow-hidden min-h-[70px]
+                                ${readOnly ? 'cursor-pointer' : ''}
                             `}
                         />
+                        {readOnly && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        )}
                         <label
                             htmlFor={id}
                             className={`
                                 absolute ${icon ? 'left-11' : 'left-4'} transition-all duration-300 pointer-events-none
                                 text-muted-foreground origin-left
                                 ${hasValue
-                                    ? 'top-2 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90'
+                                    ? 'top-3 text-xs font-medium text-blue-800 dark:text-indigo-400 scale-90'
                                     : 'top-1/2 -translate-y-1/2 text-base'
                                 }
                             `}
@@ -129,8 +143,9 @@ export default function FloatingLabelInput({
                 <div 
                     className={`${suggestionLayout} w-full z-[100] bg-popover border border-border rounded-xl shadow-xl max-h-[600px] overflow-y-auto 
                                 ${suggestionDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} 
-                                ${gridCols > 1 ? 'grid gap-px p-px' : 'flex flex-col p-2 gap-2'}`} 
-                    style={{ gridTemplateColumns: gridCols > 1 ? `repeat(${gridCols}, minmax(0, 1fr))` : undefined }}
+                                ${gridCols === 3 ? (gridColsMobile === 3 ? 'grid grid-cols-3 gap-1 p-1' : 'grid grid-cols-1 sm:grid-cols-3 gap-1 p-1') : 
+                                  gridCols === 2 ? (gridColsMobile === 2 ? 'grid grid-cols-2 gap-1 p-1' : 'grid grid-cols-1 sm:grid-cols-2 gap-1 p-1') : 
+                                  'flex flex-col p-2 gap-2'}`} 
                 >
                     {suggestions.map((suggestion, idx) => {
                         const isHistorical = typeof suggestion === 'object' && 'isHistorical' in (suggestion as any) && (suggestion as any).isHistorical;
@@ -139,16 +154,16 @@ export default function FloatingLabelInput({
                                 key={typeof suggestion === 'object' ? ((suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : (suggestion as any).name) || idx) : `${suggestion}-${idx}`}
                                 type="button"
                                 onClick={() => onSuggestionClick?.(typeof suggestion === 'object' && 'name' in (suggestion as any) ? (suggestion as any).name : suggestion)}
-                                className={`px-4 py-3 text-left hover:bg-muted/80 transition-all duration-300 text-popover-foreground relative overflow-hidden flex flex-col justify-center rounded-xl border border-border/50 my-0.5 first:mt-0 last:mb-0
+                                className={`px-6 py-4 text-left hover:bg-muted/80 transition-all duration-300 text-popover-foreground relative overflow-hidden flex flex-col justify-center rounded-2xl border border-border/50 my-1 first:mt-0 last:mb-0
                              ${gridCols > 1 && !isHistorical ? 'items-center text-center' : 'items-start text-left'}
                              ${isHistorical ? (gridCols === 3 ? 'col-span-3 w-full bg-amber-500/10 border-amber-500/30' : gridCols === 2 ? 'col-span-2 w-full bg-amber-500/10 border-amber-500/30' : '') : 'bg-muted/30 shadow-sm hover:shadow-md'} 
                              ${gridCols > 1 && !isHistorical ? 'border-r [&:nth-child(3n)]:border-r-0' : ''}`}
                             >
-                             <div className={`flex flex-col ${isHistorical ? 'w-full' : ''}`}>
+                             <div className={`flex flex-col w-full ${isHistorical ? '' : 'py-1'}`}>
                              {typeof suggestion === 'object' && 'lugar' in (suggestion as any) ? (
-                                 <div className="flex flex-row items-center justify-between w-full h-full">
-                                     <span className="font-bold text-indigo-900 dark:text-white text-[15px]">{(suggestion as any).lugar}</span>
-                                     <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-indigo-300 bg-black/5 dark:bg-white/10 px-2.5 py-1 rounded-full uppercase tracking-wider ml-3 shrink-0">
+                                 <div className="flex flex-row items-center justify-between w-full gap-3">
+                                     <span className="font-bold text-indigo-900 dark:text-white text-base leading-tight">{(suggestion as any).lugar}</span>
+                                     <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-indigo-300 bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-full uppercase tracking-wider shrink-0 border border-black/5 dark:border-white/5">
                                          {(suggestion as any).municipio}
                                      </span>
                                  </div>
