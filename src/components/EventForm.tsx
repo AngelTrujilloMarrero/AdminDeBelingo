@@ -413,7 +413,7 @@ export default function EventForm({
                  icon={<MapPin className="h-5 w-5" />}
                />
                {showMunicipioDropdown && (
-                 <div className="absolute z-[9999] w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                 <div className="absolute w-full mt-1 bg-popover border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto" style={{ zIndex: 100 }}>
                    <div className="p-2 grid grid-cols-1 md:grid-cols-2 gap-1">
                      {MUNICIPIOS.filter(m => normalizeString(m).includes(normalizeString(municipioSearch))).map(m => (
                        <button key={m} className={`w-full text-left px-4 py-2 rounded-lg hover:bg-muted ${formData.municipio === m ? 'bg-indigo-50 text-indigo-600' : ''}`} onClick={() => { setFormData({...formData, municipio: m}); setMunicipioSearch(m); setShowMunicipioDropdown(false); }}>{m}</button>
