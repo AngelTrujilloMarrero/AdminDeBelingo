@@ -596,8 +596,11 @@ export default function EventForm({
     setShowIAPanel(true);
     setIaSuggestions(null);
 
+    const apiUrl = `${import.meta.env.VITE_API_BASE_URL || ''}/api/generate-event`;
+    console.log('📡 Llamando a la IA en:', apiUrl);
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/generate-event`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -608,7 +611,16 @@ export default function EventForm({
           lugar: formData.lugar,
           municipio: formData.municipio,
           orquesta: formData.orquesta,
-          accion: 'sugerir'
+          accion: 'sugerir',
+          historial: historicalEvents.slice(0, 5).map(h => ({
+            fecha: h.event.day,
+            lugar: h.event.lugar,
+            municipio: h.event.municipio,
+            orquesta: h.event.orquesta,
+            tipo: h.event.tipo,
+            hora: h.event.hora,
+            programa: h.event.programa
+          }))
         })
       });
 
