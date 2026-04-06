@@ -23,7 +23,9 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  Globe
+  Globe,
+  Sparkles,
+  BrainCircuit
 } from 'lucide-react';
 
 interface EventFormProps {
@@ -67,6 +69,11 @@ export default function EventForm({
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [buttonSuccess, setButtonSuccess] = useState(false);
+
+  // IA Suggestions state
+  const [iaSuggestions, setIaSuggestions] = useState<any>(null);
+  const [isGeneratingIA, setIsGeneratingIA] = useState(false);
+  const [showIAPanel, setShowIAPanel] = useState(false);
 
   // Autocompletado
   const [orquestaSuggestions, setOrquestaSuggestions] = useState<string[]>([]);
@@ -582,14 +589,160 @@ export default function EventForm({
     }
   };
 
+  const fetchIASuggestions = async () => {
+    if (isGeneratingIA) return;
+    
+    setIsGeneratingIA(true);
+    setShowIAPanel(true);
+    setIaSuggestions(null);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/generate-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-internal-key': import.meta.env.VITE_APP_INTERNAL_KEY || ''
+        },
+        body: JSON.stringify({
+          fecha: formData.eventDate,
+          lugar: formData.lugar,
+          municipio: formData.municipio,
+          orquesta: formData.orquesta,
+          accion: 'sugerir'
+        })
+      });
+
+      if (!response.ok) throw new Error('Error al obtener sugerencias');
+      
+      const data = await response.json();
+      setIaSuggestions(data);
+    } catch (error) {
+      console.error('Error fetching IA suggestions:', error);
+      alert('La IA no pudo responder en este momento. Verifica tu conexión o clave interna.');
+    } finally {
+      setIsGeneratingIA(false);
+    }
+  };
+
+  const applyIASuggestion = (field: string, value: string) => {
+    if (!value) return;
+    
+    if (field === 'municipio') {
+      setFormData(prev => ({ ...prev, municipio: value }));
+      setMunicipioSearch(value);
+    } else if (field === 'tipo') {
+      setFormData(prev => ({ ...prev, tipo: value }));
+      setTipoSearch(value);
+      setShowCustomTipo(value === 'Otro');
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6" id="form-container">
       <div className="bg-card rounded-2xl shadow-xl border border-border overflow-visible">
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-2xl">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 rounded-t-2xl flex justify-between items-center">
           <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
             {editingEvent ? <><Eye className="h-6 w-6" /><span>Editar Evento</span></> : <><Save className="h-6 w-6" /><span>Nuevo Evento</span></>}
           </h2>
+          {!editingEvent && (
+            <button
+              onClick={fetchIASuggestions}
+              disabled={isGeneratingIA}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                isGeneratingIA 
+                ? 'bg-white/20 text-white/50 cursor-not-allowed' 
+                : 'bg-white text-indigo-600 hover:bg-white/90 shadow-lg group'
+              }`}
+            >
+              <Sparkles className={`h-4 w-4 ${isGeneratingIA ? 'animate-spin' : 'group-hover:scale-125 transition-transform'}`} />
+              <span>{isGeneratingIA ? 'Generando...' : 'Sugerir con IA'}</span>
+            </button>
+          )}
         </div>
+
+        {showIAPanel && (
+          <div className="border-b border-border bg-indigo-50/50 p-6 animate-in fade-in slide-in-from-top duration-300">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center space-x-2 text-indigo-700 font-bold">
+                <BrainCircuit className="h-5 w-5" />
+                <span>Asistente de IA</span>
+              </div>
+              <button onClick={() => setShowIAPanel(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {isGeneratingIA ? (
+              <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm text-indigo-600 font-medium animate-pulse">Analizando tradiciones de Tenerife...</p>
+              </div>
+            ) : iaSuggestions ? (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 italic">"{iaSuggestions.explicacion}"</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Orquestas */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Orquestas</span>
+                    <div className="flex flex-wrap gap-2">
+                      {iaSuggestions.orquestas?.map((o: string) => (
+                        <button key={o} onClick={() => applyIASuggestion('orquesta', o)} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors">
+                          + {o}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Lugares */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lugares</span>
+                    <div className="flex flex-wrap gap-2">
+                      {iaSuggestions.lugares?.map((l: string) => (
+                        <button key={l} onClick={() => applyIASuggestion('lugar', l)} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors">
+                          + {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tipos */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipos de Evento</span>
+                    <div className="flex flex-wrap gap-2">
+                      {iaSuggestions.tipos?.map((t: string) => (
+                        <button key={t} onClick={() => applyIASuggestion('tipo', t)} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors">
+                          + {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hora y Programa */}
+                  <div className="space-y-2">
+                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hora y Programa</span>
+                     <div className="flex flex-wrap gap-2">
+                       {iaSuggestions.hora && (
+                          <button onClick={() => applyIASuggestion('hora', iaSuggestions.hora)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors">
+                            🕒 Hora: {iaSuggestions.hora}
+                          </button>
+                       )}
+                       {iaSuggestions.programa && (
+                          <button onClick={() => applyIASuggestion('programa', iaSuggestions.programa)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 transition-colors">
+                            📝 Aplicar Programa
+                          </button>
+                       )}
+                     </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-red-500">No se pudieron cargar sugerencias.</p>
+            )}
+          </div>
+        )}
 
         <div className="p-6 space-y-6">
           <FloatingLabelInput
