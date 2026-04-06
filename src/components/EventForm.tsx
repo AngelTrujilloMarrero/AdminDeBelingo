@@ -675,9 +675,9 @@ export default function EventForm({
         </div>
 
         {showIAPanel && (
-          <div className="border-b border-border bg-indigo-50/50 p-6 animate-in fade-in slide-in-from-top duration-300">
+          <div className="border-b border-border bg-indigo-50/50 dark:bg-indigo-500/10 p-6 animate-in fade-in slide-in-from-top duration-300">
             <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center space-x-2 text-indigo-700 font-bold">
+              <div className="flex items-center space-x-2 text-indigo-700 dark:text-indigo-300 font-bold">
                 <BrainCircuit className="h-5 w-5" />
                 <span>Asistente de IA</span>
               </div>
@@ -693,18 +693,17 @@ export default function EventForm({
               </div>
             ) : iaSuggestions ? (
               <div className="space-y-4">
-                <p className="text-sm text-slate-600 italic">"{iaSuggestions.explicacion}"</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium italic">"{iaSuggestions.explicacion}"</p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Orquestas */}
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Orquestas</span>
                     <div className="flex flex-wrap gap-2">
-                      {iaSuggestions.orquestas?.map((o: string) => (
-                        <button key={o} onClick={() => applyIASuggestion('orquesta', o)} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors">
-                          + {o}
-                        </button>
-                      ))}
+                      {iaSuggestions.orquestas?.map((o: string) => <button key={o} onClick={() => applyIASuggestion('orquesta', o)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-500/30 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-colors">
+                            + {o}
+                          </button>
+                      )}
                     </div>
                   </div>
 
@@ -712,11 +711,10 @@ export default function EventForm({
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lugares</span>
                     <div className="flex flex-wrap gap-2">
-                      {iaSuggestions.lugares?.map((l: string) => (
-                        <button key={l} onClick={() => applyIASuggestion('lugar', l)} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors">
-                          + {l}
-                        </button>
-                      ))}
+                      {iaSuggestions.lugares?.map((l: string) => <button key={l} onClick={() => applyIASuggestion('lugar', l)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-500/30 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-colors">
+                            + {l}
+                          </button>
+                      )}
                     </div>
                   </div>
 
@@ -724,11 +722,10 @@ export default function EventForm({
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipos de Evento</span>
                     <div className="flex flex-wrap gap-2">
-                      {iaSuggestions.tipos?.map((t: string) => (
-                        <button key={t} onClick={() => applyIASuggestion('tipo', t)} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white transition-colors">
-                          + {t}
-                        </button>
-                      ))}
+                      {iaSuggestions.tipos?.map((t: string) => <button key={t} onClick={() => applyIASuggestion('tipo', t)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-500/30 rounded-lg text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-colors">
+                            + {t}
+                          </button>
+                      )}
                     </div>
                   </div>
 
