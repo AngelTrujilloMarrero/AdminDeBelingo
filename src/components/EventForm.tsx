@@ -974,7 +974,7 @@ export default function EventForm({
                 {isLoading ? (
                   <span>Guardando...</span>
                 ) : buttonSuccess ? (
-                  <><CheckCircle className="h-5 w-5" /><span>¡Creado!</span></>
+                  <><CheckCircle className="h-5 w-5" /><span>{editingEvent ? '¡Actualizado!' : '¡Creado!'}</span></>
                 ) : (
                   <><Save className="h-5 w-5" /><span>{editingEvent ? 'Actualizar Evento' : 'Crear Evento'}</span></>
                 )}
