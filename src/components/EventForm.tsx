@@ -407,6 +407,7 @@ export default function EventForm({
   }, [events]);
 
   const lugarContainerRef = useRef<HTMLDivElement>(null);
+  const orquestaContainerRef = useRef<HTMLDivElement>(null);
 
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
@@ -422,6 +423,9 @@ export default function EventForm({
       }
       if (lugarContainerRef.current && !lugarContainerRef.current.contains(event.target as Node)) {
         setShowLugarSuggestions(false);
+      }
+      if (orquestaContainerRef.current && !orquestaContainerRef.current.contains(event.target as Node)) {
+        setShowOrquestaSuggestions(false);
       }
     };
 
@@ -445,7 +449,6 @@ export default function EventForm({
     const parts = formData.orquesta.split(',');
     parts[parts.length - 1] = orq;
     setFormData({ ...formData, orquesta: parts.map(p => p.trim()).join(', ') + ', ' });
-    setShowOrquestaSuggestions(false);
   };
 
   const selectLugar = (item: { lugar: string; municipio: string }) => {
@@ -760,6 +763,7 @@ export default function EventForm({
             onFocus={() => { setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowProgramaSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
           />
 
+          <div ref={orquestaContainerRef}>
           <FloatingLabelInput
             id="orquesta" label="Orquesta/Grupo" value={formData.orquesta} icon={<Music className="h-5 w-5" />}
             onChange={handleOrquestaInput} showSuggestions={showOrquestaSuggestions}
@@ -773,6 +777,7 @@ export default function EventForm({
             onClick={() => setShowOrquestaSuggestions(true)}
             inputRef={orquestaInputRef}
           />
+          </div>
 
           <div ref={lugarContainerRef}>
           <FloatingLabelInput
