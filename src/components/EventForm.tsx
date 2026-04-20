@@ -495,6 +495,57 @@ export default function EventForm({
       return;
     }
 
+    const normalizedOrq = normalizeString(orquesta);
+    const currentFormData = formData;
+
+    const isDuplicate = events.some(e => {
+      if (e.cancelado) return false;
+      if (editingEvent && e.id === editingEvent.id) return false;
+      if (e.day !== eventDate) return false;
+      
+      const eNormalizedOrq = normalizeString(e.orquesta);
+      const matchesOrq = eNormalizedOrq.includes(normalizedOrq) || normalizedOrq.includes(eNormalizedOrq);
+      if (!matchesOrq) return false;
+      
+      const matchesLugar = (currentFormData.lugar && e.lugar && 
+        (normalizeString(e.lugar!).includes(normalizeString(currentFormData.lugar)) || 
+         normalizeString(currentFormData.lugar).includes(normalizeString(e.lugar!))));
+      const matchesMunicipio = normalizeString(e.municipio!).includes(normalizeString(municipio)) || 
+                           normalizeString(municipio).includes(normalizeString(e.municipio!));
+      
+      return matchesLugar || matchesMunicipio;
+    });
+
+    if (isDuplicate) {
+      const confirmDuplicate = window.confirm('⚠️ Ya existe un evento con esta misma fecha, orquesta y lugar/municipio.\n\n¿Estás seguro de que quieres continuar?');
+      if (!confirmDuplicate) return;
+    }
+
+    const [hours, mins] = hora.split(':').map(Number);
+    const timeInMinutes = hours * 60 + mins;
+    const twoHoursInMinutes = 120;
+
+    const hasConflicts = events.some(e => {
+      if (e.cancelado) return false;
+      if (editingEvent && e.id === editingEvent.id) return false;
+      if (e.day !== eventDate) return false;
+      
+      const eNormalizedOrq = normalizeString(e.orquesta);
+      const matchesOrq = eNormalizedOrq.includes(normalizedOrq) || normalizedOrq.includes(eNormalizedOrq);
+      if (!matchesOrq) return false;
+      
+      const [eh, em] = e.hora.split(':').map(Number);
+      const eventTimeInMinutes = eh * 60 + em;
+      const diff = Math.abs(timeInMinutes - eventTimeInMinutes);
+      
+      return diff > 0 && diff <= twoHoursInMinutes;
+    });
+
+    if (hasConflicts) {
+      const confirmConflict = window.confirm('⚠️ La orquesta tiene otro evento a menos de 2 horas de diferencia en el mismo día.\n\n¿Estás seguro de que quieres continuar?');
+      if (!confirmConflict) return;
+    }
+
     await saveEvent();
   };
 
