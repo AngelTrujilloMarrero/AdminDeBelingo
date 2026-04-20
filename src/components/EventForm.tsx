@@ -525,7 +525,7 @@ export default function EventForm({
     const timeInMinutes = hours * 60 + mins;
     const twoHoursInMinutes = 120;
 
-    const hasConflicts = events.some(e => {
+    const conflictingEvents = events.filter(e => {
       if (e.cancelado) return false;
       if (editingEvent && e.id === editingEvent.id) return false;
       if (e.day !== eventDate) return false;
@@ -541,8 +541,13 @@ export default function EventForm({
       return diff > 0 && diff <= twoHoursInMinutes;
     });
 
-    if (hasConflicts) {
-      const confirmConflict = window.confirm('⚠️ La orquesta tiene otro evento a menos de 2 horas de diferencia en el mismo día.\n\n¿Estás seguro de que quieres continuar?');
+    if (conflictingEvents.length > 0) {
+      const conflictList = conflictingEvents.map(e => 
+        `• ${e.orquesta} en ${e.lugar || e.municipio} a las ${e.hora}`
+      ).join('\n');
+      const confirmConflict = window.confirm(
+        `⚠️ La orquesta tiene otro evento a menos de 2 horas de diferencia en el mismo día:\n\n${conflictList}\n\n¿Estás seguro de que quieres continuar?`
+      );
       if (!confirmConflict) return;
     }
 
