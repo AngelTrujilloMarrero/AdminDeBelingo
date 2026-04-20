@@ -498,6 +498,8 @@ export default function EventForm({
     const normalizedOrq = normalizeString(orquesta);
     const currentFormData = formData;
 
+    const isDJ = normalizeString(orquesta) === 'dj';
+
     const isDuplicate = events.some(e => {
       if (e.cancelado) return false;
       if (editingEvent && e.id === editingEvent.id) return false;
@@ -516,7 +518,7 @@ export default function EventForm({
       return matchesLugar || matchesMunicipio;
     });
 
-    if (isDuplicate) {
+    if (isDuplicate && !isDJ) {
       const confirmDuplicate = window.confirm('⚠️ Ya existe un evento con esta misma fecha, orquesta y lugar/municipio.\n\n¿Estás seguro de que quieres continuar?');
       if (!confirmDuplicate) return;
     }
@@ -531,6 +533,8 @@ export default function EventForm({
       if (e.day !== eventDate) return false;
       
       const eNormalizedOrq = normalizeString(e.orquesta);
+      if (eNormalizedOrq === 'dj') return false;
+      
       const matchesOrq = eNormalizedOrq.includes(normalizedOrq) || normalizedOrq.includes(eNormalizedOrq);
       if (!matchesOrq) return false;
       
