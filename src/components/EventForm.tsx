@@ -23,10 +23,11 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  Globe,
   Sparkles,
   BrainCircuit
 } from 'lucide-react';
+
+import ProgramaInput from './ProgramaInput';
 
 interface EventFormProps {
   events: Event[];
@@ -1009,17 +1010,15 @@ export default function EventForm({
             <FloatingLabelInput id="customTipo" label="Especifique el tipo" value={formData.customTipo} onChange={v => setFormData({...formData, customTipo: v})} icon={<Tag className="h-5 w-5" />} />
           )}
 
-          <FloatingLabelInput
-            id="programa" label="Programa" value={formData.programa} icon={<Globe className="h-5 w-5" />}
+          <ProgramaInput
+            value={formData.programa}
             onChange={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(true); }}
-            onBlur={() => setTimeout(() => setShowProgramaSuggestions(false), 200)}
             showSuggestions={showProgramaSuggestions}
-            suggestionDirection="down"
-            suggestionLayout="relative"
-            onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
-            suggestions={uniqueProgramas.map(p => ({ name: p })).slice(0, 30)}
             onSuggestionClick={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(false); }}
-            inputRef={programaInputRef}
+            onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
+            onBlur={() => setTimeout(() => setShowProgramaSuggestions(false), 200)}
+            inputRef={programaInputRef as React.RefObject<HTMLInputElement>}
+            suggestions={uniqueProgramas.map(p => ({ name: p })).slice(0, 30)}
           />
 
           <div className="flex flex-col sm:flex-row gap-4 pt-6">

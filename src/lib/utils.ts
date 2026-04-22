@@ -3,6 +3,10 @@ export function normalizeString(str: string): string {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+export function cn(...classes: (string | undefined | null | false)[]): string {
+  return classes.filter(Boolean).join(' ');
+}
+
 export function levenshteinDistance(a: string, b: string): number {
   const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
     Array(b.length + 1).fill(0)
