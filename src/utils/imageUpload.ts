@@ -6,7 +6,7 @@
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://debelingo.com';
+const API_BASE_URL = import.meta.env.VITE_VERCEL_API_URL || 'https://de-belingo-con-angel.vercel.app';
 
 export interface ImageInfo {
     name: string;
