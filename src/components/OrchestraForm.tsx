@@ -140,6 +140,7 @@ export default function OrchestraForm({ events, allOrchestras = [] }: OrchestraF
                 facebook: formData.facebook,
                 instagram: formData.instagram,
                 other: formData.other,
+                type: formData.type || '',
                 lastUpdated: new Date().toISOString()
             };
 
