@@ -84,7 +84,7 @@ export default function MainPage({
             {/* Sección de datos de orquestas */}
             <section>
                 <div className="max-w-4xl mx-auto px-6">
-                    <OrchestraForm events={events} />
+                    <OrchestraForm events={events} allOrchestras={allOrchestras} />
                 </div>
             </section>
 

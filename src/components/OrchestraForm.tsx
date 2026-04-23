@@ -1,18 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { ref, push, set, onValue } from 'firebase/database';
+import { ref, push, set } from 'firebase/database';
 import { db } from '../lib/firebase';
 import FloatingLabelInput from './FloatingLabelInput';
 import { Music, Phone, Globe, FileText, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { Event } from '../types/event';
 import { Orchestra } from '../types/orchestra';
 import { estandarizarNombre, normalizeString } from '../lib/utils';
-import { hybridOrchestraService } from '../services/hybridOrchestraService';
 
 interface OrchestraFormProps {
     events: Event[];
+    allOrchestras?: Orchestra[];
 }
 
-export default function OrchestraForm({ events }: OrchestraFormProps) {
+export default function OrchestraForm({ events, allOrchestras = [] }: OrchestraFormProps) {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -29,44 +29,16 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
     // Suggestions for Orchestra Name
     const [suggestions, setSuggestions] = useState<Array<{ name: string; hasData: boolean }>>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [storedOrchestras, setStoredOrchestras] = useState<Orchestra[]>([]);
+    const [storedOrchestras, setStoredOrchestras] = useState<Orchestra[]>(allOrchestras);
     const [editingId, setEditingId] = useState<string | null>(null);
     const nameInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch existing orchestras (Hybrid: Live + Archive)
+    // Use pre-loaded allOrchestras from props
     useEffect(() => {
-        const loadOrchestras = async () => {
-            const orchestrasRef = ref(db, 'orchestras');
-
-            // Listen to live changes as before
-            const unsubscribe = onValue(orchestrasRef, async (snapshot) => {
-                const liveData = snapshot.val();
-                const liveLoaded: Orchestra[] = [];
-                if (liveData) {
-                    Object.entries(liveData).forEach(([key, value]: [string, any]) => {
-                        liveLoaded.push({ id: key, ...value });
-                    });
-                }
-
-                // Load archived data
-                const archivedData = await hybridOrchestraService.getArchivedOrchestras();
-
-                // Merge: Live (Firebase) has priority over Archive (Static)
-                const mergedMap = new Map<string, Orchestra>();
-                archivedData.forEach(o => mergedMap.set(o.name, o));
-                liveLoaded.forEach(o => mergedMap.set(o.name, o));
-
-                setStoredOrchestras(Array.from(mergedMap.values()));
-            });
-
-            return unsubscribe;
-        };
-
-        const cleanupPromise = loadOrchestras();
-        return () => {
-            cleanupPromise.then(unsubscribe => unsubscribe());
-        };
-    }, []);
+        if (allOrchestras.length > 0) {
+            setStoredOrchestras(allOrchestras);
+        }
+    }, [allOrchestras]);
 
     useEffect(() => {
         // Extract unique orchestra names from events and stored orchestras
@@ -112,8 +84,13 @@ export default function OrchestraForm({ events }: OrchestraFormProps) {
         }
     };
 
-    const selectOrchestra = (item: { name: string; hasData: boolean }) => {
-        const name = item.name;
+    const selectOrchestra = (item: any) => {
+        // Handle both string and object formats
+        const name = typeof item === 'string' ? item : item?.name;
+        
+        if (!name) {
+            return;
+        }
 
         const existing = storedOrchestras.find(
             o => estandarizarNombre(o.name) === estandarizarNombre(name)

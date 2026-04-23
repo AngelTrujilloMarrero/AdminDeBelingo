@@ -158,7 +158,10 @@ export default function FloatingLabelInput({
                             <button
                                 key={typeof suggestion === 'object' ? ((suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : (suggestion as any).name) || idx) : `${suggestion}-${idx}`}
                                 type="button"
-                                onClick={() => onSuggestionClick?.(typeof suggestion === 'object' && 'name' in (suggestion as any) ? (suggestion as any).name : suggestion)}
+                                onClick={() => {
+                                    const suggestionName = typeof suggestion === 'string' ? suggestion : suggestion?.name;
+                                    onSuggestionClick?.(suggestionName);
+                                }}
                                 className={`px-6 py-4 text-left hover:bg-muted/80 transition-all duration-300 text-popover-foreground relative overflow-hidden flex flex-col justify-center rounded-2xl border border-border/50 my-1 first:mt-0 last:mb-0
                              ${gridCols > 1 && !isHistorical ? 'items-center text-center' : 'items-start text-left'}
                              ${isHistorical ? (gridCols === 3 ? 'col-span-3 w-full bg-amber-500/10 border-amber-500/30' : gridCols === 2 ? 'col-span-2 w-full bg-amber-500/10 border-amber-500/30' : '') : 'bg-muted/30 shadow-sm hover:shadow-md'} 
