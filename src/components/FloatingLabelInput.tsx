@@ -159,8 +159,14 @@ export default function FloatingLabelInput({
                                 key={typeof suggestion === 'object' ? ((suggestion as any).id || ('lugar' in suggestion ? `${suggestion.lugar}|${suggestion.municipio}` : (suggestion as any).name) || idx) : `${suggestion}-${idx}`}
                                 type="button"
                                 onClick={() => {
-                                    const suggestionName = typeof suggestion === 'string' ? suggestion : suggestion?.name;
-                                    onSuggestionClick?.(suggestionName);
+                                    // Si es un objeto de lugar {lugar, municipio}, pasamos el objeto entero
+                                    // Si tiene una propiedad 'name', pasamos el name (para hora, tipo, etc)
+                                    // Si es un string, pasamos el string
+                                    let valToPass: any = suggestion;
+                                    if (typeof suggestion === 'object' && suggestion !== null && 'name' in (suggestion as any)) {
+                                        valToPass = (suggestion as any).name;
+                                    }
+                                    onSuggestionClick?.(valToPass);
                                 }}
                                 className={`px-6 py-4 text-left hover:bg-muted/80 transition-all duration-300 text-popover-foreground relative overflow-hidden flex flex-col justify-center rounded-2xl border border-border/50 my-1 first:mt-0 last:mb-0
                              ${gridCols > 1 && !isHistorical ? 'items-center text-center' : 'items-start text-left'}
