@@ -26,6 +26,11 @@ export default function OrchestraForm({ events, allOrchestras = [] }: OrchestraF
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [storedOrchestras, setStoredOrchestras] = useState<Orchestra[]>(allOrchestras);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const nameInputRef = useRef<HTMLInputElement>(null);
+
     // Suggestions for Orchestra Name
     const suggestions = useMemo(() => {
         // Extract unique orchestra names from events and stored orchestras
@@ -43,11 +48,6 @@ export default function OrchestraForm({ events, allOrchestras = [] }: OrchestraF
             return { name, hasData: exists };
         });
     }, [events, storedOrchestras]);
-
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [storedOrchestras, setStoredOrchestras] = useState<Orchestra[]>(allOrchestras);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const nameInputRef = useRef<HTMLInputElement>(null);
 
     // Use pre-loaded allOrchestras from props
     useEffect(() => {
