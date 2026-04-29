@@ -1,5 +1,5 @@
 import { Event } from '../types/event';
-import { ref, remove, push, set } from 'firebase/database';
+import { ref, remove, push, set, get } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { getDayClassName } from '../lib/utils';
 import {
@@ -35,7 +35,39 @@ const getDayGradient = (dayName: string): string => {
 };
 
 export default function EventList({ events, onEditEvent }: EventListProps) {
+  const checkIfEventAlreadyDeleted = async (eventId: string): Promise<boolean> => {
+    try {
+      const deletionsRef = ref(db, 'eventDeletions');
+      const snapshot = await get(deletionsRef);
+      if (snapshot.val()) {
+        const deletions = snapshot.val() as Record<string, any>;
+        for (const delId of Object.keys(deletions)) {
+          if (deletions[delId].eventId === eventId) {
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking deletions:', error);
+      return false;
+    }
+  };
+
   const handleDelete = async (id: string, eventName: string) => {
+    const isArchived = events.find(e => e.id === id)?.isArchived;
+    
+    if (isArchived) {
+      alert(`El evento "${eventName}" es de un año anterior y está archivado.\nNo se puede eliminar directamente.`);
+      return;
+    }
+
+    const alreadyDeleted = await checkIfEventAlreadyDeleted(id);
+    if (alreadyDeleted) {
+      alert(`El evento "${eventName}" ya fue eliminado anteriormente.\nEstá en la papelera y puedes restaurarlo desde ahí.`);
+      return;
+    }
+
     if (confirm(`¿Estás seguro de que quieres eliminar el evento "${eventName}"?`)) {
       try {
         // Primero registrar la eliminación en la auditoría
