@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ref, push, set } from 'firebase/database';
 import { db } from '../lib/firebase';
 import FloatingLabelInput from './FloatingLabelInput';
@@ -27,7 +27,23 @@ export default function OrchestraForm({ events, allOrchestras = [] }: OrchestraF
     const [errorMessage, setErrorMessage] = useState('');
 
     // Suggestions for Orchestra Name
-    const [suggestions, setSuggestions] = useState<Array<{ name: string; hasData: boolean }>>([]);
+    const suggestions = useMemo(() => {
+        // Extract unique orchestra names from events and stored orchestras
+        const allOrquestas = [
+            ...events.flatMap(e => e.orquesta.split(',').map(o => o.trim())),
+            ...storedOrchestras.map(o => o.name)
+        ];
+        const uniqueOrquestas = [...new Set(allOrquestas)].filter(Boolean).sort();
+
+        // Map to suggestion objects with hasData flag
+        return uniqueOrquestas.map(name => {
+            const exists = storedOrchestras.some(
+                o => estandarizarNombre(o.name) === estandarizarNombre(name)
+            );
+            return { name, hasData: exists };
+        });
+    }, [events, storedOrchestras]);
+
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [storedOrchestras, setStoredOrchestras] = useState<Orchestra[]>(allOrchestras);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,25 +55,6 @@ export default function OrchestraForm({ events, allOrchestras = [] }: OrchestraF
             setStoredOrchestras(allOrchestras);
         }
     }, [allOrchestras]);
-
-    useEffect(() => {
-        // Extract unique orchestra names from events and stored orchestras
-        const allOrquestas = [
-            ...events.flatMap(e => e.orquesta.split(',').map(o => o.trim())),
-            ...storedOrchestras.map(o => o.name)
-        ];
-        const uniqueOrquestas = [...new Set(allOrquestas)].filter(Boolean).sort();
-
-        // Map to suggestion objects with hasData flag
-        const suggestionsWithData = uniqueOrquestas.map(name => {
-            const exists = storedOrchestras.some(
-                o => estandarizarNombre(o.name) === estandarizarNombre(name)
-            );
-            return { name, hasData: exists };
-        });
-
-        setSuggestions(suggestionsWithData);
-    }, [events, storedOrchestras]);
 
     const handleNameInput = (value: string) => {
         setFormData({ ...formData, name: value });

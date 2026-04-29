@@ -151,8 +151,8 @@ export async function trackVisit(data: AnalyticsData): Promise<void> {
 }
 
 let maxScroll = 0;
-let pageStartTime = Date.now();
-let pageViewCount = parseInt(sessionStorage.getItem('analyticsPageViews') || '0');
+const pageStartTime = Date.now();
+const pageViewCount = parseInt(sessionStorage.getItem('analyticsPageViews') || '0');
 sessionStorage.setItem('analyticsPageViews', String(pageViewCount + 1));
 
 export function initScrollTracking(): void {

@@ -955,7 +955,7 @@ export default function EventForm({
                 gridColsMobile={3}
                 suggestions={(() => {
                   const val = formData.hora.trim();
-                  let results: any[] = [];
+                  const results: any[] = [];
                   
                   // Mostrar SOLO el evento histórico con mayor puntuación
                   if (historicalEvents.length > 0) {
@@ -1027,7 +1027,7 @@ export default function EventForm({
                 readOnly={true}
                 gridCols={3}
                 suggestions={(() => {
-                  let results: any[] = [];
+                  const results: any[] = [];
                   
                   // Mostrar SOLO el evento histórico con mayor puntuación
                   if (historicalEvents.length > 0) {

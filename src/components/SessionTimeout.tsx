@@ -22,8 +22,17 @@ export default function SessionTimeout({ onLogout, onStayConnected, isActive }: 
         return stored ? parseInt(stored, 10) : Date.now();
     };
 
-    const lastActivityRef = useRef(getInitialActivity());
-    const lastStorageUpdateRef = useRef(Date.now());
+    const lastActivityRef = useRef(0);
+    const lastStorageUpdateRef = useRef(0);
+
+    useEffect(() => {
+        if (lastActivityRef.current === 0) {
+            lastActivityRef.current = getInitialActivity();
+        }
+        if (lastStorageUpdateRef.current === 0) {
+            lastStorageUpdateRef.current = Date.now();
+        }
+    }, []);
 
     // Check for inactivity periodically
     useEffect(() => {
