@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Event } from '../types/event';
 import Calendar from './Calendar';
 import EventForm from './EventForm';
@@ -44,6 +44,16 @@ export default function MainPage({
     allOrchestras
 }: MainPageProps) {
     const [showExportDialog, setShowExportDialog] = useState(false);
+
+    useEffect(() => {
+        const handleRestoreFromTrash = (e: any) => {
+            const { id, eventData } = e.detail;
+            onEditEvent(eventData, true, id);
+        };
+
+        window.addEventListener('restoreFromTrash', handleRestoreFromTrash as EventListener);
+        return () => window.removeEventListener('restoreFromTrash', handleRestoreFromTrash as EventListener);
+    }, [onEditEvent]);
 
     return (
         <div className="space-y-8 pb-8 animate-fade-in">

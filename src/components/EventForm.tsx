@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ref, push, set, remove } from 'firebase/database';
+import { ref, push, set, remove, get } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event, MUNICIPIOS, TIPOS_EVENTO } from '../types/event';
 
@@ -469,6 +469,33 @@ export default function EventForm({
     setMunicipioSearch(newMunicipio);
   };
 
+  const checkIfInTrash = async (eventData: any) => {
+    try {
+      const deletionsRef = ref(db, 'eventDeletions');
+      const snapshot = await get(deletionsRef);
+      if (snapshot.val()) {
+        const deletions = snapshot.val();
+        
+        // Estandarizar datos actuales para comparar
+        const currentOrq = eventData.orquesta.split(',').map((o: string) => o.trim()).filter(Boolean).map(estandarizarNombre).join(', ');
+        
+        for (const id of Object.keys(deletions)) {
+          const d = deletions[id].eventData;
+          if (d && 
+              d.day === eventData.eventDate && 
+              d.orquesta === currentOrq && 
+              d.municipio === eventData.municipio && 
+              d.hora === eventData.hora) {
+            return { id, eventData: d };
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking trash:', error);
+    }
+    return null;
+  };
+
   const validateAndSave = async () => {
     const { eventDate, orquesta, municipio, hora, tipo, customTipo, programa } = formData;
     const missing: string[] = [];
@@ -522,6 +549,28 @@ export default function EventForm({
     if (isDuplicate && !isDJ) {
       const confirmDuplicate = window.confirm('⚠️ Ya existe un evento con esta misma fecha, orquesta y lugar/municipio.\n\n¿Estás seguro de que quieres continuar?');
       if (!confirmDuplicate) return;
+    }
+
+    // Comprobar si existe en la papelera (solo si no es un evento restaurado que estamos procesando)
+    if (!isRestoredEvent) {
+      const trashMatch = await checkIfInTrash(formData);
+      if (trashMatch) {
+        const confirmRestore = window.confirm(
+          `⚠️ Este evento ya existe en la papelera.\n\n` +
+          `${trashMatch.eventData.orquesta} - ${trashMatch.eventData.day}\n\n` +
+          `¿Deseas RESTAURAR el evento de la papelera en lugar de crear uno nuevo?`
+        );
+        if (confirmRestore) {
+          // Restaurar: cargar en el formulario como restauración
+          onEventAdded(); // Limpiar estados previos si los hay
+          // Disparar la edición/restauración (esto lo maneja App.tsx usualmente vía onEditEvent)
+          // Pero como estamos dentro de EventForm, lo más fácil es simular la restauración aquí
+          // O mejor aún, dejar que el usuario use el botón de restaurar del panel, pero aquí le avisamos.
+          // Para ser pro, vamos a activar el modo restauración directamente:
+          window.dispatchEvent(new CustomEvent('restoreFromTrash', { detail: trashMatch }));
+          return;
+        }
+      }
     }
 
     const [hours, mins] = hora.split(':').map(Number);
