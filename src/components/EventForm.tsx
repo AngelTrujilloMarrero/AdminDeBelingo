@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ref, push, set } from 'firebase/database';
+import { ref, push, set, remove } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event, MUNICIPIOS, TIPOS_EVENTO } from '../types/event';
 
@@ -617,6 +617,16 @@ export default function EventForm({
         await set(ref(db, `events/${editingEvent.id}`), event);
       } else {
         await push(ref(db, 'events'), event);
+        
+        // Si es un evento restaurado, eliminarlo de la papelera
+        if (isRestoredEvent && deletionIdToRemove) {
+          try {
+            const deletionRef = ref(db, `eventDeletions/${deletionIdToRemove}`);
+            await remove(deletionRef);
+          } catch (error) {
+            console.error('Error al eliminar registro de papelera:', error);
+          }
+        }
       }
       clearForm();
       onEventAdded();

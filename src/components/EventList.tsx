@@ -35,15 +35,26 @@ const getDayGradient = (dayName: string): string => {
 };
 
 export default function EventList({ events, onEditEvent }: EventListProps) {
-  const checkIfEventAlreadyDeleted = async (eventId: string): Promise<boolean> => {
+  const checkIfEventAlreadyDeleted = async (eventId: string, eventData: Event): Promise<boolean> => {
     try {
       const deletionsRef = ref(db, 'eventDeletions');
       const snapshot = await get(deletionsRef);
       if (snapshot.val()) {
         const deletions = snapshot.val() as Record<string, any>;
         for (const delId of Object.keys(deletions)) {
-          if (deletions[delId].eventId === eventId) {
-            return true;
+          const del = deletions[delId];
+          // Primero por ID
+          if (del.eventId === eventId) return true;
+          
+          // Luego por datos (para capturar eventos restaurados que tienen nuevo ID)
+          if (del.eventData) {
+            const d = del.eventData;
+            if (d.day === eventData.day && 
+                d.orquesta === eventData.orquesta && 
+                d.municipio === eventData.municipio && 
+                d.hora === eventData.hora) {
+              return true;
+            }
           }
         }
       }
@@ -62,9 +73,12 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
       return;
     }
 
-    const alreadyDeleted = await checkIfEventAlreadyDeleted(id);
+    const eventToDelete = events.find(e => e.id === id);
+    if (!eventToDelete) return;
+
+    const alreadyDeleted = await checkIfEventAlreadyDeleted(id, eventToDelete);
     if (alreadyDeleted) {
-      alert(`El evento "${eventName}" ya fue eliminado anteriormente.\nEstá en la papelera y puedes restaurarlo desde ahí.`);
+      alert(`El evento "${eventName}" ya tiene una copia en la papelera.\nNo se pueden duplicar eventos en la papelera.`);
       return;
     }
 
