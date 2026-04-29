@@ -1061,7 +1061,11 @@ export default function EventForm({
 
           <ProgramaInput
             value={formData.programa}
-            onChange={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(true); }}
+            onChange={v => { 
+              setFormData({...formData, programa: v}); 
+              const isUrl = v.trim().toLowerCase().startsWith('http');
+              setShowProgramaSuggestions(!isUrl && v.length > 0); 
+            }}
             showSuggestions={showProgramaSuggestions}
             onSuggestionClick={v => { setFormData({...formData, programa: v}); setShowProgramaSuggestions(false); }}
             onFocus={() => { setShowProgramaSuggestions(true); setShowOrquestaSuggestions(false); setShowLugarSuggestions(false); setShowMunicipioDropdown(false); setShowTimeDropdown(false); setShowTipoDropdown(false); }}
