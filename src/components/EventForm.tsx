@@ -24,7 +24,9 @@ import {
   AlertCircle,
   Eye,
   Sparkles,
-  BrainCircuit
+  BrainCircuit,
+  RefreshCw,
+  PlusCircle
 } from 'lucide-react';
 
 import ProgramaInput from './ProgramaInput';
@@ -66,6 +68,7 @@ export default function EventForm({
   const [showCustomTipo, setShowCustomTipo] = useState(false);
   const [missingFields, setMissingFields] = useState('');
   const [duplicateWarning, setDuplicateWarning] = useState('');
+  const [trashConflict, setTrashConflict] = useState<{ id: string; eventData: any } | null>(null);
   const [conflictWarnings, setConflictWarnings] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -496,7 +499,7 @@ export default function EventForm({
     return null;
   };
 
-  const validateAndSave = async () => {
+  const validateAndSave = async (ignoreTrash = false) => {
     const { eventDate, orquesta, municipio, hora, tipo, customTipo, programa } = formData;
     const missing: string[] = [];
     if (!eventDate) missing.push('Fecha');
@@ -552,24 +555,11 @@ export default function EventForm({
     }
 
     // Comprobar si existe en la papelera (solo si no es un evento restaurado que estamos procesando)
-    if (!isRestoredEvent) {
+    if (!isRestoredEvent && !ignoreTrash) {
       const trashMatch = await checkIfInTrash(formData);
       if (trashMatch) {
-        const confirmRestore = window.confirm(
-          `⚠️ Este evento ya existe en la papelera.\n\n` +
-          `${trashMatch.eventData.orquesta} - ${trashMatch.eventData.day}\n\n` +
-          `¿Deseas RESTAURAR el evento de la papelera en lugar de crear uno nuevo?`
-        );
-        if (confirmRestore) {
-          // Restaurar: cargar en el formulario como restauración
-          onEventAdded(); // Limpiar estados previos si los hay
-          // Disparar la edición/restauración (esto lo maneja App.tsx usualmente vía onEditEvent)
-          // Pero como estamos dentro de EventForm, lo más fácil es simular la restauración aquí
-          // O mejor aún, dejar que el usuario use el botón de restaurar del panel, pero aquí le avisamos.
-          // Para ser pro, vamos a activar el modo restauración directamente:
-          window.dispatchEvent(new CustomEvent('restoreFromTrash', { detail: trashMatch }));
-          return;
-        }
+        setTrashConflict(trashMatch);
+        return;
       }
     }
 
@@ -1106,6 +1096,61 @@ export default function EventForm({
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Modal de conflicto con papelera */}
+      {trashConflict && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-border animate-in zoom-in-95 duration-300">
+            <div className="bg-amber-500 p-6 flex justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm relative z-10 shadow-lg">
+                <AlertCircle className="w-10 h-10 text-white" />
+              </div>
+            </div>
+            
+            <div className="p-6 text-center">
+              <h3 className="text-xl font-bold text-foreground mb-2">Evento en Papelera</h3>
+              <p className="text-muted-foreground mb-6">
+                Hemos encontrado un evento idéntico en la papelera:<br/>
+                <strong className="text-foreground">{trashConflict.eventData.orquesta}</strong> el <strong className="text-foreground">{trashConflict.eventData.day}</strong>.
+              </p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    onEventAdded();
+                    window.dispatchEvent(new CustomEvent('restoreFromTrash', { detail: trashConflict }));
+                    setTrashConflict(null);
+                  }}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Restaurar de Papelera
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setTrashConflict(null);
+                    validateAndSave(true);
+                  }}
+                  className="w-full bg-background hover:bg-muted text-foreground font-semibold py-3 rounded-xl border-2 border-border transition-all flex items-center justify-center gap-2"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  Crear como evento nuevo
+                </button>
+                
+                <button
+                  onClick={() => setTrashConflict(null)}
+                  className="w-full py-2 text-muted-foreground hover:text-foreground text-sm font-medium transition-all"
+                >
+                  Cancelar operación
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
