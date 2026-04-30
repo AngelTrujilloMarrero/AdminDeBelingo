@@ -102,7 +102,7 @@ export default function EventForm({
   const [municipioSearch, setMunicipioSearch] = useState('');
   const [tipoSearch, setTipoSearch] = useState('');
   const [historicalEvents, setHistoricalEvents] = useState<Array<{ event: Event; score: number; reasons: string[] }>>([]);
-  const [currentOrquestaInput, setCurrentOrquestaInput] = useState('');
+
 
   const municipioDropdownRef = useRef<HTMLDivElement>(null);
   const municipioInputRef = useRef<HTMLInputElement>(null);
@@ -688,11 +688,21 @@ export default function EventForm({
       hora: '', tipo: 'Baile Normal', customTipo: '', programa: ''
     });
     setMunicipioSearch('');
+    setTipoSearch('');
     setShowCustomTipo(false);
     setHistoricalEvents([]);
     setMissingFields('');
     setDuplicateWarning('');
     setConflictWarnings([]);
+    setIaSuggestions(null);
+    setShowIAPanel(false);
+    setTrashConflict(null);
+    setShowOrquestaSuggestions(false);
+    setShowLugarSuggestions(false);
+    setShowMunicipioDropdown(false);
+    setShowTimeDropdown(false);
+    setShowTipoDropdown(false);
+    setShowProgramaSuggestions(false);
   };
 
   const handleCancel = () => {
