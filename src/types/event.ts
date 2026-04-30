@@ -14,6 +14,7 @@ export interface Event {
   programa?: string;
   customTipo?: string;
   cambios?: string[];
+  motivoEliminacion?: string;
 }
 
 export const MUNICIPIOS = [

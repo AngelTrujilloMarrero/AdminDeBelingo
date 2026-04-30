@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Event } from '../types/event';
 import { ref, remove, push, set, get } from 'firebase/database';
 import { db } from '../lib/firebase';
@@ -13,7 +14,9 @@ import {
   Plus,
   AlertCircle,
   Archive,
-  Lock
+  Lock,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 
 interface EventListProps {
@@ -35,6 +38,11 @@ const getDayGradient = (dayName: string): string => {
 };
 
 export default function EventList({ events, onEditEvent }: EventListProps) {
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [eventToDeleteData, setEventToDeleteData] = useState<{ id: string; orquesta: string; eventData: Event } | null>(null);
+  const [deletionReason, setDeletionReason] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const checkIfEventAlreadyDeleted = async (eventId: string, eventData: Event): Promise<boolean> => {
     try {
       const deletionsRef = ref(db, 'eventDeletions');
@@ -82,28 +90,40 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
       return;
     }
 
-    if (confirm(`¿Estás seguro de que quieres eliminar el evento "${eventName}"?`)) {
-      try {
-        // Primero registrar la eliminación en la auditoría
-        const eventToRegister = events.find(e => e.id === id);
-        if (eventToRegister) {
-          const deletionRef = ref(db, 'eventDeletions');
-          const newDeletionRef = push(deletionRef);
-          await set(newDeletionRef, {
-            eventId: id,
-            deletedBy: 'admin@debelingo.com', // TODO: Obtener del usuario autenticado
-            deletedAt: new Date().toISOString(),
-            eventData: eventToRegister
-          });
-        }
+    setEventToDeleteData({ id, orquesta: eventName, eventData: eventToDelete });
+    setDeletionReason('');
+    setIsDeleteModalOpen(true);
+  };
 
-        // Luego eliminar el evento
-        const eventRef = ref(db, `events/${id}`);
-        await remove(eventRef);
-      } catch (error) {
-        console.error('Error al eliminar evento:', error);
-        alert('Error al eliminar el evento');
-      }
+  const confirmDelete = async () => {
+    if (!eventToDeleteData) return;
+    
+    setIsDeleting(true);
+    try {
+      const { id, eventData } = eventToDeleteData;
+      
+      // Registrar la eliminación en la auditoría
+      const deletionRef = ref(db, 'eventDeletions');
+      const newDeletionRef = push(deletionRef);
+      await set(newDeletionRef, {
+        eventId: id,
+        deletedBy: 'admin@debelingo.com', // TODO: Obtener del usuario autenticado
+        deletedAt: new Date().toISOString(),
+        eventData: eventData,
+        reason: deletionReason || null
+      });
+
+      // Luego eliminar el evento
+      const eventRef = ref(db, `events/${id}`);
+      await remove(eventRef);
+      
+      setIsDeleteModalOpen(false);
+      setEventToDeleteData(null);
+    } catch (error) {
+      console.error('Error al eliminar evento:', error);
+      alert('Error al eliminar el evento');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -299,6 +319,77 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
           </div>
         ))}
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-md rounded-2xl shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2 text-red-500">
+                  <AlertTriangle className="h-6 w-6" />
+                  <h3 className="text-xl font-bold">Confirmar eliminación</h3>
+                </div>
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-foreground mb-2">
+                  ¿Estás seguro de que quieres eliminar el evento:
+                </p>
+                <div className="bg-muted/50 p-3 rounded-lg border border-border mb-4">
+                  <p className="font-bold text-foreground">{eventToDeleteData?.orquesta}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {eventToDeleteData?.eventData.day && new Date(eventToDeleteData.eventData.day).toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long' })}
+                  </p>
+                </div>
+
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Motivo de la eliminación (opcional)
+                </label>
+                <select
+                  value={deletionReason}
+                  onChange={(e) => setDeletionReason(e.target.value)}
+                  className="w-full bg-background border border-input rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                >
+                  <option value="">Sin especificar</option>
+                  <option value="Climatológica">1º Climatológica</option>
+                  <option value="Defunción">2º Defunción</option>
+                  <option value="Otro motivo">3º Otro motivo</option>
+                </select>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-background text-foreground font-medium hover:bg-muted transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      <span>Eliminar</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
