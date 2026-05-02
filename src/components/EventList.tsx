@@ -41,6 +41,7 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDeleteData, setEventToDeleteData] = useState<{ id: string; orquesta: string; eventData: Event } | null>(null);
   const [deletionReason, setDeletionReason] = useState<string>('');
+  const [customDeletionReason, setCustomDeletionReason] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   const checkIfEventAlreadyDeleted = async (eventId: string, eventData: Event): Promise<boolean> => {
@@ -92,6 +93,7 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
 
     setEventToDeleteData({ id, orquesta: eventName, eventData: eventToDelete });
     setDeletionReason('');
+    setCustomDeletionReason('');
     setIsDeleteModalOpen(true);
   };
 
@@ -110,7 +112,7 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
         deletedBy: 'admin@debelingo.com', // TODO: Obtener del usuario autenticado
         deletedAt: new Date().toISOString(),
         eventData: eventData,
-        reason: deletionReason || null
+        reason: deletionReason === 'Otro motivo' && customDeletionReason ? customDeletionReason : deletionReason || null
       });
 
       // Luego eliminar el evento
@@ -119,6 +121,8 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
       
       setIsDeleteModalOpen(false);
       setEventToDeleteData(null);
+      setDeletionReason('');
+      setCustomDeletionReason('');
     } catch (error) {
       console.error('Error al eliminar evento:', error);
       alert('Error al eliminar el evento');
@@ -362,6 +366,15 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
                   <option value="Defunción">2º Defunción</option>
                   <option value="Otro motivo">3º Otro motivo</option>
                 </select>
+                {deletionReason === 'Otro motivo' && (
+                  <input
+                    type="text"
+                    value={customDeletionReason}
+                    onChange={(e) => setCustomDeletionReason(e.target.value)}
+                    placeholder="Especifica el motivo"
+                    className="w-full mt-2 bg-background border border-input rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                  />
+                )}
               </div>
 
               <div className="flex space-x-3">
