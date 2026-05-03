@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '../types/event';
 import { Search, X } from 'lucide-react';
+import { matchSorter } from 'match-sorter';
 
 interface QuickSearchProps {
   events: Event[];
@@ -25,24 +26,36 @@ export default function QuickSearch({ events, onFilterChange, onEditEvent }: Qui
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(() => {
-      const normalizedQuery = query.toLowerCase().trim();
-      
       const twoDaysAgo = new Date();
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
       twoDaysAgo.setHours(0, 0, 0, 0);
 
-      const filtered = events
-        .filter(event => {
-          const eventDate = new Date(event.day);
-          return eventDate >= twoDaysAgo;
-        })
-        .filter(event => {
-          const searchText = `${event.orquesta} ${event.municipio} ${event.lugar} ${event.tipo} ${event.day} ${event.hora}`.toLowerCase();
-          return searchText.includes(normalizedQuery);
-        })
-        .slice(0, 10);
+      const recentEvents = events.filter(event => {
+        const eventDate = new Date(event.day);
+        return eventDate >= twoDaysAgo;
+      });
 
-      setResults(filtered);
+      const searchTerms = query.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0);
+
+      if (searchTerms.length === 0) {
+        setResults([]);
+        setShowResults(false);
+        return;
+      }
+
+      const results = matchSorter(recentEvents, searchTerms.join(' '), {
+        keys: [
+          item => item.orquesta || '',
+          item => item.municipio || '',
+          item => item.lugar || '',
+          item => item.tipo || '',
+          item => item.day || '',
+          item => item.hora || '',
+        ],
+        threshold: matchSorter.rankings.CONTAINS,
+      }).slice(0, 10);
+
+      setResults(results);
       setShowResults(true);
     }, 300);
 
