@@ -4,6 +4,7 @@ import Calendar from './Calendar';
 import EventForm from './EventForm';
 import EventList from './EventList';
 import Filters from './Filters';
+import QuickSearch from './QuickSearch';
 
 import OrchestraForm from './OrchestraForm';
 import FormationTagger from './FormationTagger';
@@ -60,6 +61,7 @@ export default function MainPage({
             {/* Sección de calendarios */}
             <section className="pt-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <QuickSearch events={events} onFilterChange={onFilterChange} />
                     <Calendar onDateSelect={onDateSelect} />
                 </div>
             </section>
