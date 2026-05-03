@@ -190,7 +190,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
           <div className="mb-4">
             <div className="font-medium text-foreground">{selectedEvent.orquesta}</div>
             <div className="text-xs text-muted-foreground">
-              {selectedEvent.day} · {selectedEvent.municipio} · {selectedEvent.hora}
+              {selectedEvent.day} · {selectedEvent.lugar ? `${selectedEvent.lugar}, ` : ''}{selectedEvent.municipio} · {selectedEvent.hora}
             </div>
           </div>
           <div className="flex gap-2">
@@ -228,7 +228,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
                   >
                     <div className="font-medium text-foreground text-sm">{event.orquesta}</div>
                     <div className="text-xs text-muted-foreground">
-                      {event.day} · {event.municipio} · {event.hora}
+                      {event.day} · {event.lugar ? `${event.lugar}, ` : ''}{event.municipio} · {event.hora}
                     </div>
                   </button>
                 ))}
