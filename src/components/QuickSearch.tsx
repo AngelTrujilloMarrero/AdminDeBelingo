@@ -209,6 +209,13 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
               <Trash2 className="h-4 w-4" />
               Eliminar
             </button>
+            <button
+              onClick={handleClear}
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-500 hover:bg-slate-600 text-white py-2 px-3 rounded-lg text-sm font-medium"
+            >
+              <X className="h-4 w-4" />
+              Limpiar
+            </button>
           </div>
           
         </div>
