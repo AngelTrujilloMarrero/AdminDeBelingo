@@ -172,9 +172,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
     }
   };
 
-  const handleClose = () => {
-    setSelectedEvent(null);
-  };
+  
 
   return (
     <div className="md:hidden mb-4">
@@ -233,12 +231,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
               Eliminar
             </button>
           </div>
-          <button
-            onClick={handleClose}
-            className="w-full mt-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            Cancelar
-          </button>
+          
         </div>
       ) : (
         <>
