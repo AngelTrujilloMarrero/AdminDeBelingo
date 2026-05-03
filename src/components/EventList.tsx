@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Event } from '../types/event';
-import { ref, remove, push, set, get } from 'firebase/database';
-import { db } from '../lib/firebase';
 import { getDayClassName } from '../lib/utils';
+import { useEventActions } from '../hooks/useEventActions';
 import {
   Edit,
   Trash2,
@@ -38,52 +37,21 @@ const getDayGradient = (dayName: string): string => {
 };
 
 export default function EventList({ events, onEditEvent }: EventListProps) {
+  const { checkIfEventAlreadyDeleted, deleteEvent, checkIfArchived } = useEventActions();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDeleteData, setEventToDeleteData] = useState<{ id: string; orquesta: string; eventData: Event } | null>(null);
   const [deletionReason, setDeletionReason] = useState<string>('');
   const [customDeletionReason, setCustomDeletionReason] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const checkIfEventAlreadyDeleted = async (eventId: string, eventData: Event): Promise<boolean> => {
-    try {
-      const deletionsRef = ref(db, 'eventDeletions');
-      const snapshot = await get(deletionsRef);
-      if (snapshot.val()) {
-        const deletions = snapshot.val() as Record<string, any>;
-        for (const delId of Object.keys(deletions)) {
-          const del = deletions[delId];
-          // Primero por ID
-          if (del.eventId === eventId) return true;
-          
-          // Luego por datos (para capturar eventos restaurados que tienen nuevo ID)
-          if (del.eventData) {
-            const d = del.eventData;
-            if (d.day === eventData.day && 
-                d.orquesta === eventData.orquesta && 
-                d.municipio === eventData.municipio && 
-                d.hora === eventData.hora) {
-              return true;
-            }
-          }
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error('Error checking deletions:', error);
-      return false;
-    }
-  };
-
   const handleDelete = async (id: string, eventName: string) => {
-    const isArchived = events.find(e => e.id === id)?.isArchived;
-    
-    if (isArchived) {
+    const eventToDelete = events.find(e => e.id === id);
+    if (!eventToDelete) return;
+
+    if (checkIfArchived(eventToDelete)) {
       alert(`El evento "${eventName}" es de un año anterior y está archivado.\nNo se puede eliminar directamente.`);
       return;
     }
-
-    const eventToDelete = events.find(e => e.id === id);
-    if (!eventToDelete) return;
 
     const alreadyDeleted = await checkIfEventAlreadyDeleted(id, eventToDelete);
     if (alreadyDeleted) {
@@ -104,20 +72,7 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
     try {
       const { id, eventData } = eventToDeleteData;
       
-      // Registrar la eliminación en la auditoría
-      const deletionRef = ref(db, 'eventDeletions');
-      const newDeletionRef = push(deletionRef);
-      await set(newDeletionRef, {
-        eventId: id,
-        deletedBy: 'admin@debelingo.com', // TODO: Obtener del usuario autenticado
-        deletedAt: new Date().toISOString(),
-        eventData: eventData,
-        reason: deletionReason === 'Otro motivo' && customDeletionReason ? customDeletionReason : deletionReason || null
-      });
-
-      // Luego eliminar el evento
-      const eventRef = ref(db, `events/${id}`);
-      await remove(eventRef);
+      await deleteEvent(id, eventData, deletionReason, customDeletionReason);
       
       setIsDeleteModalOpen(false);
       setEventToDeleteData(null);
