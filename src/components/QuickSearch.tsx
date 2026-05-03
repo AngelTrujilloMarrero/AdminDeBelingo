@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '../types/event';
-import { Search, X, Edit, Trash2, Ban } from 'lucide-react';
+import { Search, X, Edit, Trash2 } from 'lucide-react';
 import { useEventActions } from '../hooks/useEventActions';
 
 interface QuickSearchProps {
@@ -9,7 +9,7 @@ interface QuickSearchProps {
 }
 
 export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
-  const { checkIfEventAlreadyDeleted, deleteEvent, cancelEvent, checkIfArchived } = useEventActions();
+  const { checkIfEventAlreadyDeleted, deleteEvent, checkIfArchived } = useEventActions();
   
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Event[]>([]);
@@ -155,22 +155,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
     }
   };
 
-  const handleCancelEvent = async () => {
-    if (!selectedEvent) return;
 
-    const confirmed = confirm(`¿Cancelar el evento "${selectedEvent.orquesta}" del ${selectedEvent.day}?`);
-    if (!confirmed) return;
-
-    const success = await cancelEvent(selectedEvent);
-
-    if (success) {
-      setSelectedEvent(null);
-      setQuery('');
-      alert('Evento cancelado');
-    } else {
-      alert('Error al cancelar el evento');
-    }
-  };
 
   
 
@@ -216,13 +201,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
               <Edit className="h-4 w-4" />
               Editar
             </button>
-            <button
-              onClick={handleCancelEvent}
-              className="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-sm font-medium"
-            >
-              <Ban className="h-4 w-4" />
-              Cancelar
-            </button>
+
             <button
               onClick={handleDeleteClick}
               className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg text-sm font-medium"
