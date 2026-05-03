@@ -26,10 +26,20 @@ export default function QuickSearch({ events, onFilterChange }: QuickSearchProps
     debounceRef.current = setTimeout(() => {
       const normalizedQuery = query.toLowerCase().trim();
       
-      const filtered = events.filter(event => {
-        const searchText = `${event.orquesta} ${event.municipio} ${event.lugar} ${event.tipo} ${event.day} ${event.hora}`.toLowerCase();
-        return searchText.includes(normalizedQuery);
-      }).slice(0, 10);
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      twoDaysAgo.setHours(0, 0, 0, 0);
+
+      const filtered = events
+        .filter(event => {
+          const eventDate = new Date(event.day);
+          return eventDate >= twoDaysAgo;
+        })
+        .filter(event => {
+          const searchText = `${event.orquesta} ${event.municipio} ${event.lugar} ${event.tipo} ${event.day} ${event.hora}`.toLowerCase();
+          return searchText.includes(normalizedQuery);
+        })
+        .slice(0, 10);
 
       setResults(filtered);
       setShowResults(true);
