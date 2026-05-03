@@ -1,6 +1,7 @@
 import { ref, remove, push, set, get } from 'firebase/database';
 import { db } from '../lib/firebase';
 import { Event } from '../types/event';
+import { notifyTelegram } from '../lib/telegramNotifier';
 
 export function useEventActions() {
   const checkIfEventAlreadyDeleted = async (eventId: string, eventData: Event): Promise<boolean> => {
@@ -51,6 +52,9 @@ export function useEventActions() {
       const eventRef = ref(db, `events/${eventId}`);
       await remove(eventRef);
       
+      // Notificar a Telegram
+      await notifyTelegram('delete', eventData, reason === 'Otro motivo' && customReason ? customReason : reason || undefined);
+      
       return true;
     } catch (error) {
       console.error('Error al eliminar evento:', error);
@@ -62,6 +66,10 @@ export function useEventActions() {
     try {
       const eventRef = ref(db, `events/${event.id}`);
       await set(eventRef, { ...event, cancelado: true, FechaEditado: new Date().toISOString() });
+      
+      // Notificar a Telegram
+      await notifyTelegram('delete', event, "Evento cancelado");
+
       return true;
     } catch (error) {
       console.error('Error al cancelar evento:', error);
