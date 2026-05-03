@@ -5,9 +5,10 @@ import { Search, X } from 'lucide-react';
 interface QuickSearchProps {
   events: Event[];
   onFilterChange: (filtered: Event[]) => void;
+  onEditEvent: (event: Event) => void;
 }
 
-export default function QuickSearch({ events, onFilterChange }: QuickSearchProps) {
+export default function QuickSearch({ events, onFilterChange, onEditEvent }: QuickSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Event[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -58,16 +59,9 @@ return () => {
   };
 
   const handleSelectResult = (event: Event) => {
-    const eventDate = new Date(event.day);
-    const monthKey = `${eventDate.getFullYear()}-${(eventDate.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    const filtered = events.filter(e => {
-      const eDate = new Date(e.day);
-      const eMonthKey = `${eDate.getFullYear()}-${(eDate.getMonth() + 1).toString().padStart(2, '0')}`;
-      return eMonthKey === monthKey;
-    });
-    
-    onFilterChange(filtered);
+    onEditEvent(event);
+    setQuery('');
+    setResults([]);
     setShowResults(false);
   };
 

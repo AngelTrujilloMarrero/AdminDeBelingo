@@ -61,7 +61,7 @@ export default function MainPage({
             {/* Sección de calendarios */}
             <section className="pt-6">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <QuickSearch events={events} onFilterChange={onFilterChange} />
+                    <QuickSearch events={events} onFilterChange={onFilterChange} onEditEvent={onEditEvent} />
                     <Calendar onDateSelect={onDateSelect} />
                 </div>
             </section>
