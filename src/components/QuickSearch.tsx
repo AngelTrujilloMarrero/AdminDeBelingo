@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Event } from '../types/event';
 import { Search, X } from 'lucide-react';
-import { matchSorter } from 'match-sorter';
 
 interface QuickSearchProps {
   events: Event[];
@@ -43,17 +42,44 @@ export default function QuickSearch({ events, onFilterChange, onEditEvent }: Qui
         return;
       }
 
-      const results = matchSorter(recentEvents, searchTerms.join(' '), {
-        keys: [
-          item => item.orquesta || '',
-          item => item.municipio || '',
-          item => item.lugar || '',
-          item => item.tipo || '',
-          item => item.day || '',
-          item => item.hora || '',
-        ],
-        threshold: matchSorter.rankings.CONTAINS,
-      }).slice(0, 10);
+      const searchInField = (field: string, term: string): boolean => {
+        if (!field) return false;
+        return field.toLowerCase().includes(term);
+      };
+
+      const scoredEvents = recentEvents.map(event => {
+        let score = 0;
+        const fields = [
+          event.orquesta,
+          event.municipio,
+          event.lugar,
+          event.tipo,
+          event.day,
+          event.hora
+        ];
+
+        for (const term of searchTerms) {
+          for (const field of fields) {
+            if (searchInField(field, term)) {
+              score += 1;
+              if (field.toLowerCase() === term) {
+                score += 2;
+              }
+              if (field.toLowerCase().startsWith(term)) {
+                score += 1;
+              }
+            }
+          }
+        }
+
+        return { event, score };
+      });
+
+      const results = scoredEvents
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.event)
+        .slice(0, 10);
 
       setResults(results);
       setShowResults(true);
