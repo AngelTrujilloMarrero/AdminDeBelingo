@@ -160,7 +160,7 @@ export default function QuickSearch({ events, onEditEvent }: QuickSearchProps) {
   
 
   return (
-    <div className="md:hidden mb-4">
+    <div className="mb-4">
       <div className="relative">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-muted-foreground" />
