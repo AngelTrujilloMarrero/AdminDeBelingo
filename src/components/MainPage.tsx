@@ -10,6 +10,7 @@ import OrchestraForm from './OrchestraForm';
 import FormationTagger from './FormationTagger';
 import MessageAdmin from './MessageAdmin';
 import ExportFestivalDialog from './ExportFestivalDialog';
+import TelegramPhotoQueue from './TelegramPhotoQueue';
 import DeletedEventsPanel from './DeletedEventsPanel';
 import { FileImage } from 'lucide-react';
 
@@ -90,6 +91,9 @@ export default function MainPage({
                         <FileImage className="w-5 h-5" />
                         Crear Cartel de Fiestas
                     </button>
+                </div>
+                <div className="max-w-4xl mx-auto px-6 mt-4">
+                    <TelegramPhotoQueue events={events} />
                 </div>
             </section>
 
