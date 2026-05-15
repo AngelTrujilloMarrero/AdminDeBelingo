@@ -15,6 +15,7 @@ export interface Event {
   customTipo?: string;
   cambios?: string[];
   motivoEliminacion?: string;
+  completada?: boolean;
 }
 
 export const MUNICIPIOS = [

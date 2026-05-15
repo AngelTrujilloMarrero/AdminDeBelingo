@@ -81,10 +81,26 @@ export function useEventActions() {
     return event.isArchived === true;
   };
 
+  const toggleCompleted = async (event: Event): Promise<boolean> => {
+    try {
+      const eventRef = ref(db, `events/${event.id}`);
+      await set(eventRef, { 
+        ...event, 
+        completada: !event.completada, 
+        FechaEditado: new Date().toISOString() 
+      });
+      return true;
+    } catch (error) {
+      console.error('Error al cambiar estado completado:', error);
+      return false;
+    }
+  };
+
   return {
     checkIfEventAlreadyDeleted,
     deleteEvent,
     cancelEvent,
-    checkIfArchived
+    checkIfArchived,
+    toggleCompleted
   };
 }
