@@ -11,7 +11,9 @@ import {
 
 export default function Analytics() {
   const [visitCount, setVisitCount] = useState<number>(0);
+  const [selectedYear, setSelectedYear] = useState<string>('current');
   const [dailyVisits, setDailyVisits] = useState<Record<string, number>>({});
+  const [historicalDailyVisits, setHistoricalDailyVisits] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
@@ -27,6 +29,17 @@ export default function Analytics() {
     const unsubscribeDailyVisits = onValue(dailyVisitsRef, (snapshot) => {
       if (snapshot.exists()) {
         setDailyVisits(snapshot.val());
+      } else {
+        setDailyVisits({});
+      }
+    });
+
+    const historicalVisitsRef = ref(db, 'historicalDailyVisits');
+    const unsubscribeHistoricalVisits = onValue(historicalVisitsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setHistoricalDailyVisits(snapshot.val());
+      } else {
+        setHistoricalDailyVisits({});
       }
       setLoading(false);
       setLastUpdate(new Date());
@@ -35,6 +48,7 @@ export default function Analytics() {
     return () => {
       unsubscribeVisitCount();
       unsubscribeDailyVisits();
+      unsubscribeHistoricalVisits();
     };
   }, []);
 
@@ -46,6 +60,14 @@ export default function Analytics() {
       </div>
     );
   }
+
+  // Get available historical years sorted
+  const availableYears = Object.keys(historicalDailyVisits).sort((a, b) => b.localeCompare(a));
+
+  // Determine displayed list
+  const displayedVisits = selectedYear === 'current'
+    ? dailyVisits
+    : (historicalDailyVisits[selectedYear] || {});
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
@@ -119,18 +141,35 @@ export default function Analytics() {
 
       {/* Daily Visits Log */}
       <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg p-6 md:p-8 space-y-6 relative">
-        <div className="flex items-center gap-2 relative z-10">
-          <Calendar className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-lg font-bold text-foreground">Registro de Visitas Diarias</h3>
+        {/* Title and Year Selector Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10 border-b border-border pb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-lg font-bold text-foreground">Registro de Visitas Diarias</h3>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-semibold">Año:</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-muted hover:bg-muted/80 border border-border text-foreground text-xs font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
+            >
+              <option value="current">2026 (Activo / En vivo)</option>
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
         </div>
         
-        {Object.keys(dailyVisits).length === 0 ? (
+        {Object.keys(displayedVisits).length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8 relative z-10">
-            No hay registros acumulados aún. ¡Las visitas se registrarán a partir de hoy!
+            No hay registros acumulados para la vista seleccionada.
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-2 relative z-10 custom-scrollbar">
-            {Object.entries(dailyVisits)
+            {Object.entries(displayedVisits)
               .sort((a, b) => b[0].localeCompare(a[0])) // Reverse chronological sorting
               .map(([dateString, count]) => {
                 // dateString: "2026-05-17 (Domingo 17 de Mayo)"
