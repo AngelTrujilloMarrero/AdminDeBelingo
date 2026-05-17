@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, set } from 'firebase/database';
 import { db } from '../lib/firebase';
 import {
   Activity,
@@ -18,6 +18,11 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
+  const [lookerStudioUrl, setLookerStudioUrl] = useState<string>('');
+  const [tempUrl, setTempUrl] = useState<string>('');
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+
   useEffect(() => {
     const visitCountRef = ref(db, 'visitCount');
     const unsubscribeVisitCount = onValue(visitCountRef, (snapshot) => {
@@ -28,10 +33,61 @@ export default function Analytics() {
       setLastUpdate(new Date());
     });
 
+    const lookerStudioRef = ref(db, 'analytics/lookerStudioUrl');
+    const unsubscribeLookerStudio = onValue(lookerStudioRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const url = snapshot.val();
+        setLookerStudioUrl(url);
+        setTempUrl(url);
+      }
+    });
+
     return () => {
       unsubscribeVisitCount();
+      unsubscribeLookerStudio();
     };
   }, []);
+
+  const handleSaveUrl = async () => {
+    if (!tempUrl.trim()) return;
+    
+    let cleanUrl = tempUrl.trim();
+    
+    // Extract src from pasted iframe string if applicable
+    if (cleanUrl.includes('<iframe') && cleanUrl.includes('src=')) {
+      const match = cleanUrl.match(/src=["']([^"']+)["']/);
+      if (match && match[1]) {
+        cleanUrl = match[1];
+      }
+    }
+    
+    setSavingUrl(true);
+    try {
+      await set(ref(db, 'analytics/lookerStudioUrl'), cleanUrl);
+      setLookerStudioUrl(cleanUrl);
+      setShowConfig(false);
+    } catch (error) {
+      console.error("Error saving Looker Studio URL:", error);
+    } finally {
+      setSavingUrl(false);
+    }
+  };
+
+  const handleDeleteUrl = async () => {
+    if (window.confirm("¿Seguro que deseas eliminar el dashboard embebido?")) {
+      setSavingUrl(true);
+      try {
+        await set(ref(db, 'analytics/lookerStudioUrl'), null);
+        setLookerStudioUrl('');
+        setTempUrl('');
+        setShowConfig(false);
+      } catch (error) {
+        console.error("Error deleting Looker Studio URL:", error);
+      } finally {
+        setSavingUrl(false);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -201,10 +257,105 @@ export default function Analytics() {
               <p className="text-xs text-muted-foreground mt-1 px-4 leading-normal">
                 Puedes consultar todas las métricas de tráfico y comportamiento de forma profesional desde tu cuenta de Google Analytics o su aplicación oficial.
               </p>
-          </div>
         </div>
       </div>
     </div>
   </div>
+
+      {/* Looker Studio Live Dashboard Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-indigo-600 animate-pulse" />
+            <h3 className="text-xl font-bold text-foreground">Panel de Datos en Vivo Integrado</h3>
+          </div>
+          {lookerStudioUrl && (
+            <button
+              onClick={() => setShowConfig(!showConfig)}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:hover:bg-indigo-900/40 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+            >
+              {showConfig ? "Ver Dashboard" : "Configurar Dashboard"}
+            </button>
+          )}
+        </div>
+
+        {/* Configuration Panel */}
+        {(showConfig || !lookerStudioUrl) && (
+          <div className="bg-card rounded-2xl border border-border p-6 md:p-8 shadow-sm space-y-6 relative overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-indigo-500/5 blur-2xl pointer-events-none" />
+            
+            <div className="space-y-2">
+              <h4 className="text-base font-bold text-foreground">
+                {lookerStudioUrl ? "Editar enlace del Dashboard" : "Integra tu Dashboard de Google Looker Studio"}
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Google Analytics bloquea por seguridad el uso de iframes directos. La solución profesional y elegante es crear un informe gratuito en <strong>Google Looker Studio</strong> (conectado a tu cuenta de Google Analytics 4) y pegar el enlace de inserción aquí.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-1.5">
+                  <div className="w-6 h-6 rounded-full bg-indigo-600/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">1</div>
+                  <h5 className="font-bold text-foreground">Crea tu informe</h5>
+                  <p className="text-muted-foreground leading-normal">Entra a <a href="https://lookerstudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Looker Studio</a> y crea un informe en blanco usando Google Analytics 4 como fuente de datos.</p>
+                </div>
+                <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-1.5">
+                  <div className="w-6 h-6 rounded-full bg-indigo-600/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">2</div>
+                  <h5 className="font-bold text-foreground">Obtén el enlace</h5>
+                  <p className="text-muted-foreground leading-normal">Haz clic en <strong>Compartir</strong> &rarr; <strong>Insertar informe</strong>. Activa la casilla de inserción y copia la URL o el código iframe generado.</p>
+                </div>
+                <div className="p-4 bg-muted/30 border border-border rounded-xl space-y-1.5">
+                  <div className="w-6 h-6 rounded-full bg-indigo-600/10 dark:bg-indigo-400/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">3</div>
+                  <h5 className="font-bold text-foreground">Pégalo aquí</h5>
+                  <p className="text-muted-foreground leading-normal">Pega el enlace o el código iframe en el campo de texto inferior y haz clic en Guardar. ¡Se integrará al instante!</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <input
+                  type="text"
+                  value={tempUrl}
+                  onChange={(e) => setTempUrl(e.target.value)}
+                  placeholder="https://lookerstudio.google.com/embed/reporting/..."
+                  className="flex-1 px-4 py-3 bg-muted/40 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 text-foreground"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveUrl}
+                    disabled={savingUrl || !tempUrl.trim()}
+                    className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    {savingUrl ? "Guardando..." : "Guardar Dashboard"}
+                  </button>
+                  {lookerStudioUrl && (
+                    <button
+                      onClick={handleDeleteUrl}
+                      disabled={savingUrl}
+                      className="px-5 py-3 bg-destructive hover:bg-destructive/90 text-white rounded-xl font-bold text-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dashboard IFrame Wrapper */}
+        {lookerStudioUrl && !showConfig && (
+          <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-md relative w-full h-[650px]">
+            <iframe
+              src={lookerStudioUrl}
+              className="w-full h-full border-0 bg-card"
+              allowFullScreen
+              loading="lazy"
+              sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
