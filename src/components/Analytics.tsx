@@ -5,11 +5,13 @@ import {
   Activity,
   Eye,
   ExternalLink,
-  Zap
+  Zap,
+  Calendar
 } from 'lucide-react';
 
 export default function Analytics() {
   const [visitCount, setVisitCount] = useState<number>(0);
+  const [dailyVisits, setDailyVisits] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
@@ -19,12 +21,20 @@ export default function Analytics() {
       if (snapshot.exists()) {
         setVisitCount(snapshot.val());
       }
+    });
+
+    const dailyVisitsRef = ref(db, 'dailyVisits');
+    const unsubscribeDailyVisits = onValue(dailyVisitsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setDailyVisits(snapshot.val());
+      }
       setLoading(false);
       setLastUpdate(new Date());
     });
 
     return () => {
       unsubscribeVisitCount();
+      unsubscribeDailyVisits();
     };
   }, []);
 
@@ -105,6 +115,51 @@ export default function Analytics() {
             <ExternalLink className="w-4 h-4 opacity-70" />
           </a>
         </div>
+      </div>
+
+      {/* Daily Visits Log */}
+      <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg p-6 md:p-8 space-y-6 relative">
+        <div className="flex items-center gap-2 relative z-10">
+          <Calendar className="w-5 h-5 text-indigo-600" />
+          <h3 className="text-lg font-bold text-foreground">Registro de Visitas Diarias</h3>
+        </div>
+        
+        {Object.keys(dailyVisits).length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8 relative z-10">
+            No hay registros acumulados aún. ¡Las visitas se registrarán a partir de hoy!
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-2 relative z-10 custom-scrollbar">
+            {Object.entries(dailyVisits)
+              .sort((a, b) => b[0].localeCompare(a[0])) // Reverse chronological sorting
+              .map(([dateString, count]) => {
+                // dateString: "2026-05-17 (Domingo 17 de Mayo)"
+                const displayName = dateString.includes('(') 
+                  ? dateString.split('(')[1].replace(')', '') 
+                  : dateString;
+                const isoDate = dateString.split(' ')[0];
+                
+                return (
+                  <div 
+                    key={dateString} 
+                    className="p-4 bg-muted/40 hover:bg-indigo-500/5 hover:border-indigo-500/20 border border-border rounded-2xl flex items-center justify-between transition-all group"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors capitalize">
+                        {displayName}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {isoDate}
+                      </p>
+                    </div>
+                    <span className="px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-black text-xs rounded-xl shadow-sm border border-indigo-100/30 dark:border-indigo-900/30">
+                      {count.toLocaleString('es-ES')}
+                    </span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
     </div>
   );
