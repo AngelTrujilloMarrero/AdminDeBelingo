@@ -21,7 +21,7 @@ interface FestivalItem {
   municipio: string;
 }
 
-const TELEGRAM_PHOTOS_API = 'https://de-belingo-con-angel.vercel.app/api/telegram-send-photos';
+const TELEGRAM_PHOTOS_API = `${import.meta.env.VITE_VERCEL_API_URL || 'https://de-belingo-con-angel-debelingoconangels-projects.vercel.app'}/api/telegram-send-photos`;
 
 export default function TelegramPhotoQueue({ events }: TelegramPhotoQueueProps) {
   const [queue, setQueue] = useState<Record<string, QueueEntry>>({});
