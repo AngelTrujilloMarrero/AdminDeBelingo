@@ -127,7 +127,7 @@ export default function Analytics() {
           </a>
           
           <a
-            href="https://analytics.google.com/analytics/web/#/a306453112p432255455/realtime/pages?params=_u..nav%3Dmaui"
+            href="https://analytics.google.com/analytics/web/#/a306453112p432255455/reports/reportinghub?params=_u..nav%3Dmaui%26_u.dateOption%3Dtoday%26_u.comparisonOption%3Ddisabled"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2.5 px-6 py-4 bg-muted hover:bg-muted/80 text-foreground rounded-2xl font-bold transition-all border border-border hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
