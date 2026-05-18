@@ -16,8 +16,7 @@ import {
   Lock,
   X,
   AlertTriangle,
-  CheckCircle2,
-  Circle
+  
 } from 'lucide-react';
 
 interface EventListProps {
@@ -39,7 +38,7 @@ const getDayGradient = (dayName: string): string => {
 };
 
 export default function EventList({ events, onEditEvent }: EventListProps) {
-  const { checkIfEventAlreadyDeleted, deleteEvent, checkIfArchived, toggleCompleted } = useEventActions();
+  const { checkIfEventAlreadyDeleted, deleteEvent, checkIfArchived } = useEventActions();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDeleteData, setEventToDeleteData] = useState<{ id: string; orquesta: string; eventData: Event } | null>(null);
   const [deletionReason, setDeletionReason] = useState<string>('');
@@ -228,19 +227,7 @@ export default function EventList({ events, onEditEvent }: EventListProps) {
                         <div className="flex flex-col space-y-2 ml-4">
                           {!event.isArchived ? (
                             <>
-                            <button
-                              onClick={() => toggleCompleted(event)}
-                              className={`flex items-center space-x-1 font-medium py-2 px-3 rounded-lg shadow-md 
-                                         hover:shadow-lg transform hover:scale-105 active:scale-95 
-                                         transition-all duration-200 
-                                         ${event.completada 
-                                           ? 'bg-green-500 text-white hover:bg-green-600' 
-                                           : 'bg-white/50 dark:bg-black/20 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-black/40'}`}
-                              title={event.completada ? "Marcar como pendiente" : "Marcar como completada"}
-                            >
-                              {event.completada ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                              <span className="text-sm">{event.completada ? 'Hecho' : 'Hacer'}</span>
-                            </button>
+                            
 
                             <button
                               onClick={() => onEditEvent(event)}
