@@ -1,12 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../lib/firebase';
+import { processDailyVisits, calculateStats, formatNumber, formatPercentage, getWeekLabel } from '../lib/analyticsUtils';
+import VisitCalendar from './VisitCalendar';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart
+} from 'recharts';
 import {
   Activity,
   Eye,
   ExternalLink,
   Zap,
-  Calendar
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Award,
+  Target,
+  Flame,
+  Crown,
+  CalendarDays,
+  BarChart3,
+  Waves,
+  AlertTriangle,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 
 export default function Analytics() {
@@ -16,6 +48,101 @@ export default function Analytics() {
   const [historicalDailyVisits, setHistoricalDailyVisits] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+
+  interface MonthGroupCardProps {
+    year: string;
+    monthName: string;
+    monthNum: number;
+    totalVisits: number;
+    days: number;
+    details: Record<string, number>;
+  }
+
+  function MonthGroupCard({ year, monthName, monthNum, totalVisits, days, details }: MonthGroupCardProps) {
+    const [expanded, setExpanded] = useState(false);
+    const sortedDays = Object.entries(details).sort((a, b) => b[0].localeCompare(a[0]));
+    const avgVisits = Math.round(totalVisits / days);
+    const maxDay = sortedDays.reduce((max, [date, count]) => count > max[1] ? [date, count] : max, sortedDays[0]);
+    const minDay = sortedDays.reduce((min, [date, count]) => count < min[1] ? [date, count] : min, sortedDays[0]);
+
+    const monthColors: Record<number, string> = {
+      1: 'from-slate-500/20 to-slate-600/20',
+      2: 'from-rose-500/20 to-rose-600/20',
+      3: 'from-green-500/20 to-green-600/20',
+      4: 'from-emerald-500/20 to-emerald-600/20',
+      5: 'from-teal-500/20 to-teal-600/20',
+      6: 'from-cyan-500/20 to-cyan-600/20',
+      7: 'from-blue-500/20 to-blue-600/20',
+      8: 'from-indigo-500/20 to-indigo-600/20',
+      9: 'from-violet-500/20 to-violet-600/20',
+      10: 'from-purple-500/20 to-purple-600/20',
+      11: 'from-fuchsia-500/20 to-fuchsia-600/20',
+      12: 'from-orange-500/20 to-orange-600/20'
+    };
+
+    return (
+      <div className={`bg-gradient-to-r ${monthColors[monthNum] || 'from-muted to-muted'} rounded-2xl border border-border overflow-hidden`}>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-4">
+            {expanded ? (
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            )}
+            <div className="text-left">
+              <p className="text-lg font-black text-foreground">{monthName} {year}</p>
+              <p className="text-xs text-muted-foreground">{days} días registrados</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-black text-foreground">{formatNumber(totalVisits)}</p>
+            <p className="text-[10px] text-muted-foreground">~{formatNumber(avgVisits)}/día media</p>
+          </div>
+        </button>
+
+        {expanded && (
+          <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-green-500/10 rounded-lg p-2 border border-green-500/20">
+                <span className="text-muted-foreground">Día más Visits:</span>
+                <p className="font-bold text-green-600 dark:text-green-400 truncate">
+                  {maxDay[0].includes('(') ? maxDay[0].split('(')[1].replace(')', '') : maxDay[0].split(' ')[0]}
+                </p>
+                <p className="font-black text-foreground">{formatNumber(maxDay[1])}</p>
+              </div>
+              <div className="bg-red-500/10 rounded-lg p-2 border border-red-500/20">
+                <span className="text-muted-foreground">Día menos Visits:</span>
+                <p className="font-bold text-red-600 dark:text-red-400 truncate">
+                  {minDay[0].includes('(') ? minDay[0].split('(')[1].replace(')', '') : minDay[0].split(' ')[0]}
+                </p>
+                <p className="font-black text-foreground">{formatNumber(minDay[1])}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+              {sortedDays.map(([dateStr, count]) => {
+                const displayName = dateStr.includes('(') ? dateStr.split('(')[1].replace(')', '') : dateStr;
+                const isoDate = dateStr.split(' ')[0];
+                return (
+                  <div key={dateStr} className="bg-muted/50 rounded-lg p-2 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-foreground truncate capitalize">{displayName}</p>
+                      <p className="text-[8px] text-muted-foreground font-mono">{isoDate}</p>
+                    </div>
+                    <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 ml-1 whitespace-nowrap">
+                      {count >= 1000 ? `${(count/1000).toFixed(1)}k` : count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   useEffect(() => {
     const visitCountRef = ref(db, 'visitCount');
@@ -52,6 +179,122 @@ export default function Analytics() {
     };
   }, []);
 
+  const displayedVisits = useMemo(() => {
+    return selectedYear === 'current'
+      ? dailyVisits
+      : (historicalDailyVisits[selectedYear] || {});
+  }, [selectedYear, dailyVisits, historicalDailyVisits]);
+
+  const isCurrentYear = selectedYear === 'current';
+  const selectedYearNum = selectedYear === 'current' ? new Date().getFullYear() : parseInt(selectedYear);
+
+  const dailyData = useMemo(() => {
+    return processDailyVisits(displayedVisits);
+  }, [displayedVisits]);
+
+  const stats = useMemo(() => {
+    const result = calculateStats(dailyData);
+    if (!result) return null;
+
+    if (!isCurrentYear) {
+      const yearData = dailyData.filter(d => d.year === selectedYearNum);
+      
+      const weekMap: Record<string, { total: number; days: number }> = {};
+      yearData.forEach(d => {
+        const key = `${d.year}-${d.weekNumber}`;
+        if (!weekMap[key]) weekMap[key] = { total: 0, days: 0 };
+        weekMap[key].total += d.visits;
+        weekMap[key].days += 1;
+      });
+      const weeks = Object.values(weekMap);
+      const sortedWeeks = weeks.sort((a, b) => b.total - a.total);
+      
+      const monthMap: Record<string, { total: number; days: number }> = {};
+      yearData.forEach(d => {
+        const key = `${d.year}-${d.month}`;
+        if (!monthMap[key]) monthMap[key] = { total: 0, days: 0 };
+        monthMap[key].total += d.visits;
+        monthMap[key].days += 1;
+      });
+      const months = Object.values(monthMap);
+      const sortedMonths = months.sort((a, b) => b.total - a.total);
+
+      const sortedDays = yearData.sort((a, b) => b.visits - a.visits);
+      const sortedDaysAsc = yearData.sort((a, b) => a.visits - b.visits);
+
+      return {
+        ...result,
+        bestWeek: sortedWeeks[0] ? { 
+          ...sortedWeeks[0], 
+          totalVisits: sortedWeeks[0].total,
+          weekStart: '', 
+          weekEnd: '', 
+          weekNumber: 0, 
+          year: selectedYearNum,
+          avgDaily: sortedWeeks[0].days > 0 ? sortedWeeks[0].total / sortedWeeks[0].days : 0
+        } : null,
+        bestMonth: sortedMonths[0] ? {
+          ...sortedMonths[0],
+          totalVisits: sortedMonths[0].total,
+          month: 0,
+          year: selectedYearNum,
+          monthName: '',
+          avgDaily: sortedMonths[0].days > 0 ? sortedMonths[0].total / sortedMonths[0].days : 0
+        } : null,
+        maxVisits: sortedDays[0]?.visits || 0,
+        maxDate: sortedDays[0]?.isoDate || '',
+        maxDayName: sortedDays[0]?.dayName || '',
+        minVisits: sortedDaysAsc[0]?.visits || 0,
+        minDate: sortedDaysAsc[0]?.isoDate || '',
+        minDayName: sortedDaysAsc[0]?.dayName || '',
+        weeklyChange: 0,
+        monthlyChange: 0,
+        currentWeek: null,
+        previousWeek: null,
+        currentMonth: null,
+        previousMonth: null,
+        yearTotal: yearData.reduce((sum, d) => sum + d.visits, 0)
+      };
+    }
+
+    return result;
+  }, [dailyData, isCurrentYear, selectedYearNum]);
+
+  const chartData = useMemo(() => {
+    return dailyData.slice(-30).map(d => ({
+      date: d.isoDate.slice(5),
+      visits: d.visits,
+      day: d.dayName
+    }));
+  }, [dailyData]);
+
+  const dayOfWeekChartData = useMemo(() => {
+    if (!stats) return [];
+    return stats.dayOfWeekStats.map(d => ({
+      day: d.day.substring(0, 3),
+      visitas: d.avg,
+      total: d.total
+    }));
+  }, [stats]);
+
+  const weeklyChartData = useMemo(() => {
+    if (!stats) return [];
+    return stats.weeklyData.slice(0, 12).map(w => ({
+      semana: `S${w.weekNumber}`,
+      visitas: w.totalVisits,
+      promedio: Math.round(w.avgDaily)
+    }));
+  }, [stats]);
+
+  const monthlyChartData = useMemo(() => {
+    if (!stats) return [];
+    return stats.monthlyData.slice(0, 12).map(m => ({
+      mes: m.monthName.substring(0, 3),
+      visitas: m.totalVisits,
+      promedio: Math.round(m.avgDaily)
+    }));
+  }, [stats]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
@@ -61,17 +304,13 @@ export default function Analytics() {
     );
   }
 
-  // Get available historical years sorted
   const availableYears = Object.keys(historicalDailyVisits).sort((a, b) => b.localeCompare(a));
 
-  // Determine displayed list
-  const displayedVisits = selectedYear === 'current'
-    ? dailyVisits
-    : (historicalDailyVisits[selectedYear] || {});
+  const TrendIcon = stats?.trend === 'up' ? TrendingUp : stats?.trend === 'down' ? TrendingDown : Minus;
+  const trendColor = stats?.trend === 'up' ? 'text-green-600' : stats?.trend === 'down' ? 'text-red-600' : 'text-muted-foreground';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
-      {/* Header */}
+    <div className="max-w-6xl mx-auto space-y-8 pb-12">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
@@ -92,9 +331,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Main Counter Centerpiece */}
       <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg relative p-8 md:p-12 text-center space-y-8">
-        {/* Glowing background highlights */}
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
 
@@ -113,7 +350,6 @@ export default function Analytics() {
           </p>
         </div>
 
-        {/* Action Buttons Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto relative z-10 pt-4">
           <a
             href="https://analytics.google.com/"
@@ -139,64 +375,443 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Daily Visits Log */}
-      <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg p-6 md:p-8 space-y-6 relative">
-        {/* Title and Year Selector Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10 border-b border-border pb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-lg font-bold text-foreground">Registro de Visitas Diarias</h3>
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDays className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Días Registrados</span>
+            </div>
+            <p className="text-2xl font-black text-foreground">{stats.totalDays}</p>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-semibold">Año:</span>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-muted hover:bg-muted/80 border border-border text-foreground text-xs font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
-            >
-              <option value="current">2026 (Activo / En vivo)</option>
-              {availableYears.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
+
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Waves className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Media Diaria</span>
+            </div>
+            <p className="text-2xl font-black text-foreground">{formatNumber(stats.average)}</p>
           </div>
+
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Mediana</span>
+            </div>
+            <p className="text-2xl font-black text-foreground">{formatNumber(stats.median)}</p>
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-4 h-4 text-rose-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Desviación</span>
+            </div>
+            <p className="text-2xl font-black text-foreground">{formatNumber(stats.stdDev)}</p>
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Award className="w-4 h-4 text-yellow-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Récord Máximo</span>
+            </div>
+            <p className="text-2xl font-black text-foreground">{formatNumber(stats.maxVisits)}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{stats.maxDayName}</p>
+          </div>
+
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-cyan-500" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Mínimo</span>
+            </div>
+            <p className="text-2xl font-black text-foreground">{formatNumber(stats.minVisits)}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{stats.minDayName}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <VisitCalendar dailyData={dailyData} />
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <Star className="w-5 h-5 text-yellow-500" />
+              <h3 className="text-lg font-bold text-foreground">Récord Absoluto</h3>
+            </div>
+            {stats && (
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-2xl p-4 border border-yellow-500/30">
+                  <p className="text-3xl font-black text-foreground">{formatNumber(stats.maxVisits)}</p>
+                  <p className="text-sm font-semibold text-muted-foreground">{stats.maxDate}</p>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 font-bold">{stats.maxDayName}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <Crown className="w-5 h-5 text-indigo-500" />
+              <h3 className="text-lg font-bold text-foreground">Día Más Visitado</h3>
+            </div>
+            {stats && (
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl p-4 border border-indigo-500/30">
+                  <p className="text-2xl font-black text-foreground">{stats.mostVisitedDay}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Promedio: {formatNumber(Math.round(stats.dayOfWeekStats.find(d => d.day === stats.mostVisitedDay)?.avg || 0))} visitas
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <Flame className="w-5 h-5 text-orange-500" />
+              <h3 className="text-lg font-bold text-foreground">Estadísticas de Racha</h3>
+            </div>
+            {stats && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-green-500/10 rounded-xl p-3 border border-green-500/20">
+                  <p className="text-lg font-black text-green-600 dark:text-green-400">{stats.consecutiveGrowthDays}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Días Creciendo</p>
+                </div>
+                <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20">
+                  <p className="text-lg font-black text-red-600 dark:text-red-400">{stats.consecutiveDeclineDays}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Días Bajando</p>
+                </div>
+                <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20">
+                  <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{stats.longestGrowthStreak}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Racha Máx. Crec.</p>
+                </div>
+                <div className="bg-rose-500/10 rounded-xl p-3 border border-rose-500/20">
+                  <p className="text-lg font-black text-rose-600 dark:text-rose-400">{stats.longestDeclineStreak}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">Racha Máx. Baja</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <Award className="w-5 h-5 text-green-500" />
+            <h3 className="text-lg font-bold text-foreground">Semana con Más Visitas</h3>
+          </div>
+          {stats && stats.bestWeek && (
+            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl p-4 border border-green-500/20">
+              <p className="text-2xl font-black text-foreground">{formatNumber(stats.bestWeek.totalVisits)}</p>
+              <p className="text-sm text-muted-foreground">{getWeekLabel(stats.bestWeek)}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 font-semibold">
+                {stats.bestWeek.days} días · {formatNumber(Math.round(stats.bestWeek.avgDaily))} media
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <BarChart3 className="w-5 h-5 text-purple-500" />
+            <h3 className="text-lg font-bold text-foreground">Mes con Más Visitas</h3>
+          </div>
+          {stats && stats.bestMonth && (
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl p-4 border border-purple-500/20">
+              <p className="text-2xl font-black text-foreground">{formatNumber(stats.bestMonth.totalVisits)}</p>
+              <p className="text-sm text-muted-foreground">{stats.bestMonth.monthName} {stats.bestMonth.year}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">
+                {stats.bestMonth.days} días · {formatNumber(Math.round(stats.bestMonth.avgDaily))} media
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-bold text-foreground">Comparación Semanal</h3>
+            </div>
+            {isCurrentYear && stats && (
+              <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${stats.weeklyChange >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                {stats.weeklyChange >= 0 ? <ArrowUpRight className="w-4 h-4 text-green-600" /> : <ArrowDownRight className="w-4 h-4 text-red-600" />}
+                <span className={`text-sm font-bold ${stats.weeklyChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatPercentage(stats.weeklyChange)}
+                </span>
+              </div>
+            )}
+          </div>
+          {isCurrentYear && stats && stats.currentWeek && stats.previousWeek ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-muted/50 rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase mb-1">Semana Actual</p>
+                <p className="text-xl font-black text-foreground">{formatNumber(stats.currentWeek.totalVisits)}</p>
+                <p className="text-[10px] text-muted-foreground">{getWeekLabel(stats.currentWeek)}</p>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase mb-1">Semana Anterior</p>
+                <p className="text-xl font-black text-foreground">{formatNumber(stats.previousWeek.totalVisits)}</p>
+                <p className="text-[10px] text-muted-foreground">{getWeekLabel(stats.previousWeek)}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/30 rounded-xl p-6 text-center">
+              <p className="text-sm text-muted-foreground">Comparación no disponible para años históricos</p>
+              <p className="text-xs text-muted-foreground mt-1">Solo disponible para el año en curso</p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-violet-500" />
+              <h3 className="text-lg font-bold text-foreground">Comparación Mensual</h3>
+            </div>
+            {isCurrentYear && stats && (
+              <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${stats.monthlyChange >= 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                {stats.monthlyChange >= 0 ? <ArrowUpRight className="w-4 h-4 text-green-600" /> : <ArrowDownRight className="w-4 h-4 text-red-600" />}
+                <span className={`text-sm font-bold ${stats.monthlyChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatPercentage(stats.monthlyChange)}
+                </span>
+              </div>
+            )}
+          </div>
+          {isCurrentYear && stats && stats.currentMonth && stats.previousMonth ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-muted/50 rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase mb-1">Mes Actual</p>
+                <p className="text-xl font-black text-foreground">{formatNumber(stats.currentMonth.totalVisits)}</p>
+                <p className="text-[10px] text-muted-foreground">{stats.currentMonth.monthName}</p>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase mb-1">Mes Anterior</p>
+                <p className="text-xl font-black text-foreground">{formatNumber(stats.previousMonth.totalVisits)}</p>
+                <p className="text-[10px] text-muted-foreground">{stats.previousMonth.monthName}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-muted/30 rounded-xl p-6 text-center">
+              <p className="text-sm text-muted-foreground">Comparación no disponible para años históricos</p>
+              <p className="text-xs text-muted-foreground mt-1">Solo disponible para el año en curso</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-6">
+          <Activity className="w-5 h-5 text-indigo-500" />
+          <h3 className="text-lg font-bold text-foreground">Evolución de Visitas (Últimos 30 Días)</h3>
+          <div className={`ml-auto flex items-center gap-1 px-2 py-1 rounded-lg ${trendColor === 'text-green-600' ? 'bg-green-100 dark:bg-green-900/30' : trendColor === 'text-red-600' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-muted'}`}>
+            <TrendIcon className={`w-4 h-4 ${trendColor}`} />
+            <span className={`text-xs font-bold ${trendColor}`}>
+              {stats?.trend === 'up' ? 'Tendencia Alza' : stats?.trend === 'down' ? 'Tendencia Baja' : 'Estable'}
+            </span>
+          </div>
+        </div>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="visits"
+                stroke="#6366f1"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorVisits)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <BarChart3 className="w-5 h-5 text-emerald-500" />
+            <h3 className="text-lg font-bold text-foreground">Visitas por Día de la Semana</h3>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dayOfWeekChartData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis dataKey="day" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={60} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: number) => [formatNumber(value), 'Promedio']}
+                />
+                <Bar dataKey="visitas" fill="#10b981" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <Calendar className="w-5 h-5 text-purple-500" />
+            <h3 className="text-lg font-bold text-foreground">Visitas por Mes</h3>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="mes" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: number) => [formatNumber(value), 'Visitas']}
+                />
+                <Bar dataKey="visitas" fill="#a855f7" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Waves className="w-4 h-4 text-indigo-500" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Media 7 Días</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{stats ? formatNumber(stats.movingAverage7Days) : '-'}</p>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Media 30 Días</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{stats ? formatNumber(stats.movingAverage30Days) : '-'}</p>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-4 h-4 text-purple-500" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Visitas Año Actual</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{stats ? formatNumber(stats.yearTotal) : '-'}</p>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Días Anómalos</span>
+          </div>
+          <p className="text-xl font-black text-foreground">{stats ? stats.anomalyDays.length : '-'}</p>
+        </div>
+      </div>
+
+      {stats && stats.anomalyDays.length > 0 && (
+        <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <h3 className="text-lg font-bold text-foreground">Días con Picos Inhabituales</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {stats.anomalyDays.slice(0, 10).map((day, idx) => (
+              <div key={idx} className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+                <p className="text-sm font-bold text-foreground">{day.date}</p>
+                <p className="text-lg font-black text-amber-600 dark:text-amber-400">{formatNumber(day.visits)}</p>
+                <p className="text-[10px] text-muted-foreground">esperado: {formatNumber(day.expected)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-6">
+          <Calendar className="w-5 h-5 text-indigo-500" />
+          <h3 className="text-lg font-bold text-foreground">Registro de Visitas Diarias</h3>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="ml-auto bg-muted hover:bg-muted/80 border border-border text-foreground text-xs font-bold py-1.5 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer"
+          >
+            <option value="current">2026 (Activo)</option>
+            {availableYears.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
         </div>
         
         {Object.keys(displayedVisits).length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8 relative z-10">
+          <p className="text-sm text-muted-foreground text-center py-8">
             No hay registros acumulados para la vista seleccionada.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[300px] overflow-y-auto pr-2 relative z-10 custom-scrollbar">
-            {Object.entries(displayedVisits)
-              .sort((a, b) => b[0].localeCompare(a[0])) // Reverse chronological sorting
-              .map(([dateString, count]) => {
-                // dateString: "2026-05-17 (Domingo 17 de Mayo)"
-                const displayName = dateString.includes('(') 
-                  ? dateString.split('(')[1].replace(')', '') 
-                  : dateString;
+          <div className="space-y-3">
+            {(() => {
+              const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+              
+              const groupedByMonth: Record<string, { total: number; days: number; details: Record<string, number> }> = {};
+              
+              Object.entries(displayedVisits).forEach(([dateString, count]) => {
                 const isoDate = dateString.split(' ')[0];
+                const [year, month] = isoDate.split('-');
+                const monthKey = `${year}-${month}`;
+                
+                if (!groupedByMonth[monthKey]) {
+                  groupedByMonth[monthKey] = { total: 0, days: 0, details: {} };
+                }
+                groupedByMonth[monthKey].total += count;
+                groupedByMonth[monthKey].days += 1;
+                groupedByMonth[monthKey].details[dateString] = count;
+              });
+              
+              const sortedMonths = Object.entries(groupedByMonth).sort((a, b) => b[0].localeCompare(a[0]));
+              
+              return sortedMonths.map(([monthKey, data]) => {
+                const [year, month] = monthKey.split('-');
+                const monthName = monthNames[parseInt(month) - 1];
                 
                 return (
-                  <div 
-                    key={dateString} 
-                    className="p-4 bg-muted/40 hover:bg-indigo-500/5 hover:border-indigo-500/20 border border-border rounded-2xl flex items-center justify-between transition-all group"
-                  >
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors capitalize">
-                        {displayName}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-mono">
-                        {isoDate}
-                      </p>
-                    </div>
-                    <span className="px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-black text-xs rounded-xl shadow-sm border border-indigo-100/30 dark:border-indigo-900/30">
-                      {count.toLocaleString('es-ES')}
-                    </span>
-                  </div>
+                  <MonthGroupCard
+                    key={monthKey}
+                    year={year}
+                    monthName={monthName}
+                    monthNum={parseInt(month)}
+                    totalVisits={data.total}
+                    days={data.days}
+                    details={data.details}
+                  />
                 );
-              })}
+              });
+            })()}
           </div>
         )}
       </div>
