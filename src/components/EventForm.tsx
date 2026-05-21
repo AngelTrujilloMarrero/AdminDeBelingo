@@ -533,7 +533,13 @@ export default function EventForm({
 
     const isDuplicate = events.some(e => {
       if (e.cancelado) return false;
-      if (editingEvent && e.id === editingEvent.id) return false;
+      if (editingEvent && !isRestoredEvent && (e.id === editingEvent.id || (
+        e.day === editingEvent.day &&
+        e.orquesta === editingEvent.orquesta &&
+        e.municipio === editingEvent.municipio &&
+        e.hora === editingEvent.hora &&
+        (e.lugar || '') === (editingEvent.lugar || '')
+      ))) return false;
       if (e.day !== eventDate) return false;
       
       const eNormalizedOrq = normalizeString(e.orquesta);
@@ -569,7 +575,13 @@ export default function EventForm({
 
     const conflictingEvents = events.filter(e => {
       if (e.cancelado) return false;
-      if (editingEvent && e.id === editingEvent.id) return false;
+      if (editingEvent && !isRestoredEvent && (e.id === editingEvent.id || (
+        e.day === editingEvent.day &&
+        e.orquesta === editingEvent.orquesta &&
+        e.municipio === editingEvent.municipio &&
+        e.hora === editingEvent.hora &&
+        (e.lugar || '') === (editingEvent.lugar || '')
+      ))) return false;
       if (e.day !== eventDate) return false;
       
       const eNormalizedOrq = normalizeString(e.orquesta);
