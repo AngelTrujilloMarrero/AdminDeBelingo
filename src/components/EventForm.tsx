@@ -526,36 +526,83 @@ export default function EventForm({
       return;
     }
 
-    const normalizedOrq = normalizeString(orquesta);
+    // Dividir orquestas del formulario en lista individual para comparar correctamente
+    const formOrqList = orquesta.split(',').map(o => normalizeString(o.trim())).filter(o => o.length > 0);
     const currentFormData = formData;
 
-    const isDJ = normalizeString(orquesta) === 'dj';
+    const isDJ = formOrqList.length === 1 && formOrqList[0] === 'dj';
 
-    const isDuplicate = events.some(e => {
-      if (e.cancelado) return false;
-      if (editingEvent && !isRestoredEvent && (e.id === editingEvent.id || (
-        e.day === editingEvent.day &&
-        e.orquesta === editingEvent.orquesta &&
-        e.municipio === editingEvent.municipio &&
-        e.hora === editingEvent.hora &&
-        (e.lugar || '') === (editingEvent.lugar || '')
-      ))) return false;
-      if (e.day !== eventDate) return false;
-      
-      const eNormalizedOrq = normalizeString(e.orquesta);
-      const matchesOrq = eNormalizedOrq.includes(normalizedOrq) || normalizedOrq.includes(eNormalizedOrq);
-      if (!matchesOrq) return false;
-      
-      const matchesLugar = (currentFormData.lugar && e.lugar && 
+    // Función auxiliar: comprueba si alguna orquesta individual del formulario
+    // coincide con alguna orquesta individual de un evento existente
+    const hasMatchingOrquesta = (eventOrquesta: string): boolean => {
+      const eventOrqList = eventOrquesta.split(',').map(o => normalizeString(o.trim())).filter(o => o.length > 0);
+      return formOrqList.some(fo =>
+        eventOrqList.some(eo => eo.includes(fo) || fo.includes(eo))
+      );
+    };
+
+    // Debug: verificar que editingEvent tiene id válido
+    if (editingEvent && !editingEvent.id) {
+      console.warn('[EventForm] ⚠️ editingEvent no tiene id:', editingEvent);
+    }
+
+    // ============================================================
+    // SISTEMA DE VALIDACIÓN ROBUSTO (3 niveles de comprobación)
+    // Cada alerta permite Cancelar o Continuar
+    // ============================================================
+
+    const [hours, mins] = hora.split(':').map(Number);
+    const timeInMinutes = hours * 60 + mins;
+
+    // Función auxiliar: comprueba si un evento coincide en lugar/municipio
+    const matchesVenue = (e: Event): boolean => {
+      const matchesLugar = !!(currentFormData.lugar && e.lugar && 
         (normalizeString(e.lugar!).includes(normalizeString(currentFormData.lugar)) || 
          normalizeString(currentFormData.lugar).includes(normalizeString(e.lugar!))));
-      const matchesMunicipio = normalizeString(e.municipio!).includes(normalizeString(municipio)) || 
-                           normalizeString(municipio).includes(normalizeString(e.municipio!));
-      
+      const matchesMunicipio = !!(e.municipio &&
+        (normalizeString(e.municipio!).includes(normalizeString(municipio)) || 
+         normalizeString(municipio).includes(normalizeString(e.municipio!))));
       return matchesLugar || matchesMunicipio;
+    };
+
+    // Función auxiliar: comprueba si un evento es del mismo día y no es el que se edita
+    const isRelevantEvent = (e: Event): boolean => {
+      if (e.cancelado) return false;
+      if (editingEvent && !isRestoredEvent && e.id === editingEvent.id) return false;
+      if (e.day !== eventDate) return false;
+      return true;
+    };
+
+    // ── CHECK 1: Conflicto de LUGAR + HORA ──
+    // Dos eventos en el mismo sitio a la misma hora (independiente de orquesta)
+    const venueTimeConflicts = events.filter(e => {
+      if (!isRelevantEvent(e)) return false;
+      if (!matchesVenue(e)) return false;
+      const [eh, em] = e.hora.split(':').map(Number);
+      const eventTimeInMinutes = eh * 60 + em;
+      return Math.abs(timeInMinutes - eventTimeInMinutes) === 0;
     });
 
-    if (isDuplicate && !isDJ) {
+    if (venueTimeConflicts.length > 0) {
+      const conflictList = venueTimeConflicts.map(e => 
+        `• ${e.orquesta} en ${e.lugar || e.municipio} a las ${e.hora}`
+      ).join('\n');
+      const confirmVenue = window.confirm(
+        `🚫 Ya existe un evento en el mismo lugar a la misma hora:\n\n${conflictList}\n\n¿Estás seguro de que quieres continuar?`
+      );
+      if (!confirmVenue) return;
+    }
+
+    // ── CHECK 2: DUPLICADO de orquesta + lugar ──
+    // Misma orquesta, mismo día, mismo sitio (cualquier hora)
+    const isDuplicate = events.some(e => {
+      if (!isRelevantEvent(e)) return false;
+      if (!hasMatchingOrquesta(e.orquesta)) return false;
+      return matchesVenue(e);
+    });
+
+    // Solo avisar si no se avisó ya por el check 1 (evitar doble alerta del mismo evento)
+    if (isDuplicate && !isDJ && venueTimeConflicts.length === 0) {
       const confirmDuplicate = window.confirm('⚠️ Ya existe un evento con esta misma fecha, orquesta y lugar/municipio.\n\n¿Estás seguro de que quieres continuar?');
       if (!confirmDuplicate) return;
     }
@@ -569,36 +616,34 @@ export default function EventForm({
       }
     }
 
-    const [hours, mins] = hora.split(':').map(Number);
-    const timeInMinutes = hours * 60 + mins;
+    // ── CHECK 3: PROXIMIDAD de orquesta (< 2 horas) ──
+    // La misma orquesta tiene otro evento a menos de 2 horas en el mismo día
     const twoHoursInMinutes = 120;
 
     const conflictingEvents = events.filter(e => {
-      if (e.cancelado) return false;
-      if (editingEvent && !isRestoredEvent && (e.id === editingEvent.id || (
-        e.day === editingEvent.day &&
-        e.orquesta === editingEvent.orquesta &&
-        e.municipio === editingEvent.municipio &&
-        e.hora === editingEvent.hora &&
-        (e.lugar || '') === (editingEvent.lugar || '')
-      ))) return false;
-      if (e.day !== eventDate) return false;
+      if (!isRelevantEvent(e)) return false;
       
-      const eNormalizedOrq = normalizeString(e.orquesta);
-      if (eNormalizedOrq === 'dj') return false;
+      // Ignorar si el evento existente es solo DJ
+      const eOrqList = e.orquesta.split(',').map(o => normalizeString(o.trim())).filter(o => o.length > 0);
+      if (eOrqList.length === 1 && eOrqList[0] === 'dj') return false;
       
-      const matchesOrq = eNormalizedOrq.includes(normalizedOrq) || normalizedOrq.includes(eNormalizedOrq);
-      if (!matchesOrq) return false;
+      if (!hasMatchingOrquesta(e.orquesta)) return false;
       
       const [eh, em] = e.hora.split(':').map(Number);
       const eventTimeInMinutes = eh * 60 + em;
       const diff = Math.abs(timeInMinutes - eventTimeInMinutes);
       
-      return diff > 0 && diff <= twoHoursInMinutes;
+      // Incluir diff === 0 (misma hora) y hasta 2 horas
+      return diff <= twoHoursInMinutes;
     });
 
-    if (conflictingEvents.length > 0) {
-      const conflictList = conflictingEvents.map(e => 
+    // Filtrar los que ya se avisaron en checks anteriores para no repetir alertas
+    const newConflicts = conflictingEvents.filter(ce => 
+      !venueTimeConflicts.some(vc => vc.id === ce.id)
+    );
+
+    if (newConflicts.length > 0) {
+      const conflictList = newConflicts.map(e => 
         `• ${e.orquesta} en ${e.lugar || e.municipio} a las ${e.hora}`
       ).join('\n');
       const confirmConflict = window.confirm(
