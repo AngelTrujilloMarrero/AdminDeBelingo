@@ -305,8 +305,10 @@ export function calculateStats(dailyData: DailyVisitData[]): StatsResult | null 
   else if (lastDiff < -average * 0.1) trend = 'down';
   
   const anomalyDays: { date: string; visits: number; expected: number; deviation: number }[] = [];
+  const todayISO = now.toISOString().split('T')[0];
   
   dailyData.forEach(d => {
+    if (d.isoDate === todayISO) return;
     const deviation = Math.abs(d.visits - average);
     if (deviation > stdDev * 2) {
       anomalyDays.push({
