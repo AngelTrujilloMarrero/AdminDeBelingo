@@ -304,6 +304,15 @@ export default function Analytics() {
     );
   }
 
+  const todayISO = new Date().toISOString().split('T')[0];
+  const todayKey = Object.keys(displayedVisits).find(k => k.startsWith(todayISO));
+  const todayVisits = todayKey ? displayedVisits[todayKey] : 0;
+  const yesterdayISO = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const yesterdayKey = Object.keys(displayedVisits).find(k => k.startsWith(yesterdayISO));
+  const yesterdayVisits = yesterdayKey ? displayedVisits[yesterdayKey] : 0;
+  const todayVsYesterday = yesterdayVisits > 0 ? ((todayVisits - yesterdayVisits) / yesterdayVisits) * 100 : 0;
+  const todayVsAvg = stats && stats.average > 0 ? ((todayVisits - stats.average) / stats.average) * 100 : 0;
+
   const availableYears = Object.keys(historicalDailyVisits).sort((a, b) => b.localeCompare(a));
 
   const TrendIcon = stats?.trend === 'up' ? TrendingUp : stats?.trend === 'down' ? TrendingDown : Minus;
@@ -374,6 +383,53 @@ export default function Analytics() {
           </a>
         </div>
       </div>
+
+      {isCurrentYear && (
+        <div className="bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-pink-600/10 rounded-3xl border-2 border-indigo-500/30 p-6 md:p-8 shadow-lg shadow-indigo-500/10 relative overflow-hidden">
+          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/30">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase font-black tracking-widest">Visitas de Hoy</p>
+                <p className="text-4xl md:text-5xl font-black text-foreground">{formatNumber(todayVisits)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {stats && (
+                <div className="bg-card/80 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-border text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Media diaria</p>
+                  <p className="text-lg font-black text-foreground">{formatNumber(stats.average)}</p>
+                </div>
+              )}
+              <div className={`bg-card/80 backdrop-blur-sm rounded-xl px-4 py-2.5 border text-center ${todayVsYesterday >= 0 ? 'border-green-500/30' : 'border-red-500/30'}`}>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Vs. Ayer</p>
+                <div className="flex items-center justify-center gap-1">
+                  {todayVsYesterday >= 0 ? <ArrowUpRight className="w-4 h-4 text-green-500" /> : <ArrowDownRight className="w-4 h-4 text-red-500" />}
+                  <span className={`text-lg font-black ${todayVsYesterday >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {formatPercentage(todayVsYesterday)}
+                  </span>
+                </div>
+              </div>
+              <div className={`bg-card/80 backdrop-blur-sm rounded-xl px-4 py-2.5 border text-center ${todayVsAvg >= 0 ? 'border-emerald-500/30' : 'border-amber-500/30'}`}>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Vs. Media</p>
+                <div className="flex items-center justify-center gap-1">
+                  {todayVsAvg >= 0 ? <ArrowUpRight className="w-4 h-4 text-emerald-500" /> : <ArrowDownRight className="w-4 h-4 text-amber-500" />}
+                  <span className={`text-lg font-black ${todayVsAvg >= 0 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    {formatPercentage(todayVsAvg)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
