@@ -25,9 +25,20 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
     return map;
   }, [dailyData]);
 
+  const rankMap = useMemo(() => {
+    const sorted = [...dailyData].sort((a, b) => b.visits - a.visits);
+    const map: Record<string, number> = {};
+    sorted.forEach((d, idx) => {
+      map[d.isoDate] = idx + 1;
+    });
+    return map;
+  }, [dailyData]);
+
   const maxVisits = useMemo(() => {
     return Math.max(...Object.values(visitsMap), 1);
   }, [visitsMap]);
+
+  const totalDays = dailyData.length;
 
   const calendarDays = useMemo(() => {
     const firstDay = startOfMonth(currentDate);
@@ -39,16 +50,18 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
       const isoDate = format(date, 'yyyy-MM-dd');
       const visits = visitsMap[isoDate] || 0;
       const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+      const rank = rankMap[isoDate] || 0;
       
       return {
         date,
         isoDate,
         visits,
+        rank,
         isCurrentMonth,
         intensity: visits > 0 ? Math.min(visits / maxVisits, 1) : 0
       };
     });
-  }, [currentDate, visitsMap, maxVisits]);
+  }, [currentDate, visitsMap, maxVisits, rankMap]);
 
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -59,14 +72,18 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
     }
     
     const colors = [
-      'bg-emerald-200 dark:bg-emerald-900/40',
-      'bg-emerald-300 dark:bg-emerald-800/50',
-      'bg-emerald-400 dark:bg-emerald-700/60',
-      'bg-yellow-400 dark:bg-yellow-600/60',
-      'bg-orange-400 dark:bg-orange-600/60',
-      'bg-orange-500 dark:bg-orange-500/60',
-      'bg-red-500 dark:bg-red-500/60',
-      'bg-red-600 dark:bg-red-600/70'
+      'bg-teal-100 dark:bg-teal-900/40',
+      'bg-teal-200 dark:bg-teal-800/45',
+      'bg-emerald-300 dark:bg-emerald-700/55',
+      'bg-green-300 dark:bg-green-600/55',
+      'bg-lime-300 dark:bg-lime-600/55',
+      'bg-yellow-200 dark:bg-yellow-500/55',
+      'bg-amber-300 dark:bg-amber-500/60',
+      'bg-orange-300 dark:bg-orange-500/65',
+      'bg-orange-400 dark:bg-orange-500/70',
+      'bg-red-400 dark:bg-red-500/75',
+      'bg-rose-500 dark:bg-rose-500/80',
+      'bg-purple-500 dark:bg-purple-500/80'
     ];
     
     const index = Math.min(Math.floor(intensity * colors.length), colors.length - 1);
@@ -136,6 +153,11 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
               ${!day.isCurrentMonth ? 'opacity-40' : ''}
             `}
           >
+            {day.rank > 0 && (
+              <span className="absolute top-0.5 right-1 text-[8px] font-black text-muted-foreground/40 leading-none">
+                #{day.rank}
+              </span>
+            )}
             <span className={`font-semibold ${day.visits > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
               {day.date.getDate()}
             </span>
@@ -152,13 +174,14 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Menos</span>
           <div className="flex gap-0.5">
-            {[0, 0.25, 0.5, 0.75, 1].map((intensity, i) => (
+            {[0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.55, 0.64, 0.73, 0.82, 0.91, 1].map((intensity, i) => (
               <div
                 key={i}
-                className={`w-3 h-3 rounded-sm ${getIntensityColor(intensity, true)}`}
+                className={`w-2.5 h-3 rounded-sm ${getIntensityColor(intensity, true)}`}
               />
             ))}
           </div>
+          <span className="text-[8px] text-muted-foreground ml-1">#ranking</span>
           <span className="text-xs text-muted-foreground">Más</span>
         </div>
         <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
