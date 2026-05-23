@@ -154,15 +154,15 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
             `}
           >
             {day.rank > 0 && (
-              <span className="absolute top-0.5 right-1 text-[8px] font-black text-muted-foreground/40 leading-none">
+              <span className="absolute top-0.5 right-1 text-[8px] font-black text-foreground/40 leading-none">
                 #{day.rank}
               </span>
             )}
-            <span className={`font-semibold ${day.visits > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className="font-semibold text-foreground">
               {day.date.getDate()}
             </span>
             {day.visits > 0 && (
-              <span className="text-[10px] font-bold text-muted-foreground/70">
+              <span className="text-[10px] font-bold text-foreground/70">
                 {day.visits >= 1000 ? `${(day.visits / 1000).toFixed(1)}k` : day.visits}
               </span>
             )}
