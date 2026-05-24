@@ -270,10 +270,17 @@ export default function Analytics() {
 
   const dayOfWeekChartData = useMemo(() => {
     if (!stats) return [];
-    return stats.dayOfWeekStats.map(d => ({
+    // Reordenar para que empiece en Lunes (índice 1 en dayOfWeekStats)
+    const mondayFirst = [
+      ...stats.dayOfWeekStats.slice(1),
+      stats.dayOfWeekStats[0]
+    ];
+    return mondayFirst.map(d => ({
       day: d.day.substring(0, 3),
-      visitas: d.avg,
-      total: d.total
+      label: `${d.day.substring(0, 3)}${d.count > 0 ? ` (${d.count})` : ''}`,
+      visitas: Math.round(d.avg),
+      total: d.total,
+      count: d.count
     }));
   }, [stats]);
 
@@ -290,8 +297,11 @@ export default function Analytics() {
     if (!stats) return [];
     return stats.monthlyData.slice(0, 12).map(m => ({
       mes: m.monthName.substring(0, 3),
+      nombre: m.monthName,
+      año: m.year,
       visitas: m.totalVisits,
-      promedio: Math.round(m.avgDaily)
+      promedio: Math.round(m.avgDaily),
+      dias: m.days
     }));
   }, [stats]);
 
@@ -707,23 +717,42 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <BarChart3 className="w-5 h-5 text-emerald-500" />
-            <h3 className="text-lg font-bold text-foreground">Visitas por Día de la Semana</h3>
+          <div className="flex flex-col mb-4">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="w-5 h-5 text-emerald-500" />
+              <h3 className="text-lg font-bold text-foreground">Visitas por Día de la Semana</h3>
+            </div>
+            <p className="text-xs text-muted-foreground ml-8">Media histórica de visitas según el día</p>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dayOfWeekChartData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="day" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={60} />
+                <YAxis dataKey="label" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={65} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-card border border-border p-3 rounded-xl shadow-xl">
+                          <p className="text-xs font-bold text-foreground mb-1 capitalize">{data.day} (Promedio)</p>
+                          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                            {formatNumber(data.visitas)}
+                          </p>
+                          <div className="mt-2 pt-2 border-t border-border">
+                            <p className="text-[10px] text-muted-foreground">
+                              Total: <span className="font-bold text-foreground">{formatNumber(data.total)}</span>
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Muestras: <span className="font-bold text-foreground">{data.count} {data.count === 1 ? 'día' : 'días'}</span>
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
-                  formatter={(value: number) => [formatNumber(value), 'Promedio']}
                 />
                 <Bar dataKey="visitas" fill="#10b981" radius={[0, 4, 4, 0]} />
               </BarChart>
@@ -732,9 +761,12 @@ export default function Analytics() {
         </div>
 
         <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <Calendar className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-bold text-foreground">Visitas por Mes</h3>
+          <div className="flex flex-col mb-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-purple-500" />
+              <h3 className="text-lg font-bold text-foreground">Visitas por Mes</h3>
+            </div>
+            <p className="text-xs text-muted-foreground ml-8">Totales mensuales y media diaria</p>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -743,12 +775,28 @@ export default function Analytics() {
                 <XAxis dataKey="mes" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-card border border-border p-3 rounded-xl shadow-xl">
+                          <p className="text-xs font-bold text-foreground mb-1">{data.nombre} {data.año}</p>
+                          <p className="text-xl font-black text-purple-600 dark:text-purple-400">
+                            {formatNumber(data.visitas)} <span className="text-[10px] font-normal text-muted-foreground">total</span>
+                          </p>
+                          <div className="mt-2 pt-2 border-t border-border">
+                            <p className="text-[10px] text-muted-foreground">
+                              Media diaria: <span className="font-bold text-foreground">{formatNumber(data.promedio)}</span>
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Días registrados: <span className="font-bold text-foreground">{data.dias}</span>
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
-                  formatter={(value: number) => [formatNumber(value), 'Visitas']}
                 />
                 <Bar dataKey="visitas" fill="#a855f7" radius={[4, 4, 0, 0]} />
               </BarChart>
