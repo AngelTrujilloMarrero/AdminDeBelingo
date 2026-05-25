@@ -556,13 +556,23 @@ export default function EventForm({
 
     // Función auxiliar: comprueba si un evento coincide en lugar/municipio
     const matchesVenue = (e: Event): boolean => {
-      const matchesLugar = !!(currentFormData.lugar && e.lugar && 
-        (normalizeString(e.lugar!).includes(normalizeString(currentFormData.lugar)) || 
-         normalizeString(currentFormData.lugar).includes(normalizeString(e.lugar!))));
-      const matchesMunicipio = !!(e.municipio &&
+      const matchesMunicipio = !!(e.municipio && municipio &&
         (normalizeString(e.municipio!).includes(normalizeString(municipio)) || 
          normalizeString(municipio).includes(normalizeString(e.municipio!))));
-      return matchesLugar || matchesMunicipio;
+
+      if (!matchesMunicipio) return false;
+
+      const hasLugarCurrent = !!(currentFormData.lugar && currentFormData.lugar.trim());
+      const hasLugarEvent = !!(e.lugar && e.lugar.trim());
+
+      // Si ambos tienen lugar especificado, deben coincidir en el lugar
+      if (hasLugarCurrent && hasLugarEvent) {
+        return normalizeString(e.lugar!).includes(normalizeString(currentFormData.lugar)) || 
+               normalizeString(currentFormData.lugar).includes(normalizeString(e.lugar!));
+      }
+
+      // Si alguno no tiene lugar especificado, por precaución consideramos que coincide (ya que están en el mismo municipio)
+      return true;
     };
 
     // Función auxiliar: comprueba si un evento es del mismo día y no es el que se edita
