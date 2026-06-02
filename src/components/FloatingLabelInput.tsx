@@ -148,8 +148,8 @@ export default function FloatingLabelInput({
                 <div 
                     className={`${suggestionLayout} w-full z-[100] bg-popover border border-border rounded-xl shadow-xl max-h-[600px] overflow-y-auto 
                                 ${suggestionDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} 
-                                ${gridCols === 3 ? (gridColsMobile === 3 ? 'grid grid-cols-3 gap-1 p-1' : 'grid grid-cols-1 sm:grid-cols-3 gap-1 p-1') : 
-                                  gridCols === 2 ? (gridColsMobile === 2 ? 'grid grid-cols-2 gap-1 p-1' : 'grid grid-cols-1 sm:grid-cols-2 gap-1 p-1') : 
+                                ${gridCols === 3 ? (gridColsMobile === 3 ? 'grid grid-cols-3 gap-1 p-1' : 'grid grid-cols-1 md:grid-cols-3 gap-1 p-1') : 
+                                  gridCols === 2 ? (gridColsMobile === 2 ? 'grid grid-cols-2 gap-1 p-1' : 'grid grid-cols-1 md:grid-cols-2 gap-1 p-1') : 
                                   'flex flex-col p-2 gap-2'}`} 
                 >
                     {suggestions.map((suggestion, idx) => {
@@ -169,9 +169,17 @@ export default function FloatingLabelInput({
                                     onSuggestionClick?.(valToPass);
                                 }}
                                 className={`px-6 py-4 text-left hover:bg-muted/80 transition-all duration-300 text-popover-foreground relative overflow-hidden flex flex-col justify-center rounded-2xl border border-border/50 my-1 first:mt-0 last:mb-0
-                             ${gridCols > 1 && !isHistorical ? 'items-center text-center' : 'items-start text-left'}
+                             ${gridCols > 1 && !isHistorical 
+                                 ? (gridColsMobile && gridColsMobile > 1 
+                                     ? 'items-center text-center' 
+                                     : 'items-start text-left md:items-center md:text-center') 
+                                 : 'items-start text-left'}
                              ${isHistorical ? (gridCols === 3 ? 'col-span-3 w-full bg-amber-500/10 border-amber-500/30' : gridCols === 2 ? 'col-span-2 w-full bg-amber-500/10 border-amber-500/30' : '') : 'bg-muted/30 shadow-sm hover:shadow-md'} 
-                             ${gridCols > 1 && !isHistorical ? 'border-r [&:nth-child(3n)]:border-r-0' : ''}`}
+                             ${gridCols > 1 && !isHistorical 
+                                 ? (gridColsMobile && gridColsMobile > 1 
+                                     ? 'border-r [&:nth-child(3n)]:border-r-0' 
+                                     : 'md:border-r md:[&:nth-child(3n)]:border-r-0') 
+                                 : ''}`}
                             >
                              <div className={`flex flex-col w-full ${isHistorical ? '' : 'py-1'}`}>
                              {typeof suggestion === 'object' && 'lugar' in (suggestion as any) ? (
