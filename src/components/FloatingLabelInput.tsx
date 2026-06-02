@@ -177,8 +177,8 @@ export default function FloatingLabelInput({
                              ${isHistorical ? (gridCols === 3 ? 'col-span-3 w-full bg-amber-500/10 border-amber-500/30' : gridCols === 2 ? 'col-span-2 w-full bg-amber-500/10 border-amber-500/30' : '') : 'bg-muted/30 shadow-sm hover:shadow-md'} 
                              ${gridCols > 1 && !isHistorical 
                                  ? (gridColsMobile && gridColsMobile > 1 
-                                     ? 'border-r [&:nth-child(3n)]:border-r-0' 
-                                     : 'md:border-r md:[&:nth-child(3n)]:border-r-0') 
+                                     ? (gridCols === 3 ? 'border-r [&:nth-child(3n)]:border-r-0' : 'border-r [&:nth-child(2n)]:border-r-0') 
+                                     : (gridCols === 3 ? 'md:border-r md:[&:nth-child(3n)]:border-r-0' : 'md:border-r md:[&:nth-child(2n)]:border-r-0')) 
                                  : ''}`}
                             >
                              <div className={`flex flex-col w-full ${isHistorical ? '' : 'py-1'}`}>

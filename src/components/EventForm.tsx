@@ -1092,7 +1092,8 @@ export default function EventForm({
                 onClick={() => setShowTipoDropdown(true)}
                 showSuggestions={showTipoDropdown}
                 readOnly={true}
-                gridCols={3}
+                gridCols={2}
+                gridColsMobile={2}
                 suggestions={(() => {
                   const results: any[] = [];
                   
