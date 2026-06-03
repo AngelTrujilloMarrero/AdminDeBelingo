@@ -38,7 +38,10 @@ import {
   Sparkles,
   ChevronDown,
   ChevronRight,
-  Star
+  Star,
+  Download,
+  Clock,
+  Image
 } from 'lucide-react';
 
 export default function Analytics() {
@@ -48,6 +51,11 @@ export default function Analytics() {
   const [historicalDailyVisits, setHistoricalDailyVisits] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+
+  // Descargas de imágenes
+  const [downloadRecords, setDownloadRecords] = useState<Record<string, { timestamp: number, type: 'date' | 'festival' }>>({});
+  const [monthlyDownloads, setMonthlyDownloads] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState<'traffic' | 'downloads'>('traffic');
 
   interface MonthGroupCardProps {
     year: string;
@@ -172,10 +180,30 @@ export default function Analytics() {
       setLastUpdate(new Date());
     });
 
+    const downloadRecordsRef = ref(db, 'downloads/records');
+    const unsubscribeDownloadRecords = onValue(downloadRecordsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setDownloadRecords(snapshot.val());
+      } else {
+        setDownloadRecords({});
+      }
+    });
+
+    const monthlyDownloadsRef = ref(db, 'downloads/monthly');
+    const unsubscribeMonthlyDownloads = onValue(monthlyDownloadsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setMonthlyDownloads(snapshot.val());
+      } else {
+        setMonthlyDownloads({});
+      }
+    });
+
     return () => {
       unsubscribeVisitCount();
       unsubscribeDailyVisits();
       unsubscribeHistoricalVisits();
+      unsubscribeDownloadRecords();
+      unsubscribeMonthlyDownloads();
     };
   }, []);
 
@@ -305,6 +333,79 @@ export default function Analytics() {
     }));
   }, [stats]);
 
+  const downloadStats = useMemo(() => {
+    const records = Object.values(downloadRecords || {});
+    const totalDownloads = records.length;
+    
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+    
+    let todayCount = 0;
+    let dateRangeCount = 0;
+    let festivalCount = 0;
+    
+    const hourlyDistribution = Array.from({ length: 24 }, (_, i) => ({
+      hour: `${String(i).padStart(2, '0')}:00`,
+      descargas: 0
+    }));
+    
+    const dailyDistributionMap: Record<string, number> = {};
+    
+    records.forEach(r => {
+      if (!r.timestamp) return;
+      
+      const date = new Date(r.timestamp);
+      const hour = date.getHours();
+      if (hour >= 0 && hour < 24) {
+        hourlyDistribution[hour].descargas += 1;
+      }
+      
+      if (r.timestamp >= startOfTodayMs) {
+        todayCount += 1;
+      }
+      
+      if (r.type === 'date') {
+        dateRangeCount += 1;
+      } else if (r.type === 'festival') {
+        festivalCount += 1;
+      }
+      
+      const dayStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      dailyDistributionMap[dayStr] = (dailyDistributionMap[dayStr] || 0) + 1;
+    });
+    
+    const dailyDistribution = Object.entries(dailyDistributionMap)
+      .map(([date, count]) => ({
+        date: date.slice(5),
+        isoDate: date,
+        descargas: count
+      }))
+      .sort((a, b) => a.isoDate.localeCompare(b.isoDate));
+      
+    const monthlyHistory = Object.entries(monthlyDownloads || {})
+      .map(([yearMonth, count]) => {
+        const [year, month] = yearMonth.split('-');
+        const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        return {
+          mes: `${monthNames[parseInt(month) - 1]} ${year.slice(2)}`,
+          key: yearMonth,
+          descargas: count
+        };
+      })
+      .sort((a, b) => a.key.localeCompare(b.key));
+      
+    return {
+      totalDownloads,
+      todayCount,
+      dateRangeCount,
+      festivalCount,
+      hourlyDistribution,
+      dailyDistribution,
+      monthlyHistory
+    };
+  }, [downloadRecords, monthlyDownloads]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
@@ -350,7 +451,35 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg relative p-8 md:p-12 text-center space-y-8">
+      {/* Selector de Pestañas Premium */}
+      <div className="flex border-b border-border mb-6">
+        <button
+          onClick={() => setActiveTab('traffic')}
+          className={`flex items-center gap-2 px-6 py-3 border-b-2 text-sm font-bold transition-all ${
+            activeTab === 'traffic'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          Tráfico y Visitas
+        </button>
+        <button
+          onClick={() => setActiveTab('downloads')}
+          className={`flex items-center gap-2 px-6 py-3 border-b-2 text-sm font-bold transition-all ${
+            activeTab === 'downloads'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Download className="w-4 h-4" />
+          Descargas de Fotos
+        </button>
+      </div>
+
+      {activeTab === 'traffic' ? (
+        <>
+          <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg relative p-8 md:p-12 text-center space-y-8">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
 
@@ -919,6 +1048,170 @@ export default function Analytics() {
           </div>
         )}
       </div>
+      </>
+      ) : (
+        <div className="space-y-8 animate-fadeIn">
+          {/* Tarjetas de Resumen / KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
+              <div className="absolute top-4 right-4 text-indigo-500/10">
+                <Download className="w-12 h-12" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Descargas este Mes</p>
+              <h4 className="text-3xl font-black text-foreground">{downloadStats.totalDownloads}</h4>
+              <p className="text-[10px] text-muted-foreground mt-1">Registros individuales activos en BD</p>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
+              <div className="absolute top-4 right-4 text-emerald-500/10">
+                <Zap className="w-12 h-12" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Descargas de Hoy</p>
+              <h4 className="text-3xl font-black text-foreground">{downloadStats.todayCount}</h4>
+              <p className="text-[10px] text-muted-foreground mt-1">Desde las 00:00 de hoy</p>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
+              <div className="absolute top-4 right-4 text-blue-500/10">
+                <Calendar className="w-12 h-12" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Exportar Fechas (Rango)</p>
+              <h4 className="text-3xl font-black text-foreground">{downloadStats.dateRangeCount}</h4>
+              <p className="text-[10px] text-muted-foreground mt-1">Descargas tipo "Exportar Rango"</p>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
+              <div className="absolute top-4 right-4 text-purple-500/10">
+                <Image className="w-12 h-12" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Carteles de Fiesta</p>
+              <h4 className="text-3xl font-black text-foreground">{downloadStats.festivalCount}</h4>
+              <p className="text-[10px] text-muted-foreground mt-1">Descargas de carteles individuales</p>
+            </div>
+          </div>
+
+          {/* Gráficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Evolución Diaria */}
+            <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+              <div className="flex flex-col mb-4">
+                <div className="flex items-center gap-3">
+                  <Activity className="w-5 h-5 text-indigo-500" />
+                  <h3 className="text-lg font-bold text-foreground">Evolución de Descargas (Día a Día)</h3>
+                </div>
+                <p className="text-xs text-muted-foreground ml-8">Descargas diarias del mes actual</p>
+              </div>
+              <div className="h-64">
+                {downloadStats.dailyDistribution.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    No hay descargas registradas en este mes todavía
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={downloadStats.dailyDistribution}>
+                      <defs>
+                        <linearGradient id="colorDownloads" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="descargas"
+                        stroke="#6366f1"
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#colorDownloads)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* Distribución Horaria */}
+            <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+              <div className="flex flex-col mb-4">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-emerald-500" />
+                  <h3 className="text-lg font-bold text-foreground">¿A qué hora descarga la gente?</h3>
+                </div>
+                <p className="text-xs text-muted-foreground ml-8">Distribución de descargas por hora del día</p>
+              </div>
+              <div className="h-64">
+                {downloadStats.totalDownloads === 0 ? (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    No hay datos de distribución horaria en este mes
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={downloadStats.hourlyDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="hour" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      />
+                      <Bar dataKey="descargas" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Histórico Mensual */}
+          <div className="bg-card rounded-3xl border border-border p-6 shadow-lg">
+            <div className="flex flex-col mb-4">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="w-5 h-5 text-purple-500" />
+                <h3 className="text-lg font-bold text-foreground">Histórico Acumulado por Mes</h3>
+              </div>
+              <p className="text-xs text-muted-foreground ml-8">Descargas consolidadas al final de cada mes</p>
+            </div>
+            <div className="h-72">
+              {downloadStats.monthlyHistory.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  No hay datos históricos mensuales acumulados
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={downloadStats.monthlyHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="mes" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    />
+                    <Bar dataKey="descargas" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
