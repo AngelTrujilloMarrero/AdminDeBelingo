@@ -175,7 +175,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
             contentDiv.style.cssText = `
                 position: relative;
                 z-index: 10;
-                background-color: rgba(255, 255, 255, 0.85);
+                background-color: rgba(255, 255, 255, 0.55);
                 border: 1px solid #000000;
                 padding: 40px;
                 border-radius: 15px;
