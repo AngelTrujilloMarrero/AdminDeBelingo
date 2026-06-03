@@ -156,13 +156,6 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                 }
             };
     
-            if (lugar) {
-                addVariations(lugar);
-                const nLugar = normalize(lugar).replace(/\s+/g, '');
-                const nMunicipio = normalize(municipio).replace(/\s+/g, '');
-                variations.push(`${nLugar}_${nMunicipio}`);
-                variations.push(`${nMunicipio}_${nLugar}`);
-            }
             addVariations(municipio);
     
             const uniqueVariations = [...new Set(variations)];
