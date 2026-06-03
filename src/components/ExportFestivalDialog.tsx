@@ -408,13 +408,20 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                 return;
             }
             const img = new Image();
+            const timeoutId = setTimeout(() => {
+                img.onload = null;
+                img.onerror = null;
+                tryNextImage(index + 1);
+            }, 3000);
             img.src = possibleImages[index];
             img.crossOrigin = 'anonymous';
             img.onload = () => {
+                clearTimeout(timeoutId);
                 backgroundDiv.style.backgroundImage = `url('${possibleImages[index]}')`;
                 createContent();
             };
             img.onerror = () => {
+                clearTimeout(timeoutId);
                 tryNextImage(index + 1);
             };
         };
