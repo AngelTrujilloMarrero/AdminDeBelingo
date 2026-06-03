@@ -443,16 +443,23 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
         setQueueResult(null);
 
         try {
+            const selectedEvents = municipioEvents.filter(e => selectedEventIds.has(e.id));
+            const uniqueLugares = [...new Set(selectedEvents.map(e => e.lugar || ''))];
+
             const queueRef = ref(db, 'telegramPhotoQueue');
-            await push(queueRef, {
-                lugar: '',
-                municipio: selectedMunicipio,
-                label: `Verbenas de ${selectedMunicipio}`,
-                addedAt: new Date().toISOString()
-            });
+            let added = 0;
+            for (const lugar of uniqueLugares) {
+                await push(queueRef, {
+                    lugar,
+                    municipio: selectedMunicipio,
+                    label: lugar ? `${lugar}, ${selectedMunicipio}` : selectedMunicipio,
+                    addedAt: new Date().toISOString()
+                });
+                added++;
+            }
             setQueueResult({
                 success: true,
-                message: `"${selectedMunicipio}" añadido a la cola de Telegram`
+                message: `${added} lugar${added > 1 ? 'es' : ''} de "${selectedMunicipio}" añadido${added > 1 ? 's' : ''} a la cola`
             });
         } catch (error: any) {
             setQueueResult({
