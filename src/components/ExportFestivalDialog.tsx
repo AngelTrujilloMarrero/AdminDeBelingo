@@ -140,10 +140,9 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
             const urls: string[] = [];
             const baseUrls = [
                 'https://debelingoconangel.web.app/fotos/',
-                'https://debelingo.webcindario.com/',
                 'http://debelingoconangel.infy.uk/fotos/'
             ];
-            const extensions = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP'];
+            const extensions = ['jpg', 'jpeg', 'png', 'webp'];
             const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ñ/g, 'n');
     
             const variations: string[] = [];
