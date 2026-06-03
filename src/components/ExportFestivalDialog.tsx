@@ -127,7 +127,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
             height: 100%;
             background-size: cover;
             background-position: center;
-            opacity: 0.5;
+            opacity: 0.75;
         `;
     
         // Logic to find background image (simplified from WEB debelingo)
