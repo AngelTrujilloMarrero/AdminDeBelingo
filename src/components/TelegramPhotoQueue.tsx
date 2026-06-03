@@ -74,8 +74,20 @@ export default function TelegramPhotoQueue({ events }: TelegramPhotoQueueProps) 
       }
     });
 
+    // Also include queue entries that don't match any event-based festival (e.g. added from cartel)
+    Object.values(queue).forEach(entry => {
+      const key = `${entry.lugar}|${entry.municipio}`;
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, {
+          label: entry.label || (entry.lugar ? `${entry.lugar}, ${entry.municipio}` : entry.municipio),
+          lugar: entry.lugar || '',
+          municipio: entry.municipio
+        });
+      }
+    });
+
     return Array.from(uniqueMap.values());
-  }, [events]);
+  }, [events, queue]);
 
   // Check if a festival is already in the queue
   const isInQueue = (festival: FestivalItem): string | null => {
