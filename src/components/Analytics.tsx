@@ -41,7 +41,8 @@ import {
   Star,
   Download,
   Clock,
-  Image
+  Image,
+  CalendarRange
 } from 'lucide-react';
 
 export default function Analytics() {
@@ -336,45 +337,78 @@ export default function Analytics() {
   const downloadStats = useMemo(() => {
     const records = Object.values(downloadRecords || {});
     const totalDownloads = records.length;
-    
+
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayMs = startOfToday.getTime();
-    
+
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfToday.getDate() - 1);
+    const startOfYesterdayMs = startOfYesterday.getTime();
+
+    const now = new Date();
+    const currentDayOfWeek = now.getDay();
+    const daysFromMonday = (currentDayOfWeek + 6) % 7;
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setDate(now.getDate() - daysFromMonday);
+    startOfThisWeek.setHours(0, 0, 0, 0);
+    const startOfThisWeekMs = startOfThisWeek.getTime();
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+    const startOfLastWeekMs = startOfLastWeek.getTime();
+
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const lastMonthKey = `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}`;
+    const lastMonthCount = (monthlyDownloads && monthlyDownloads[lastMonthKey]) || 0;
+
     let todayCount = 0;
+    let yesterdayCount = 0;
+    let thisWeekCount = 0;
+    let lastWeekCount = 0;
     let dateRangeCount = 0;
     let festivalCount = 0;
-    
+
     const hourlyDistribution = Array.from({ length: 24 }, (_, i) => ({
       hour: `${String(i).padStart(2, '0')}:00`,
       descargas: 0
     }));
-    
+
     const dailyDistributionMap: Record<string, number> = {};
-    
+
     records.forEach(r => {
       if (!r.timestamp) return;
-      
+
       const date = new Date(r.timestamp);
       const hour = date.getHours();
       if (hour >= 0 && hour < 24) {
         hourlyDistribution[hour].descargas += 1;
       }
-      
+
       if (r.timestamp >= startOfTodayMs) {
         todayCount += 1;
+      } else if (r.timestamp >= startOfYesterdayMs && r.timestamp < startOfTodayMs) {
+        yesterdayCount += 1;
       }
-      
+
+      if (r.timestamp >= startOfThisWeekMs) {
+        thisWeekCount += 1;
+      } else if (r.timestamp >= startOfLastWeekMs && r.timestamp < startOfThisWeekMs) {
+        lastWeekCount += 1;
+      }
+
       if (r.type === 'date') {
         dateRangeCount += 1;
       } else if (r.type === 'festival') {
         festivalCount += 1;
       }
-      
+
       const dayStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       dailyDistributionMap[dayStr] = (dailyDistributionMap[dayStr] || 0) + 1;
     });
-    
+
     const dailyDistribution = Object.entries(dailyDistributionMap)
       .map(([date, count]) => ({
         date: date.slice(5),
@@ -382,7 +416,7 @@ export default function Analytics() {
         descargas: count
       }))
       .sort((a, b) => a.isoDate.localeCompare(b.isoDate));
-      
+
     const monthlyHistory = Object.entries(monthlyDownloads || {})
       .map(([yearMonth, count]) => {
         const [year, month] = yearMonth.split('-');
@@ -394,12 +428,23 @@ export default function Analytics() {
         };
       })
       .sort((a, b) => a.key.localeCompare(b.key));
-      
+
+    const todayVsYesterday = yesterdayCount > 0 ? ((todayCount - yesterdayCount) / yesterdayCount) * 100 : 0;
+    const thisWeekVsLastWeek = lastWeekCount > 0 ? ((thisWeekCount - lastWeekCount) / lastWeekCount) * 100 : 0;
+    const monthVsLastMonth = lastMonthCount > 0 ? ((totalDownloads - lastMonthCount) / lastMonthCount) * 100 : 0;
+
     return {
       totalDownloads,
       todayCount,
+      yesterdayCount,
+      thisWeekCount,
+      lastWeekCount,
+      lastMonthCount,
       dateRangeCount,
       festivalCount,
+      todayVsYesterday,
+      thisWeekVsLastWeek,
+      monthVsLastMonth,
       hourlyDistribution,
       dailyDistribution,
       monthlyHistory
@@ -1052,41 +1097,69 @@ export default function Analytics() {
       ) : (
         <div className="space-y-8 animate-fadeIn">
           {/* Tarjetas de Resumen / KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
-              <div className="absolute top-4 right-4 text-indigo-500/10">
-                <Download className="w-12 h-12" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-card rounded-2xl border border-border p-5 shadow-sm animate-slideUp">
+                <div className="flex items-center gap-2 mb-2">
+                  <Download className="w-4 h-4 text-indigo-500" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">Descargas este Mes</span>
+                </div>
+                <p className="text-3xl font-black text-foreground">{downloadStats.totalDownloads}</p>
+                <div className="flex items-center gap-1 mt-2">
+                  {downloadStats.monthVsLastMonth >= 0 ? <ArrowUpRight className="w-3 h-3 text-green-500" /> : <ArrowDownRight className="w-3 h-3 text-red-500" />}
+                  <span className={`text-[10px] font-bold ${downloadStats.monthVsLastMonth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {formatPercentage(downloadStats.monthVsLastMonth)} vs mes pasado
+                  </span>
+                </div>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Descargas este Mes</p>
-              <h4 className="text-3xl font-black text-foreground">{downloadStats.totalDownloads}</h4>
-              <p className="text-[10px] text-muted-foreground mt-1">Registros individuales activos en BD</p>
+
+              <div className="bg-card rounded-2xl border border-border p-5 shadow-sm animate-slideUp">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">Descargas de Hoy</span>
+                </div>
+                <p className="text-3xl font-black text-foreground">{downloadStats.todayCount}</p>
+                <div className="flex items-center gap-1 mt-2">
+                  {downloadStats.todayVsYesterday >= 0 ? <ArrowUpRight className="w-3 h-3 text-green-500" /> : <ArrowDownRight className="w-3 h-3 text-red-500" />}
+                  <span className={`text-[10px] font-bold ${downloadStats.todayVsYesterday >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {formatPercentage(downloadStats.todayVsYesterday)} vs ayer
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-card rounded-2xl border border-border p-5 shadow-sm animate-slideUp">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDays className="w-4 h-4 text-blue-500" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">Esta Semana</span>
+                </div>
+                <p className="text-3xl font-black text-foreground">{downloadStats.thisWeekCount}</p>
+                <div className="flex items-center gap-1 mt-2">
+                  {downloadStats.thisWeekVsLastWeek >= 0 ? <ArrowUpRight className="w-3 h-3 text-green-500" /> : <ArrowDownRight className="w-3 h-3 text-red-500" />}
+                  <span className={`text-[10px] font-bold ${downloadStats.thisWeekVsLastWeek >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {formatPercentage(downloadStats.thisWeekVsLastWeek)} vs semana pasada
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
-              <div className="absolute top-4 right-4 text-emerald-500/10">
-                <Zap className="w-12 h-12" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-card rounded-2xl border border-border p-5 shadow-sm animate-slideUp">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarRange className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">Exportar Fechas (Rango)</span>
+                </div>
+                <p className="text-3xl font-black text-foreground">{downloadStats.dateRangeCount}</p>
+                <p className="text-[10px] text-muted-foreground mt-2">Descargas tipo "Exportar Rango"</p>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Descargas de Hoy</p>
-              <h4 className="text-3xl font-black text-foreground">{downloadStats.todayCount}</h4>
-              <p className="text-[10px] text-muted-foreground mt-1">Desde las 00:00 de hoy</p>
-            </div>
 
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
-              <div className="absolute top-4 right-4 text-blue-500/10">
-                <Calendar className="w-12 h-12" />
+              <div className="bg-card rounded-2xl border border-border p-5 shadow-sm animate-slideUp">
+                <div className="flex items-center gap-2 mb-2">
+                  <Image className="w-4 h-4 text-purple-500" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">Carteles de Fiesta</span>
+                </div>
+                <p className="text-3xl font-black text-foreground">{downloadStats.festivalCount}</p>
+                <p className="text-[10px] text-muted-foreground mt-2">Descargas de carteles individuales</p>
               </div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Exportar Fechas (Rango)</p>
-              <h4 className="text-3xl font-black text-foreground">{downloadStats.dateRangeCount}</h4>
-              <p className="text-[10px] text-muted-foreground mt-1">Descargas tipo "Exportar Rango"</p>
-            </div>
-
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm relative overflow-hidden animate-slideUp">
-              <div className="absolute top-4 right-4 text-purple-500/10">
-                <Image className="w-12 h-12" />
-              </div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Carteles de Fiesta</p>
-              <h4 className="text-3xl font-black text-foreground">{downloadStats.festivalCount}</h4>
-              <p className="text-[10px] text-muted-foreground mt-1">Descargas de carteles individuales</p>
             </div>
           </div>
 
