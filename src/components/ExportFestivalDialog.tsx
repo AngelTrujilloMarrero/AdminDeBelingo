@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Event } from '../types/event';
-import { Download, X, Check, FileImage, Calendar, MapPin } from 'lucide-react';
+import { Download, X, Check, FileImage, Calendar, MapPin, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { ref, push, onValue } from 'firebase/database';
+import { db } from '../lib/firebase';
 
 interface ExportFestivalDialogProps {
     events: Event[];
@@ -13,6 +15,19 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
     const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+    const [isSendingToQueue, setIsSendingToQueue] = useState(false);
+    const [queueResult, setQueueResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [queueCount, setQueueCount] = useState(0);
+
+    // Subscribe to queue count for badge
+    useEffect(() => {
+        const queueRef = ref(db, 'telegramPhotoQueue');
+        const unsubscribe = onValue(queueRef, (snapshot) => {
+            const data = snapshot.val();
+            setQueueCount(data ? Object.keys(data).length : 0);
+        });
+        return () => unsubscribe();
+    }, []);
 
     // Get unique municipalities from active events
     const municipalities = useMemo(() => {
@@ -416,6 +431,34 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
         link.click();
     };
 
+    const addToTelegramQueue = async () => {
+        if (!selectedMunicipio) return;
+        setIsSendingToQueue(true);
+        setQueueResult(null);
+
+        try {
+            const queueRef = ref(db, 'telegramPhotoQueue');
+            await push(queueRef, {
+                lugar: '',
+                municipio: selectedMunicipio,
+                label: `Verbenas de ${selectedMunicipio}`,
+                addedAt: new Date().toISOString()
+            });
+            setQueueResult({
+                success: true,
+                message: `"${selectedMunicipio}" añadido a la cola de Telegram`
+            });
+        } catch (error: any) {
+            setQueueResult({
+                success: false,
+                message: `Error: ${error.message}`
+            });
+        } finally {
+            setIsSendingToQueue(false);
+            setTimeout(() => setQueueResult(null), 4000);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -552,7 +595,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                                     alt="Cartel Generado" 
                                     className="max-h-[500px] w-auto shadow-2xl rounded-lg mb-6"
                                 />
-                                <div className="flex gap-4">
+                                <div className="flex flex-wrap gap-3 justify-center">
                                     <button
                                         onClick={() => setGeneratedImage(null)}
                                         className="px-6 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -561,12 +604,49 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
                                     </button>
                                     <button
                                         onClick={downloadImage}
-                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition-all hover:-translate-y-1"
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-all hover:-translate-y-1"
                                     >
                                         <Download className="w-5 h-5" />
-                                        Descargar Imagen
+                                        Descargar
+                                    </button>
+                                    <button
+                                        onClick={addToTelegramQueue}
+                                        disabled={isSendingToQueue}
+                                        className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-all hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    >
+                                        {isSendingToQueue ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Enviando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-4 h-4" />
+                                                Enviar a Cola Telegram
+                                                {queueCount > 0 && (
+                                                    <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                                                        {queueCount} en cola
+                                                    </span>
+                                                )}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
+                                {queueResult && (
+                                    <div className={`
+                                        flex items-center justify-center gap-2 mt-3 p-2 rounded-lg text-sm font-medium animate-in fade-in duration-300
+                                        ${queueResult.success
+                                            ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                                            : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                                        }
+                                    `}>
+                                        {queueResult.success
+                                            ? <CheckCircle2 className="w-4 h-4" />
+                                            : <AlertCircle className="w-4 h-4" />
+                                        }
+                                        {queueResult.message}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
