@@ -139,8 +139,7 @@ export default function ExportFestivalDialog({ events, onClose }: ExportFestival
         const generateImageUrls = () => {
             const urls: string[] = [];
             const baseUrls = [
-                'https://debelingoconangel.web.app/fotos/',
-                'http://debelingoconangel.infy.uk/fotos/'
+                'https://debelingoconangel.web.app/fotos/'
             ];
             const extensions = ['jpg', 'jpeg', 'png', 'webp'];
             const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ñ/g, 'n');
