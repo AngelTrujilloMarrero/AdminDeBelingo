@@ -571,7 +571,11 @@ export default function EventForm({
                normalizeString(currentFormData.lugar).includes(normalizeString(e.lugar!));
       }
 
-      // Si alguno no tiene lugar especificado, por precaución consideramos que coincide (ya que están en el mismo municipio)
+      // Si el evento actual no tiene lugar pero el existente sí, son sitios distintos
+      if (!hasLugarCurrent && hasLugarEvent) return false;
+
+      // En el resto de casos (ambos sin lugar, o el actual con lugar y el existente sin),
+      // no hay un lugar específico que comparar: se considera que coincide por municipio
       return true;
     };
 
