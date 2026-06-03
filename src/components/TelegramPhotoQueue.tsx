@@ -232,7 +232,7 @@ export default function TelegramPhotoQueue({ events }: TelegramPhotoQueueProps) 
 
                     {/* Festival label */}
                     <span className={`text-sm font-medium flex-1 ${inQueue ? 'text-violet-800 dark:text-violet-200' : 'text-foreground'}`}>
-                      Verbenas de {festival.label}
+                      {festival.label}
                     </span>
 
                     {/* In queue indicator */}
