@@ -630,6 +630,46 @@ export default function EventForm({
       }
     }
 
+    // ── CHECK 2.5: PROXIMIDAD en mismo lugar (sin importar orquesta) ──
+    // Mismo sitio dentro de 1h con orquesta diferente suele ser
+    // el mismo evento reportado con nombre distinto.
+    const oneHourInMinutes = 60;
+
+    const nearbySamePlace = events.filter(e => {
+      if (!isRelevantEvent(e)) return false;
+
+      // Ignorar si el evento existente es solo DJ (consistente con CHECK 3)
+      const eOrqList = e.orquesta.split(',').map(o => normalizeString(o.trim())).filter(o => o.length > 0);
+      if (eOrqList.length === 1 && eOrqList[0] === 'dj') return false;
+
+      // Si las orquestas coinciden, ya lo capturan CHECK 2/CHECK 3 → saltar
+      if (hasMatchingOrquesta(e.orquesta)) return false;
+
+      // Mismo lugar (matchesVenue estricto)
+      if (!matchesVenue(e)) return false;
+
+      // Cercanía temporal > 0 y <= 1h
+      const [eh, em] = e.hora.split(':').map(Number);
+      const eventTimeInMinutes = eh * 60 + em;
+      const diff = Math.abs(timeInMinutes - eventTimeInMinutes);
+      return diff > 0 && diff <= oneHourInMinutes;
+    });
+
+    // Excluir los que ya se avisaron en CHECK 1 (misma hora) para no duplicar
+    const newNearbyConflicts = nearbySamePlace.filter(ce =>
+      !venueTimeConflicts.some(vc => vc.id === ce.id)
+    );
+
+    if (newNearbyConflicts.length > 0) {
+      const conflictList = newNearbyConflicts.map(e =>
+        `• ${e.orquesta} en ${e.lugar || e.municipio} a las ${e.hora}`
+      ).join('\n');
+      const confirmNearby = window.confirm(
+        `🔍 Detectado otro evento en el mismo lugar a menos de 1 hora con orquesta diferente:\n\n${conflictList}\n\n¿Estás seguro de que es un evento distinto y no el mismo?`
+      );
+      if (!confirmNearby) return;
+    }
+
     // ── CHECK 3: PROXIMIDAD de orquesta (< 2 horas) ──
     // La misma orquesta tiene otro evento a menos de 2 horas en el mismo día
     const twoHoursInMinutes = 120;
