@@ -528,15 +528,16 @@ export default function EventForm({
 
     // Dividir orquestas del formulario en lista individual para comparar correctamente
     const formOrqList = orquesta.split(',').map(o => normalizeString(o.trim())).filter(o => o.length > 0);
+    const formOrqListForMatching = formOrqList.filter(o => o !== 'dj');
     const currentFormData = formData;
 
     const isDJ = formOrqList.length === 1 && formOrqList[0] === 'dj';
 
     // Función auxiliar: comprueba si alguna orquesta individual del formulario
-    // coincide con alguna orquesta individual de un evento existente
+    // coincide con alguna orquesta individual de un evento existente (excluye DJ)
     const hasMatchingOrquesta = (eventOrquesta: string): boolean => {
       const eventOrqList = eventOrquesta.split(',').map(o => normalizeString(o.trim())).filter(o => o.length > 0);
-      return formOrqList.some(fo =>
+      return formOrqListForMatching.some(fo =>
         eventOrqList.some(eo => eo.includes(fo) || fo.includes(eo))
       );
     };
@@ -586,6 +587,14 @@ export default function EventForm({
       if (e.day !== eventDate) return false;
       return true;
     };
+
+    // Excluir DJ de TODAS las verificaciones de duplicados
+    const isDJOnly = formOrqList.length === 1 && formOrqList[0] === 'dj';
+
+    if (isDJOnly) {
+      await saveEvent();
+      return;
+    }
 
     // ── CHECK 1: Conflicto de LUGAR + HORA ──
     // Dos eventos en el mismo sitio a la misma hora (independiente de orquesta)
