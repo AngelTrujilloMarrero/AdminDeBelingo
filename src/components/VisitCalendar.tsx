@@ -72,17 +72,29 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
     }
     
     const colors = [
+      'bg-cyan-50 dark:bg-cyan-950/30',
+      'bg-cyan-100 dark:bg-cyan-900/35',
       'bg-teal-100 dark:bg-teal-900/40',
       'bg-teal-200 dark:bg-teal-800/45',
+      'bg-emerald-200 dark:bg-emerald-800/50',
       'bg-emerald-300 dark:bg-emerald-700/55',
+      'bg-green-200 dark:bg-green-700/50',
       'bg-green-300 dark:bg-green-600/55',
-      'bg-lime-300 dark:bg-lime-600/55',
+      'bg-lime-200 dark:bg-lime-600/50',
+      'bg-lime-300 dark:bg-lime-500/55',
+      'bg-yellow-100 dark:bg-yellow-600/45',
       'bg-yellow-200 dark:bg-yellow-500/55',
+      'bg-amber-200 dark:bg-amber-500/55',
       'bg-amber-300 dark:bg-amber-500/60',
+      'bg-orange-200 dark:bg-orange-500/55',
       'bg-orange-300 dark:bg-orange-500/65',
       'bg-orange-400 dark:bg-orange-500/70',
+      'bg-red-300 dark:bg-red-500/65',
       'bg-red-400 dark:bg-red-500/75',
+      'bg-rose-400 dark:bg-rose-500/75',
       'bg-rose-500 dark:bg-rose-500/80',
+      'bg-fuchsia-400 dark:bg-fuchsia-500/75',
+      'bg-purple-400 dark:bg-purple-500/75',
       'bg-purple-500 dark:bg-purple-500/80'
     ];
     
@@ -173,11 +185,11 @@ export default function VisitCalendar({ dailyData }: VisitCalendarProps) {
       <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-border">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Menos</span>
-          <div className="flex gap-0.5">
-            {[0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.55, 0.64, 0.73, 0.82, 0.91, 1].map((intensity, i) => (
+          <div className="flex gap-px">
+            {[0, 0.042, 0.083, 0.125, 0.167, 0.208, 0.25, 0.292, 0.333, 0.375, 0.417, 0.458, 0.5, 0.542, 0.583, 0.625, 0.667, 0.708, 0.75, 0.792, 0.833, 0.875, 0.917, 1].map((intensity, i) => (
               <div
                 key={i}
-                className={`w-2.5 h-3 rounded-sm ${getIntensityColor(intensity, true)}`}
+                className={`w-2 h-3 rounded-sm ${getIntensityColor(intensity, true)}`}
               />
             ))}
           </div>
