@@ -1,4 +1,5 @@
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert, getApp, deleteApp } from 'firebase-admin/app';
+import { getDatabase } from 'firebase-admin/database';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -13,14 +14,14 @@ if (!serviceAccountString) {
 const serviceAccount = JSON.parse(serviceAccountString);
 
 // Inicializar Firebase Admin
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+if (getApps().length === 0) {
+    initializeApp({
+        credential: cert(serviceAccount),
         databaseURL: "https://debelingoconangel-default-rtdb.europe-west1.firebasedatabase.app"
     });
 }
 
-const db = admin.database();
+const db = getDatabase();
 
 async function runMigration() {
     console.log('🚀 Iniciando proceso de migración automática...');
@@ -180,13 +181,13 @@ async function runMigration() {
         }
 
         // Cerrar la conexión de Firebase para que el proceso termine
-        await admin.app().delete();
+        await deleteApp(getApp());
         process.exit(0);
 
     } catch (error) {
         console.error('❌ Error en el proceso de migración:', error);
-        if (admin.apps.length > 0) {
-            await admin.app().delete();
+        if (getApps().length > 0) {
+            await deleteApp(getApp());
         }
         process.exit(1);
     }
