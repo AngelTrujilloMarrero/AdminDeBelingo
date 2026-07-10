@@ -12,7 +12,6 @@
     "module": "ESNext",
     "skipLibCheck": true,
     /* Tailwind stuff */
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
@@ -26,6 +25,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     /* Linting */
+    "types": ["node"],
     "strict": false,
     "noImplicitAny": false,
     "noUnusedLocals": false,
@@ -39,5 +39,9 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/scripts/migrate.ts",
+    "src/scripts/githubMigration.ts"
   ]
 }
