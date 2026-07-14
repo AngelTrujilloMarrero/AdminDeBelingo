@@ -510,12 +510,9 @@ export default function Analytics() {
           Tráfico y Visitas
         </button>
         <button
-          onClick={() => setActiveTab('downloads')}
-          className={`flex items-center gap-2 px-6 py-3 border-b-2 text-sm font-bold transition-all ${
-            activeTab === 'downloads'
-              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
+          disabled
+          title="Sección desactivada temporalmente"
+          className="flex items-center gap-2 px-6 py-3 border-b-2 border-transparent text-muted-foreground/40 cursor-not-allowed text-sm font-bold transition-all line-through"
         >
           <Download className="w-4 h-4" />
           Descargas de Fotos
