@@ -30,6 +30,19 @@ import {
 } from 'lucide-react';
 
 import ProgramaInput from './ProgramaInput';
+import { notifyTelegram } from '../lib/telegramNotifier';
+
+function isTodayCanary(dayStr: string): boolean {
+  if (!dayStr) return false;
+  const day = dayStr.split('T')[0];
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Atlantic/Canary',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return day === formatter.format(new Date());
+}
 
 interface EventFormProps {
   events: Event[];
@@ -774,6 +787,13 @@ export default function EventForm({
     try {
       if (editingEvent && !isRestoredEvent) {
         await set(ref(db, `events/${editingEvent.id}`), event);
+
+        // Notificar a Telegram: solo si el cambio es únicamente de hora
+        // y el evento se celebra hoy (modificación dentro del propio día).
+        const soloCambioHora = cambios && cambios.length === 1 && cambios[0] === 'hora';
+        if (soloCambioHora && isTodayCanary(event.day)) {
+          await notifyTelegram('edit', { ...event, id: editingEvent.id }, undefined, editingEvent.hora);
+        }
       } else {
         await push(ref(db, 'events'), event);
         

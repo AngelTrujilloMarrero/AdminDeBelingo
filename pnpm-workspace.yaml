@@ -4,4 +4,5 @@ overrides:
   yaml: ^2.8.3
 
 allowBuilds:
+  '@firebase/util': true
   protobufjs: true
