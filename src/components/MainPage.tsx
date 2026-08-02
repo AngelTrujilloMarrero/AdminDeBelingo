@@ -12,7 +12,8 @@ import MessageAdmin from './MessageAdmin';
 import ExportFestivalDialog from './ExportFestivalDialog';
 import TelegramPhotoQueue from './TelegramPhotoQueue';
 import DeletedEventsPanel from './DeletedEventsPanel';
-import { FileImage } from 'lucide-react';
+import EventCaptureDialog from './EventCaptureDialog';
+import { FileImage, Camera } from 'lucide-react';
 
 interface MainPageProps {
     events: Event[];
@@ -46,6 +47,7 @@ export default function MainPage({
     allOrchestras
 }: MainPageProps) {
     const [showExportDialog, setShowExportDialog] = useState(false);
+    const [showCaptureDialog, setShowCaptureDialog] = useState(false);
 
     useEffect(() => {
         const handleRestoreFromTrash = (e: any) => {
@@ -83,13 +85,20 @@ export default function MainPage({
 
             {/* Sección de Herramientas (Exportar) */}
             <section>
-                <div className="max-w-4xl mx-auto px-6 flex justify-center">
+                <div className="max-w-4xl mx-auto px-6 flex justify-center flex-wrap gap-4">
                     <button
                         onClick={() => setShowExportDialog(true)}
                         className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
                     >
                         <FileImage className="w-5 h-5" />
                         Crear Cartel de Fiestas
+                    </button>
+                    <button
+                        onClick={() => setShowCaptureDialog(true)}
+                        className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                    >
+                        <Camera className="w-5 h-5" />
+                        Descargar capturas de eventos
                     </button>
                 </div>
                 <div className="max-w-4xl mx-auto px-6 mt-4">
@@ -142,6 +151,12 @@ export default function MainPage({
                 <ExportFestivalDialog
                     events={events}
                     onClose={() => setShowExportDialog(false)}
+                />
+            )}
+            {showCaptureDialog && (
+                <EventCaptureDialog
+                    events={events}
+                    onClose={() => setShowCaptureDialog(false)}
                 />
             )}
         </div>
