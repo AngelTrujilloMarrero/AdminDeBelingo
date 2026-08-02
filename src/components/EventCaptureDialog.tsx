@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import html2canvas from 'html2canvas-pro';
 import JSZip from 'jszip';
 import { Event } from '../types/event';
-import { Camera, X, Check, Calendar, MapPin, Download, Loader2, AlertTriangle, CheckCircle2, AlertCircle, FolderArchive } from 'lucide-react';
+import { Camera, X, Check, Calendar, MapPin, Download, Loader2, AlertTriangle, CheckCircle2, AlertCircle, FolderArchive, FileText } from 'lucide-react';
 import EventCaptureCard from './EventCaptureCard';
 import { fetchAemetAlerts, getAlertForEvent, AemetAlert } from '../services/aemetAlerts';
 
@@ -48,6 +48,25 @@ const sanitize = (s: string) => {
         .slice(0, 45);
 };
 
+const blobToDataUrl = (blob: Blob): Promise<string> => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result as string);
+    reader.onerror = () => rej(reader.error);
+    reader.readAsDataURL(blob);
+});
+
+const getImageDims = (dataUrl: string): Promise<{ width: number; height: number }> => new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => rej(new Error('No se pudo leer la imagen'));
+    img.src = dataUrl;
+});
+
+const formatDayLabel = (day: string): string => {
+    const d = new Date(`${day}T12:00:00`);
+    return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+};
+
 export default function EventCaptureDialog({ events, onClose }: EventCaptureDialogProps) {
     const initialWindow = useMemo(() => getVisibleWindow(), []);
     const [startDate, setStartDate] = useState(initialWindow.start);
@@ -58,7 +77,7 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
     const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-    const [zipData, setZipData] = useState<{ blob: Blob; name: string } | null>(null);
+    const [downloadData, setDownloadData] = useState<{ blob: Blob; name: string } | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -173,7 +192,111 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
         });
     }, [aemetAlerts, tipoColorHex]);
 
-    const generateZip = async () => {
+    const captureAll = async (selectedEvents: Event[]): Promise<{ event: Event; blob: Blob }[]> => {
+        const captures: { event: Event; blob: Blob }[] = [];
+        for (let i = 0; i < selectedEvents.length; i++) {
+            setProgress({ current: i + 1, total: selectedEvents.length });
+            const blob = await captureEvent(selectedEvents[i]);
+            captures.push({ event: selectedEvents[i], blob });
+        }
+        return captures;
+    };
+
+    const triggerDownload = (blob: Blob, name: string) => {
+        setDownloadData({ blob, name });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    };
+
+    const buildZip = async (captures: { event: Event; blob: Blob }[]) => {
+        const zip = new JSZip();
+        const rootFolder = zip.folder(`capturas_${startDate}_${endDate}`);
+        if (!rootFolder) throw new Error('No se pudo crear el ZIP');
+
+        for (const { event, blob } of captures) {
+            const dayFolder = event.day.split('T')[0];
+            const firstOrquesta = (event.orquesta.split(',')[0] || 'evento').trim();
+            const fileName = `${event.hora.replace(':', '-')}_${sanitize(event.municipio)}_${sanitize(event.lugar || 'Casco')}_${sanitize(firstOrquesta)}.jpg`;
+            rootFolder.folder(dayFolder)?.file(fileName, blob);
+        }
+
+        const zipBlob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+
+        triggerDownload(zipBlob, `capturas_${startDate}_${endDate}.zip`);
+        setResult({ success: true, message: `ZIP generado con ${captures.length} captura(s) organizadas por día` });
+    };
+
+    const buildPdf = async (captures: { event: Event; blob: Blob }[]) => {
+        const { default: jsPDF } = await import('jspdf');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const pageW = 210;
+        const pageH = 297;
+        const margin = 12;
+        const usableW = pageW - margin * 2;
+
+        const byDay: Record<string, { event: Event; blob: Blob }[]> = {};
+        captures.forEach(c => {
+            const day = c.event.day.split('T')[0];
+            if (!byDay[day]) byDay[day] = [];
+            byDay[day].push(c);
+        });
+        const days = Object.keys(byDay).sort();
+
+        let isFirstPage = true;
+        for (const day of days) {
+            if (!isFirstPage) pdf.addPage();
+            isFirstPage = false;
+
+            const label = formatDayLabel(day);
+            pdf.setFillColor(255, 106, 0);
+            pdf.roundedRect(margin, margin, usableW, 16, 2, 2, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.text(label, pageW / 2, margin + 11, { align: 'center' });
+
+            let y = margin + 16 + 7;
+            for (const { event, blob } of byDay[day]) {
+                const dataUrl = await blobToDataUrl(blob);
+                const dims = await getImageDims(dataUrl);
+                const imgH = usableW * (dims.height / dims.width);
+
+                const caption = `${event.hora} · ${event.lugar ? `${event.lugar}, ` : ''}${event.municipio}`;
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(120, 120, 120);
+                const captionH = 5;
+
+                if (y + captionH + imgH > pageH - margin) {
+                    pdf.addPage();
+                    y = margin;
+                }
+                pdf.text(caption, margin, y + 3);
+                y += captionH;
+
+                if (y + imgH > pageH - margin) {
+                    pdf.addPage();
+                    y = margin;
+                }
+                pdf.addImage(dataUrl, 'JPEG', margin, y, usableW, imgH);
+                y += imgH + 6;
+            }
+        }
+
+        const pdfBlob = pdf.output('blob');
+        triggerDownload(pdfBlob, `capturas_${startDate}_${endDate}.pdf`);
+        setResult({ success: true, message: `PDF generado con ${captures.length} captura(s) separadas por día` });
+    };
+
+    const generate = async (mode: 'zip' | 'pdf') => {
         const selectedEvents = rangeEvents.filter(e => selectedEventIds.has(e.id));
         if (selectedEvents.length === 0) {
             alert('Selecciona al menos un evento.');
@@ -182,44 +305,16 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
 
         setIsGenerating(true);
         setResult(null);
-        setZipData(null);
+        setDownloadData(null);
         setProgress({ current: 0, total: selectedEvents.length });
 
         try {
-            const zip = new JSZip();
-            const rootFolder = zip.folder(`capturas_${startDate}_${endDate}`);
-
-            if (!rootFolder) throw new Error('No se pudo crear el ZIP');
-
-            for (let i = 0; i < selectedEvents.length; i++) {
-                const event = selectedEvents[i];
-                setProgress({ current: i + 1, total: selectedEvents.length });
-
-                const blob = await captureEvent(event);
-
-                const dayFolder = event.day.split('T')[0];
-                const firstOrquesta = (event.orquesta.split(',')[0] || 'evento').trim();
-                const fileName = `${event.hora.replace(':', '-')}_${sanitize(event.municipio)}_${sanitize(event.lugar || 'Casco')}_${sanitize(firstOrquesta)}.jpg`;
-
-                rootFolder.folder(dayFolder)?.file(fileName, blob);
+            const captures = await captureAll(selectedEvents);
+            if (mode === 'zip') {
+                await buildZip(captures);
+            } else {
+                await buildPdf(captures);
             }
-
-            const zipBlob = await zip.generateAsync({
-                type: 'blob',
-                compression: 'DEFLATE',
-                compressionOptions: { level: 6 }
-            });
-
-            const zipName = `capturas_${startDate}_${endDate}.zip`;
-            setZipData({ blob: zipBlob, name: zipName });
-
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(zipBlob);
-            link.download = zipName;
-            link.click();
-            setTimeout(() => URL.revokeObjectURL(link.href), 10000);
-
-            setResult({ success: true, message: `ZIP generado con ${selectedEvents.length} captura(s)` });
         } catch (error: any) {
             console.error('Error generando capturas:', error);
             setResult({ success: false, message: `Error: ${error.message}` });
@@ -229,11 +324,11 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
         }
     };
 
-    const downloadZipAgain = () => {
-        if (!zipData) return;
+    const downloadAgain = () => {
+        if (!downloadData) return;
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(zipData.blob);
-        link.download = zipData.name;
+        link.href = URL.createObjectURL(downloadData.blob);
+        link.download = downloadData.name;
         link.click();
         setTimeout(() => URL.revokeObjectURL(link.href), 10000);
     };
@@ -372,9 +467,9 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
                         </div>
                     </div>
 
-                    <div className="flex justify-center pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex justify-center pt-4 border-t border-gray-100 dark:border-gray-700 flex-wrap gap-4">
                         <button
-                            onClick={generateZip}
+                            onClick={() => generate('zip')}
                             disabled={selectedEventIds.size === 0 || isGenerating}
                             className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
@@ -386,7 +481,24 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
                             ) : (
                                 <>
                                     <FolderArchive className="w-5 h-5" />
-                                    Generar y descargar ZIP
+                                    Generar ZIP
+                                </>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => generate('pdf')}
+                            disabled={selectedEventIds.size === 0 || isGenerating}
+                            className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Generando PDF...
+                                </>
+                            ) : (
+                                <>
+                                    <FileText className="w-5 h-5" />
+                                    Generar PDF por día
                                 </>
                             )}
                         </button>
@@ -405,9 +517,9 @@ export default function EventCaptureDialog({ events, onClose }: EventCaptureDial
                                 : <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             }
                             {result.message}
-                            {zipData && (
+                            {downloadData && (
                                 <button
-                                    onClick={downloadZipAgain}
+                                    onClick={downloadAgain}
                                     className="ml-2 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs transition-colors"
                                 >
                                     <Download className="w-3.5 h-3.5" />
