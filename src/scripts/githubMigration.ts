@@ -23,6 +23,17 @@ if (getApps().length === 0) {
 
 const db = getDatabase();
 
+async function shutdown() {
+    if (getApps().length > 0) {
+        try {
+            await deleteApp(getApp());
+        } catch (error) {
+            console.error('⚠️ Error al cerrar Firebase:', error);
+        }
+    }
+    process.exit(0);
+}
+
 async function runMigration() {
     console.log('🚀 Iniciando proceso de migración automática...');
 
@@ -32,7 +43,7 @@ async function runMigration() {
 
         if (!snapshot.exists()) {
             console.log('ℹ️ No hay eventos en Firebase para migrar.');
-            return;
+            await shutdown();
         }
 
         const data = snapshot.val();
@@ -50,7 +61,7 @@ async function runMigration() {
 
         if (yearsToMigrate.length === 0) {
             console.log('✅ No hay años anteriores que necesiten migración.');
-            return;
+            await shutdown();
         }
 
         const archiveDir = path.join(process.cwd(), 'public', 'events-archive');
@@ -181,8 +192,7 @@ async function runMigration() {
         }
 
         // Cerrar la conexión de Firebase para que el proceso termine
-        await deleteApp(getApp());
-        process.exit(0);
+        await shutdown();
 
     } catch (error) {
         console.error('❌ Error en el proceso de migración:', error);
@@ -193,4 +203,4 @@ async function runMigration() {
     }
 }
 
-runMigration();
+runMigration().finally(() => process.exit(0));
