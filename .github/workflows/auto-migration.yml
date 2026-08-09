@@ -40,6 +40,9 @@ jobs:
           commit_message: "chore: auto-migration of previous year events and orchestras [skip ci]"
           file_pattern: 'public/events-archive/* public/orchestra-archive/*'
 
+      - name: Set public VITE env vars for build
+        run: cp .env.ci .env
+
       - name: Build and Deploy to Firebase
         run: |
           pnpm build

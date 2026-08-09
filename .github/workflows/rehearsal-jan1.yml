@@ -43,5 +43,8 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: pnpm tsx src/scripts/githubMigration.ts
 
+      - name: Set public VITE env vars for build
+        run: cp .env.ci .env
+
       - name: Build to verify deploy step would work
         run: pnpm build
